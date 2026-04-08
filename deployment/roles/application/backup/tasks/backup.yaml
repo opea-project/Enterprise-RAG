@@ -5,12 +5,32 @@
   ansible.builtin.set_fact:
     backup_name: "{{ velero.backup.prefix }}-{{ ansible_date_time.iso8601_basic_short | lower }}"
 
+- name: Compute namespaces to back up
+  ansible.builtin.set_fact:
+    backup_namespaces: >-
+      {{
+        velero.backup.backupConfig.namespaceOrder
+        | select('in', enabled_namespaces | default([]))
+        | list
+      }}
+
+- name: Fail if no namespaces to back up
+  ansible.builtin.fail:
+    msg: >-
+      No namespaces to back up: none of {{ velero.backup.backupConfig.namespaceOrder }}
+      are in enabled_namespaces={{ enabled_namespaces | default([]) }}.
+  when: backup_namespaces | length == 0
+
+- name: Display namespaces that will be backed up
+  ansible.builtin.debug:
+    msg: "Backing up namespaces: {{ backup_namespaces | join(', ') }}"
+
 - name: Build backup command
   ansible.builtin.set_fact:
     backup_cmd: >-
       velero backup create "{{ backup_name }}"
       --namespace {{ velero.namespace }}
-      --include-namespaces {{ velero.backup.backupConfig.namespaceOrder | join(",") }}
+      --include-namespaces {{ backup_namespaces | join(",") }}
       --labels "{{ (velero.backup.labels | combine({'meta.erag/solution-version': solution_version})).items() | map('join', '=') | join(',') }}"
       {% set or_sels = velero.backup.backupConfig.orSelectors | default([]) %}
       {% set res_sels = velero.backup.backupConfig.resourceSelectors | default([]) %}

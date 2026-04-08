@@ -4,11 +4,14 @@
 - name: Generate order of cleanup before restore
   ansible.builtin.set_fact:
     cleanup_list: >-
+      {% set ns_filter = enabled_namespaces | default([]) %}
       {% set result = [] %}
       {% for ns in velero.backup.backupConfig.namespaceOrder | default([]) %}
-        {% for dp in velero.backup.backupConfig.deployments[ns] | default([]) %}
-          {% set _ = result.append({'ns': ns, 'dp': dp}) %}
-        {% endfor %}
+        {% if ns in ns_filter %}
+          {% for dp in velero.backup.backupConfig.deployments[ns] | default([]) %}
+            {% set _ = result.append({'ns': ns, 'dp': dp}) %}
+          {% endfor %}
+        {% endif %}
       {% endfor %}
       {{ result }}
 

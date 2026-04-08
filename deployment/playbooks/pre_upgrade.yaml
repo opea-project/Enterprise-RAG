@@ -169,91 +169,6 @@
           - "Target: {{ version_result.installing_version }}"
           - "========================================"
 
-    - name: Load target upgrade base version
-      ansible.builtin.set_fact:
-        target_upgrade_base_version: "{{ target_version_data.upgrade_base_version | default('') }}"
-
-    - name: Block upgrade if target version does not support upgrades
-      ansible.builtin.fail:
-        msg: |
-          ========================================
-          Upgrade Not Supported
-          ========================================
-          Source version: {{ source_version }}
-          Target version: {{ target_version }}
-
-          The target version {{ target_version }} contains breaking changes
-          and does not support upgrades from any previous version.
-
-          Recommended approach:
-          1. Backup your data using the backup workflow
-          2. Perform a clean installation of version {{ target_version }}
-          3. Restore your data from backup
-
-          For detailed instructions, see: docs/upgrade.md
-          ========================================
-      when:
-        - target_upgrade_base_version | length > 0
-        - target_upgrade_base_version == 'unsupported'
-
-    - name: Verify source version meets upgrade base requirement
-      when:
-        - target_upgrade_base_version | length > 0
-        - target_upgrade_base_version != 'unsupported'
-      block:
-        - name: Compare source version with upgrade base version
-          ansible.builtin.script:
-            cmd: "{{ deployment_dir }}/roles/application/deployment_manifest/files/compare_versions.py"
-          environment:
-            DEPLOYED_VERSION: "{{ target_upgrade_base_version }}"
-            INSTALLING_VERSION: "{{ source_version }}"
-          register: base_version_result
-          changed_when: false
-          failed_when: false
-
-        - name: Parse base version comparison
-          ansible.builtin.set_fact:
-            base_version_check: "{{ base_version_result.stdout | from_json }}"
-
-        - name: Block upgrade if source version does not match exactly
-          ansible.builtin.fail:
-            msg: |
-              ========================================
-              Unsupported Upgrade Path
-              ========================================
-              Source version: {{ source_version }}
-              Required exact version: {{ target_upgrade_base_version }}
-              Target version: {{ target_version }}
-              Detected mode: {{ base_version_check.mode }}
-
-              {% if base_version_check.mode == 'downgrade' %}
-              Your current deployment version ({{ source_version }}) is BELOW
-              the required base version ({{ target_upgrade_base_version }}).
-
-              To proceed:
-              1. Upgrade to version {{ target_upgrade_base_version }} first
-              2. Then upgrade to {{ target_version }}
-              {% else %}
-              Your current deployment version ({{ source_version }}) is ABOVE
-              the required base version ({{ target_upgrade_base_version }}).
-
-              This upgrade path is not supported. The upgrade from {{ source_version }}
-              to {{ target_version }} must go through the exact base version.
-
-              Please check the upgrade documentation or release notes for
-              supported upgrade paths from version {{ source_version }}.
-              {% endif %}
-
-              For downgrade/restore scenarios, use backup/restore workflow.
-              ========================================
-          when: base_version_check.mode != 'refresh'
-
-        - name: Display upgrade base version check result
-          ansible.builtin.debug:
-            msg:
-              - "Upgrade base version check: PASSED"
-              - "Source version: {{ source_version }} == Required: {{ target_upgrade_base_version }}"
-
     - name: Block downgrade
       ansible.builtin.fail:
         msg: |
@@ -261,6 +176,65 @@
           Downgrades are not supported through the upgrade workflow.
           For recovery, use backup/restore workflow.
       when: version_result.mode == "downgrade"
+
+    - name: Set upgrade mode flag
+      ansible.builtin.set_fact:
+        is_upgrade_mode: "{{ version_result.mode in ['major_upgrade', 'minor_upgrade', 'patch_upgrade'] }}"
+
+    - name: Check upgrade constraint
+      when: is_upgrade_mode | bool
+      block:
+        - name: Load target upgrade base version
+          ansible.builtin.set_fact:
+            target_upgrade_base_version: "{{ target_version_data.upgrade_base_version | default('') }}"
+
+        - name: Skip constraint check if not configured
+          ansible.builtin.debug:
+            msg: "No upgrade constraint configured - allowing upgrade from any version"
+          when: target_upgrade_base_version | length == 0
+
+        - name: Block upgrade if target version does not support upgrades
+          ansible.builtin.fail:
+            msg: |
+              Upgrade not supported: {{ source_version }} -> {{ target_version }}
+              Target {{ target_version }} does not support upgrades.
+              Backup, clean install, and restore instead.
+          when:
+            - target_upgrade_base_version | length > 0
+            - target_upgrade_base_version == 'unsupported'
+
+        - name: Verify source version meets upgrade constraint
+          when:
+            - target_upgrade_base_version | length > 0
+            - target_upgrade_base_version != 'unsupported'
+          block:
+            - name: Check source version against upgrade constraint
+              ansible.builtin.script:
+                cmd: "{{ deployment_dir }}/roles/application/deployment_manifest/files/compare_versions.py"
+              environment:
+                SOURCE_VERSION: "{{ source_version }}"
+                TARGET_VERSION: "{{ target_version }}"
+                UPGRADE_CONSTRAINT: "{{ target_upgrade_base_version }}"
+              register: constraint_check_result
+              changed_when: false
+              failed_when: false
+
+            - name: Parse upgrade constraint check result
+              ansible.builtin.set_fact:
+                upgrade_constraint_check: "{{ constraint_check_result.stdout | from_json }}"
+
+            - name: Block upgrade if source version does not satisfy constraint
+              ansible.builtin.fail:
+                msg: |
+                  Unsupported upgrade path: {{ source_version }} -> {{ target_version }}
+                  Constraint: {{ target_upgrade_base_version }}
+                  {{ upgrade_constraint_check.reason }}
+                  Check upgrade docs for supported paths.
+              when: not (upgrade_constraint_check.allowed | default(false))
+
+            - name: Constraint check passed
+              ansible.builtin.debug:
+                msg: "Constraint check: {{ source_version }} satisfies {{ target_upgrade_base_version }} -> {{ target_version }}"
 
     - name: Verify backup availability
       ansible.builtin.include_role:

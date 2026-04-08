@@ -20,102 +20,73 @@
         existing_deployment: "{{ (existing_manifests.resources[0].data['manifest.yaml'] | from_yaml) if existing_manifests.resources | length > 0 else {} }}"
         manifest_exists: "{{ existing_manifests.resources | length > 0 }}"
 
-    - name: Display force install mode if active
+    - name: Fresh install detected
       debug:
-        msg: "Force install mode active - bypassing deployment version checks (target: {{ solution_version }})"
+        msg: "No deployment manifest found - fresh install ({{ solution_version }})"
+      when: not manifest_exists
+
+    - name: Force install mode active
+      debug:
+        msg: "Force install mode - bypassing version checks (target: {{ solution_version }})"
       when: force_install_mode | default(false) | bool
 
-    - name: Warn about missing manifest
-      debug:
-        msg: "No manifest found - treating as fresh install (target: {{ solution_version }})"
-      when: not manifest_exists
-
-    # Skip remaining version checks if no existing manifest
-    - name: Skip version comparison checks
-      meta: noop
-      when: not manifest_exists
-
-    - name: Check if previous deployment is incomplete
+    - name: Check deployment status
       set_fact:
         is_in_progress: "{{ existing_deployment.deployment.status | default('complete') == manifest_status_in_progress }}"
-      when: manifest_exists
-
-    - name: Check if deployment is being deleted
-      set_fact:
         is_deleting: "{{ existing_deployment.deployment.status | default('') == manifest_status_deleting }}"
       when: manifest_exists
 
-    - name: Fail on deleting deployment (force mode disabled)
+    - name: Block install over active uninstall
       fail:
         msg: |
-          Deployment is currently being uninstalled (status: deleting):
-            Version: {{ existing_deployment.deployment.version }}
-            Started: {{ existing_deployment.deployment.startedAt | default('unknown') }}
-
-          Cannot install while uninstall is in progress.
-          Wait for uninstall to complete or use force_install_mode=true to override.
+          Deployment is being uninstalled ({{ existing_deployment.deployment.version }}).
+          Wait for uninstall to complete or use force_install_mode=true.
       when:
         - is_deleting | default(false) | bool
         - not (force_install_mode | default(false) | bool)
 
-    - name: Warn about installing over deleting deployment with force mode
+    - name: Warn about installing over active uninstall (force mode)
       debug:
-        msg: |
-          WARNING: Deployment is being uninstalled (force mode active):
-            Version: {{ existing_deployment.deployment.version }}
-            Started: {{ existing_deployment.deployment.startedAt | default('unknown') }}
-          Proceeding with installation despite incomplete uninstall.
+        msg: "WARNING: Installing over active uninstall of {{ existing_deployment.deployment.version }} (force mode)"
       when:
         - is_deleting | default(false) | bool
         - force_install_mode | default(false) | bool
 
-    - name: Check in-progress installation target version
+    - name: Check in-progress target version
       set_fact:
         target_version_match: "{{ existing_deployment.deployment.targetVersion | default('') == solution_version }}"
         has_target_version: "{{ existing_deployment.deployment.targetVersion is not none and existing_deployment.deployment.targetVersion != '' }}"
       when: is_in_progress | default(false) | bool
 
-    - name: Warn about resuming incomplete deployment
+    - name: Resuming incomplete deployment
       debug:
-        msg: |
-          WARNING: Resuming incomplete deployment:
-            Deployed version: {{ existing_deployment.deployment.version | default('unknown') }}
-            Target version: {{ existing_deployment.deployment.targetVersion | default('unknown') }}
-            Started: {{ existing_deployment.deployment.startedAt | default('unknown') }}
+        msg: "Resuming: {{ existing_deployment.deployment.version | default('unknown') }} -> {{ existing_deployment.deployment.targetVersion | default('unknown') }}"
       when:
         - is_in_progress | default(false) | bool
         - target_version_match | default(false) | bool
 
-    - name: Fail on incomplete deployment with target version mismatch (force mode disabled)
+    - name: Block incomplete deployment with version mismatch
       fail:
         msg: |
-          Incomplete deployment detected with target version mismatch:
-            Deployed version: {{ existing_deployment.deployment.version | default('unknown') }}
-            Target version in manifest: {{ existing_deployment.deployment.targetVersion | default('unknown') }}
-            Solution version attempting to install: {{ solution_version }}
-
-          This indicates an incomplete deployment of a different version.
-          Use force_install_mode=true to override and restart with new version.
+          Incomplete deployment of different version:
+            In-progress target: {{ existing_deployment.deployment.targetVersion | default('unknown') }}
+            Attempting to install: {{ solution_version }}
+          Use force_install_mode=true to override.
       when:
         - is_in_progress | default(false) | bool
         - has_target_version | default(false) | bool
         - not (target_version_match | default(false) | bool)
         - not (force_install_mode | default(false) | bool)
 
-    - name: Warn about incomplete deployment version mismatch with force mode
+    - name: Warn about version mismatch override (force mode)
       debug:
-        msg: |
-          WARNING: Incomplete deployment version mismatch (force mode active):
-            In-progress: {{ existing_deployment.deployment.version }}
-            Installing: {{ solution_version }}
-          Proceeding with installation.
+        msg: "WARNING: Overriding incomplete deployment {{ existing_deployment.deployment.version }} with {{ solution_version }} (force mode)"
       when:
         - is_in_progress | default(false) | bool
-        - not (in_progress_version_match | default(false) | bool)
+        - not (target_version_match | default(false) | bool)
         - force_install_mode | default(false) | bool
 
-    # Version comparison using packaging library
-    - name: Compare versions using packaging
+    - name: Compare deployed vs installing version
       ansible.builtin.script:
         cmd: "{{ role_path }}/files/compare_versions.py"
       environment:
@@ -127,7 +98,7 @@
         - manifest_exists
         - not (is_in_progress | default(false) | bool)
 
-    - name: Parse version comparison result
+    - name: Parse version comparison
       set_fact:
         install_mode: "{{ (version_comparison.stdout | from_json).mode }}"
         deployed_ver: "{{ (version_comparison.stdout | from_json).deployed_version }}"
@@ -135,196 +106,107 @@
       when: manifest_exists and not (is_in_progress | default(false) | bool)
 
     - name: Display detected mode
-      ansible.builtin.debug:
-        msg:
-          - "========================================"
-          - "Installation Mode Detection"
-          - "========================================"
-          - "Mode: {{ install_mode | upper }}"
-          - "Deployed: {{ deployed_ver }}"
-          - "Installing: {{ installing_ver }}"
-          - "========================================"
+      debug:
+        msg: "Mode: {{ install_mode | upper }} ({{ deployed_ver }} -> {{ installing_ver }})"
       when:
         - manifest_exists
         - install_mode is defined
 
     - name: Set upgrade mode flag
-      ansible.builtin.set_fact:
+      set_fact:
         is_upgrade_mode: "{{ install_mode in ['major_upgrade', 'minor_upgrade', 'patch_upgrade'] }}"
       when:
         - manifest_exists
         - install_mode is defined
 
-    # Phase 2: Verify upgrade_base_version requirement
-    - name: Load upgrade base version
-      ansible.builtin.set_fact:
-        upgrade_base_version_required: "{{ lookup('file', playbook_dir + '/../version.yaml') | from_yaml | default({}) | json_query('upgrade_base_version') | default('') }}"
+    - name: Check upgrade constraint
       when:
         - manifest_exists
         - is_upgrade_mode | default(false) | bool
-
-    - name: Block upgrade if version does not support upgrades
-      ansible.builtin.fail:
-        msg: |
-          ========================================
-          Upgrade Not Supported (Phase 2)
-          ========================================
-          Deployed version: {{ deployed_ver }}
-          Installing version: {{ installing_ver }}
-
-          The target version {{ installing_ver }} contains breaking changes
-          and does not support upgrades from any previous version.
-
-          Recommended approach:
-          1. Backup your data using the backup workflow
-          2. Uninstall the current deployment
-          3. Perform a clean installation of version {{ installing_ver }}
-          4. Restore your data from backup
-
-          For detailed instructions, see: docs/upgrade.md
-          ========================================
-      when:
-        - manifest_exists
-        - is_upgrade_mode | default(false) | bool
-        - upgrade_base_version_required | length > 0
-        - upgrade_base_version_required == 'unsupported'
-        - not (force_install_mode | default(false) | bool)
-
-    - name: Warn about forced installation with unsupported upgrade
-      ansible.builtin.debug:
-        msg: |
-          ========================================
-          WARNING: Forced Installation Active
-          ========================================
-          Deployed: {{ deployed_ver }}
-          Installing: {{ installing_ver }}
-
-          You are forcing installation despite upgrade being marked as unsupported.
-          This may cause data loss, corruption, or system instability.
-
-          The outcome is NOT GUARANTEED. Proceed at your own risk!
-          ========================================
-      when:
-        - manifest_exists
-        - is_upgrade_mode | default(false) | bool
-        - upgrade_base_version_required | length > 0
-        - upgrade_base_version_required == 'unsupported'
-        - force_install_mode | default(false) | bool
-
-    - name: Verify deployed version matches upgrade base version
-      when:
-        - manifest_exists
-        - is_upgrade_mode | default(false) | bool
-        - upgrade_base_version_required | length > 0
-        - upgrade_base_version_required != 'unsupported'
       block:
-        - name: Compare deployed version with upgrade base version
-          ansible.builtin.script:
-            cmd: "{{ role_path }}/files/compare_versions.py"
-          environment:
-            DEPLOYED_VERSION: "{{ upgrade_base_version_required }}"
-            INSTALLING_VERSION: "{{ deployed_ver }}"
-          register: base_check_result
-          changed_when: false
-          failed_when: false
+        - name: Load upgrade_base_version from version.yaml
+          set_fact:
+            upgrade_base_version_required: "{{ upgrade_base_version | default('') }}"
 
-        - name: Parse base version check
-          ansible.builtin.set_fact:
-            base_check: "{{ base_check_result.stdout | from_json }}"
+        - name: No upgrade constraint configured
+          debug:
+            msg: "No upgrade_base_version constraint - allowing upgrade from any version"
+          when: upgrade_base_version_required | length == 0
 
-        - name: Block upgrade if deployed version does not match base version
-          ansible.builtin.fail:
+        - name: Block unsupported upgrade
+          fail:
             msg: |
-              ========================================
-              Unsupported Upgrade Path (Phase 2)
-              ========================================
-              Deployed version: {{ deployed_ver }}
-              Required exact version: {{ upgrade_base_version_required }}
-              Installing version: {{ installing_ver }}
-              Detected mode: {{ base_check.mode }}
+              Upgrade not supported: {{ deployed_ver }} -> {{ installing_ver }}
+              Version {{ installing_ver }} does not support upgrades.
+              Backup, clean install, and restore instead.
+          when:
+            - upgrade_base_version_required | length > 0
+            - upgrade_base_version_required == 'unsupported'
+            - not (force_install_mode | default(false) | bool)
 
-              {% if base_check.mode == 'downgrade' %}
-              Your current deployment version ({{ deployed_ver }}) is BELOW
-              the required base version ({{ upgrade_base_version_required }}).
+        - name: Warn about forced unsupported upgrade
+          debug:
+            msg: "WARNING: Forcing install despite upgrade marked unsupported ({{ deployed_ver }} -> {{ installing_ver }})"
+          when:
+            - upgrade_base_version_required | length > 0
+            - upgrade_base_version_required == 'unsupported'
+            - force_install_mode | default(false) | bool
 
-              To proceed:
-              1. Upgrade to version {{ upgrade_base_version_required }} first
-              2. Then upgrade to {{ installing_ver }}
-              {% else %}
-              Your current deployment version ({{ deployed_ver }}) is ABOVE
-              the required base version ({{ upgrade_base_version_required }}).
+        - name: Verify upgrade constraint
+          when:
+            - upgrade_base_version_required | length > 0
+            - upgrade_base_version_required != 'unsupported'
+          block:
+            - name: Check deployed version against upgrade constraint
+              ansible.builtin.script:
+                cmd: "{{ role_path }}/files/compare_versions.py"
+              environment:
+                SOURCE_VERSION: "{{ deployed_ver }}"
+                TARGET_VERSION: "{{ installing_ver }}"
+                UPGRADE_CONSTRAINT: "{{ upgrade_base_version_required }}"
+              register: constraint_check_result
+              changed_when: false
+              failed_when: false
 
-              This upgrade path is not supported. The upgrade from {{ deployed_ver }}
-              to {{ installing_ver }} must go through the exact base version.
+            - name: Parse constraint check
+              set_fact:
+                upgrade_constraint_check: "{{ constraint_check_result.stdout | from_json }}"
 
-              Please check the upgrade documentation or release notes for
-              supported upgrade paths from version {{ deployed_ver }}.
-              {% endif %}
+            - name: Block upgrade on constraint violation
+              fail:
+                msg: |
+                  Unsupported upgrade path: {{ deployed_ver }} -> {{ installing_ver }}
+                  Constraint: {{ upgrade_base_version_required }}
+                  {{ upgrade_constraint_check.reason }}
+                  Check upgrade docs for supported paths.
+              when: not (upgrade_constraint_check.allowed | default(false))
 
-              For downgrade/restore scenarios, use backup/restore workflow.
-              ========================================
-          when: base_check.mode != 'refresh'
+            - name: Constraint check passed
+              debug:
+                msg: "Constraint check: {{ deployed_ver }} satisfies {{ upgrade_base_version_required }} -> {{ installing_ver }}"
 
-        - name: Display Phase 2 upgrade base version check result
-          ansible.builtin.debug:
-            msg:
-              - "Phase 2 upgrade base version check: PASSED"
-              - "Deployed version: {{ deployed_ver }} == Required: {{ upgrade_base_version_required }}"
-
-    - name: Handle refresh (same version)
+    - name: Display install mode
       debug:
-        msg: "Refresh: redeploying version {{ installing_ver }}"
+        msg: "{{ install_mode | replace('_', ' ') | capitalize }}: {{ deployed_ver }} -> {{ installing_ver }}"
       when:
         - manifest_exists
         - install_mode is defined
-        - install_mode == "refresh"
+        - install_mode != "downgrade"
 
-    - name: Handle patch upgrade
-      debug:
-        msg: "Patch upgrade: {{ deployed_ver }} -> {{ installing_ver }}"
-      when:
-        - manifest_exists
-        - install_mode is defined
-        - install_mode == "patch_upgrade"
-
-    - name: Handle minor upgrade with warning
-      debug:
-        msg: |
-          WARNING: Minor upgrade detected: {{ deployed_ver }} -> {{ installing_ver }}
-          This will be validated by Mode Detection feature in future.
-      when:
-        - manifest_exists
-        - install_mode is defined
-        - install_mode == "minor_upgrade"
-
-    - name: Handle major upgrade with warning
-      debug:
-        msg: |
-          WARNING: Major upgrade detected: {{ deployed_ver }} -> {{ installing_ver }}
-          This will be validated by Mode Detection feature in future.
-      when:
-        - manifest_exists
-        - install_mode is defined
-        - install_mode == "major_upgrade"
-
-    - name: Block downgrade without force mode
+    - name: Block downgrade
       fail:
         msg: |
-          Downgrade blocked: {{ deployed_ver }} -> {{ installing_ver }}.
-          Options:
-            1. Use force_install_mode=true to bypass (at your own risk)
-            2. Clean install {{ installing_ver }} version + restore data from backup
+          Downgrade blocked: {{ deployed_ver }} -> {{ installing_ver }}
+          Use force_install_mode=true to bypass, or clean install + restore from backup.
       when:
         - manifest_exists
         - install_mode is defined
         - install_mode == "downgrade"
         - not (force_install_mode | default(false) | bool)
 
-    - name: Warn about downgrade with force mode
+    - name: Warn about forced downgrade
       debug:
-        msg: |
-          WARNING: Downgrade with force mode: {{ deployed_ver }} -> {{ installing_ver }}
-          This may cause data loss or compatibility issues!
+        msg: "WARNING: Downgrade {{ deployed_ver }} -> {{ installing_ver }} (force mode - may cause data loss)"
       when:
         - manifest_exists
         - install_mode is defined

@@ -33,6 +33,18 @@
         - backup
         - restore
 
+    - name: Compute enabled and pipeline namespaces
+      ansible.builtin.include_role:
+        name: utils
+        tasks_from: get_namespaces.yaml
+        apply:
+          tags:
+            - backup
+            - restore
+      tags:
+        - backup
+        - restore
+
   tasks:
 
   - name: Verify velero is available for backup and restore

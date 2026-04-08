@@ -27,6 +27,8 @@ import {
   rerankerFormConfig,
 } from "@/configs/services/reranker";
 import {
+  metadataExtractionModes,
+  metadataExtractionModesWithNer,
   RetrieverArgs,
   retrieverArgumentsDefault,
   retrieverFormConfig,
@@ -61,6 +63,7 @@ const createCodeBlock = (text: string | object) => {
 export interface RetrieverDebugDialogProps {
   retrieverArgs?: RetrieverArgs;
   rerankerArgs?: RerankerArgs;
+  nerEnabled?: boolean;
   onPostRetrieverQuery: (
     request: PostRetrieverQueryRequest,
   ) => Promise<{ data?: unknown; error?: unknown }>;
@@ -70,6 +73,7 @@ export interface RetrieverDebugDialogProps {
 export const RetrieverDebugDialog = ({
   retrieverArgs: initialRetrieverArgs,
   rerankerArgs: initialRerankerArgs,
+  nerEnabled = false,
   onPostRetrieverQuery,
   onGetErrorMessage,
 }: RetrieverDebugDialogProps) => {
@@ -215,6 +219,7 @@ export const RetrieverDebugDialog = ({
             retrieverArgumentsForm={retrieverArgumentsForm}
             rerankerArgumentsForm={rerankerArgumentsForm}
             isRerankerEnabled={isRerankerEnabled}
+            nerEnabled={nerEnabled}
             onRetrieverArgumentValueChange={onRetrieverArgumentValueChange}
             onRetrieverArgumentValidityChange={
               onRetrieverArgumentValidityChange
@@ -272,6 +277,7 @@ interface RetrieverDebugParamsFormProps {
   retrieverArgumentsForm: RetrieverArgs;
   rerankerArgumentsForm: RerankerArgs;
   isRerankerEnabled: boolean;
+  nerEnabled: boolean;
   onRetrieverArgumentValueChange: OnArgumentValueChangeHandler;
   onRetrieverArgumentValidityChange: OnArgumentValidityChangeHandler;
   onRerankerArgumentValueChange: OnArgumentValueChangeHandler;
@@ -287,6 +293,7 @@ const RetrieverDebugParamsForm = ({
   onRerankerArgumentValueChange,
   onRerankerArgumentValidityChange,
   isRerankerEnabled,
+  nerEnabled,
   onRerankerEnabledCheckboxChange,
 }: RetrieverDebugParamsFormProps) => {
   const visibleRerankerArgumentInputs = retrieverArgumentsForm?.search_type
@@ -350,6 +357,16 @@ const RetrieverDebugParamsForm = ({
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
         />
       )}
+      <ServiceArgumentSelectInput
+        {...retrieverFormConfig.metadata_extraction_mode}
+        options={[
+          ...(nerEnabled
+            ? metadataExtractionModesWithNer
+            : metadataExtractionModes),
+        ]}
+        value={retrieverArgumentsForm.metadata_extraction_mode}
+        onArgumentValueChange={onRetrieverArgumentValueChange}
+      />
       <p className="retriever-debug-dialog__section-heading">Reranker</p>
       <CheckboxInput
         data-testid="reranker-enabled-checkbox"

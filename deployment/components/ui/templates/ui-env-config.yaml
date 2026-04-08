@@ -23,5 +23,6 @@ data:
       "S3_SEND_BEARER_TOKEN": {{ (.Values.extraUiConfigVars.useBearerTokenAuth | lower) | quote }},
       {{- end }}
       "ERAG_VERSION": {{ .Chart.AppVersion | quote }},
-      "MAINTENANCE_MODE": {{ (.Values.extraUiConfigVars.chatMaintenanceMode | lower) | quote }}
+      "MAINTENANCE_MODE": {{ (.Values.extraUiConfigVars.chatMaintenanceMode | lower) | quote }},
+      "NER_ENABLED": {{ (.Values.extraUiConfigVars.nerEnabled | default "false" | lower) | quote }}
     }

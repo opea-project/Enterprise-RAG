@@ -28,6 +28,7 @@ export interface AppendArgumentsParameters {
   score_threshold: number;
   rerank_score_threshold: number | null;
   top_n: number;
+  metadata_extraction_mode: string | null;
   user_prompt_template: string;
   system_prompt_template: string;
   input_guardrail_params: {

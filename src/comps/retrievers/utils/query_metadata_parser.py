@@ -8,12 +8,12 @@ Coordinates regex and NER extraction, date normalization, and filter building
 to construct Redis filter expressions from natural language queries.
 """
 
-import asyncio
 import os
 import re
-import requests
 import time
 from typing import Any, List, Optional
+
+import requests
 
 from comps.retrievers.utils.models import (
     ExtractedMetadata,
@@ -21,7 +21,6 @@ from comps.retrievers.utils.models import (
     spans_overlap,
 )
 from comps.retrievers.utils.extractors import RegexExtractor, NERExtractor
-from comps.retrievers.utils.extractors.ner_extractor import NERExtractorStub
 from comps.retrievers.utils.normalizers import DateNormalizer, NameNormalizer
 from comps.retrievers.utils.builders import FilterExpressionBuilder
 from comps.cores.mega.logger import get_opea_logger
@@ -30,13 +29,15 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 
 
 # Extraction modes supported by the parser
+EXTRACTION_MODE_OFF = "off"  # Metadata filtering completely disabled (default)
 EXTRACTION_MODE_REGEX_ONLY = "regex_only"
 EXTRACTION_MODE_NER_ONLY = (
     "ner_only"  # for NER model testing purposes, not recommended for actual use
 )
-EXTRACTION_MODE_HYBRID = "hybrid"  # Default: regex + NER
+EXTRACTION_MODE_HYBRID = "hybrid"  # regex + NER
 
 VALID_EXTRACTION_MODES = {
+    EXTRACTION_MODE_OFF,
     EXTRACTION_MODE_REGEX_ONLY,
     EXTRACTION_MODE_NER_ONLY,
     EXTRACTION_MODE_HYBRID,
@@ -56,11 +57,8 @@ class QueryMetadataParser:
 
     Attributes:
         language: Language code ('en' or 'pl')
-        ner_endpoint: OVMS NER endpoint URL; NER disabled if not provided
+        extraction_mode: Server default mode ('off', 'regex_only', 'hybrid', 'ner_only')
         redis_connector: Optional RedisConnector for filter building
-        extraction_mode: One of 'hybrid', 'regex_only', 'ner_only'
-        regex_enabled: Whether regex extraction is enabled
-        ner_enabled: Whether NER extraction is enabled
     """
 
     def __init__(
@@ -69,8 +67,6 @@ class QueryMetadataParser:
         ner_endpoint: Optional[str] = None,
         redis_connector: Any = None,
         extraction_mode: str = EXTRACTION_MODE_HYBRID,
-        regex_enabled: Optional[bool] = None,
-        ner_enabled: Optional[bool] = None,
     ):
         self.language = language.lower().strip()
         self.extraction_mode = extraction_mode.lower().strip()
@@ -81,44 +77,19 @@ class QueryMetadataParser:
                 f"Must be one of: {', '.join(sorted(VALID_EXTRACTION_MODES))}"
             )
 
-        # Derive extractor flags from mode (explicit overrides take precedence)
-        self.regex_enabled = (
-            regex_enabled
-            if regex_enabled is not None
-            else (
-                self.extraction_mode in {EXTRACTION_MODE_REGEX_ONLY, EXTRACTION_MODE_HYBRID}
-            )
-        )
-        self.ner_enabled = (
-            ner_enabled
-            if ner_enabled is not None
-            else (self.extraction_mode in {EXTRACTION_MODE_NER_ONLY, EXTRACTION_MODE_HYBRID})
-        )
-
-        if not self.regex_enabled and not self.ner_enabled:
-            raise ValueError("At least one extraction method must be enabled.")
-        
-        if not ner_endpoint:
-            if self.ner_enabled:
-                logger.warning(
-                    "NER enabled but no endpoint provided. Using NERExtractorStub. "
-                    "Set NER_ENDPOINT to connect to OVMS."
-                )
-            else:
-                logger.info("NER disabled (NER_ENDPOINT not set), using regex-only mode")
-        
-        # Always load patterns (needed for date_context and OR keywords regardless of mode)
         _patterns = RegexExtractor(language=self.language)
-        self._regex_extractor = _patterns if self.regex_enabled else None
+        self._regex_extractor = _patterns
 
-        # Initialize NER extractor
-        if self.ner_enabled and ner_endpoint:
+        if ner_endpoint:
             self._ner_extractor = NERExtractor(endpoint=ner_endpoint)
             self._validate_ner_endpoint(ner_endpoint)
-        elif self.ner_enabled:
-            self._ner_extractor = NERExtractorStub()  # For testing without OVMS
         else:
             self._ner_extractor = None
+            if self.extraction_mode in {EXTRACTION_MODE_NER_ONLY, EXTRACTION_MODE_HYBRID}:
+                logger.warning(
+                    "NER endpoint not provided but mode requires NER. "
+                    "NER extraction will be skipped. Set NER_ENDPOINT to enable."
+                )
 
         # Date normalizer and OR detection (from pattern config)
         self._date_normalizer = DateNormalizer(
@@ -151,11 +122,17 @@ class QueryMetadataParser:
 
         logger.info(
             f"QueryMetadataParser initialized: language={self.language}, "
-            f"mode={self.extraction_mode}, regex={self.regex_enabled}, ner={self.ner_enabled}"
+            f"mode={self.extraction_mode}, ner_available={self._ner_extractor is not None}"
         )
 
-    async def parse(self, query: str) -> QueryAnalysisResult:
-        """Parse query to extract metadata and build filter expression (<250ms target)."""
+    async def parse(self, query: str, extraction_mode: Optional[str] = None) -> QueryAnalysisResult:
+        """Parse query to extract metadata and build filter expression (<250ms target).
+
+        Args:
+            query: The user query to parse.
+            extraction_mode: Optional per-request override (hybrid, regex_only, ner_only).
+                             If None, uses the instance-level default.
+        """
         start_time = time.perf_counter()
 
         if not query or not query.strip():
@@ -166,15 +143,33 @@ class QueryMetadataParser:
                 latency_ms=0.0,
             )
 
-        # Phase 1: Regex extraction (runs if enabled, <25ms target)
+        extraction_mode = extraction_mode.lower().strip() if extraction_mode else self.extraction_mode
+        if extraction_mode not in VALID_EXTRACTION_MODES:
+            raise ValueError(
+                f"Invalid extraction_mode '{extraction_mode}'. "
+                f"Must be one of: {', '.join(sorted(VALID_EXTRACTION_MODES))}"
+            )
+
+        if extraction_mode == EXTRACTION_MODE_OFF:
+            return QueryAnalysisResult(
+                filter_expression=None,
+                extracted_metadata=[],
+                original_query=query,
+                latency_ms=0.0,
+            )
+
+        use_regex = extraction_mode in {EXTRACTION_MODE_REGEX_ONLY, EXTRACTION_MODE_HYBRID}
+        use_ner = extraction_mode in {EXTRACTION_MODE_NER_ONLY, EXTRACTION_MODE_HYBRID}
+
+        # Phase 1: Regex extraction
         regex_results = []
-        if self.regex_enabled and self._regex_extractor:
+        if use_regex and self._regex_extractor:
             regex_results = self._regex_extractor.extract(query)
             logger.debug(f"Regex extracted {len(regex_results)} items")
 
-        # Phase 2: NER extraction (runs if enabled, <200ms target)
+        # Phase 2: NER extraction
         ner_results = []
-        if self.ner_enabled:
+        if use_ner:
             ner_results = await self._extract_with_ner(query)
             logger.debug(f"NER extracted {len(ner_results)} items")
 
@@ -182,7 +177,7 @@ class QueryMetadataParser:
         merged = self._merge_extractions(regex_results, ner_results, query)
         logger.debug(f"Merged to {len(merged)} items (with OR detection)")
 
-        # Phase 4: Date normalization (<10ms target)
+        # Phase 4: Date normalization
         normalized = self._date_normalizer.normalize(merged, query)
         logger.debug(f"Date-normalized to {len(normalized)} items")
 
@@ -191,7 +186,7 @@ class QueryMetadataParser:
             normalized = self._name_normalizer.normalize(normalized)
             logger.debug(f"Name-normalized to {len(normalized)} items")
 
-        # Phase 6: Build filter expression (<10ms target)
+        # Phase 6: Build filter expression
         filter_expression = self._filter_builder.build(normalized)
 
         # Calculate latency
@@ -213,12 +208,12 @@ class QueryMetadataParser:
 
     async def _extract_with_ner(self, query: str) -> List[ExtractedMetadata]:
         """Extract using NER with graceful degradation (empty list on failure)."""
-        if not self.ner_enabled:
+        if self._ner_extractor is None:
             return []
 
         try:
             return await self._ner_extractor.extract(query)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timeout = getattr(self._ner_extractor, "timeout_ms", "unknown")
             logger.warning(
                 f"NER timed out after {timeout}ms, falling back to regex-only."
@@ -358,6 +353,8 @@ class QueryMetadataParser:
 
     def set_connector(self, connector: Any) -> None:
         """Set or update the Redis connector for filter building."""
+        if not hasattr(self, '_filter_builder'):
+            return
         self._filter_builder.set_connector(connector)
         logger.debug("Redis connector updated in parser")
 
@@ -365,35 +362,17 @@ class QueryMetadataParser:
     def from_env(cls, redis_connector: Any = None) -> "QueryMetadataParser":
         """Create parser from environment variables.
 
-        Reads: METADATA_LANGUAGE, NER_ENDPOINT, METADATA_EXTRACTION_MODE,
-        METADATA_REGEX_ENABLED, METADATA_NER_ENABLED.
+        Reads: METADATA_LANGUAGE, NER_ENDPOINT, METADATA_EXTRACTION_MODE.
+
+        Default extraction mode is 'off' (no metadata filtering).
         """
         language = os.getenv("METADATA_LANGUAGE", "en").lower()
-        ner_endpoint = os.getenv("NER_ENDPOINT")  # Auto-enables NER if set
-
-        # Determine extraction mode (default: hybrid if NER endpoint available, otherwise regex_only)
-        default_mode = (
-            EXTRACTION_MODE_HYBRID if ner_endpoint else EXTRACTION_MODE_REGEX_ONLY
-        )
-        extraction_mode = os.getenv("METADATA_EXTRACTION_MODE", default_mode).lower()
-
-        # Parse optional explicit overrides
-        regex_enabled = None
-        ner_enabled = None
-
-        regex_override = os.getenv("METADATA_REGEX_ENABLED")
-        if regex_override is not None:
-            regex_enabled = regex_override.lower() in ("true", "1", "yes")
-
-        ner_override = os.getenv("METADATA_NER_ENABLED")
-        if ner_override is not None:
-            ner_enabled = ner_override.lower() in ("true", "1", "yes")
+        ner_endpoint = os.getenv("NER_ENDPOINT")
+        extraction_mode = os.getenv("METADATA_EXTRACTION_MODE", EXTRACTION_MODE_OFF).lower()
 
         return cls(
             language=language,
             ner_endpoint=ner_endpoint,
             redis_connector=redis_connector,
             extraction_mode=extraction_mode,
-            regex_enabled=regex_enabled,
-            ner_enabled=ner_enabled,
         )

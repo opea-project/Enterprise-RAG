@@ -37,7 +37,7 @@ class NERExtractor:
     
     Attributes:
         endpoint: OVMS endpoint URL
-        timeout_ms: Request timeout in milliseconds (default: 200)
+        timeout_ms: Request timeout in milliseconds (default: 500)
         confidence_threshold: Minimum confidence to accept entity (default: 0.7)
         last_latency_ms: Latency of the last extract() call in milliseconds
     """
@@ -45,7 +45,7 @@ class NERExtractor:
     def __init__(
         self, 
         endpoint: str,
-        timeout_ms: int = 200,
+        timeout_ms: int = 500,
         confidence_threshold: float = 0.7,
         model_name: str = "tanaos-ner-v1"
     ):

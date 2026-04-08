@@ -10,12 +10,21 @@ registering in SUPPORTED_FILTERS.
 """
 
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Type
 
 from comps.retrievers.utils.models import ExtractedMetadata
 from comps.cores.mega.logger import get_opea_logger
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
+
+
+def _ts_to_iso(ts: int) -> str:
+    """Convert Unix timestamp to human-readable ISO format."""
+    try:
+        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    except (OSError, ValueError, OverflowError):
+        return str(ts)
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +78,16 @@ class FilterExpressionAbstract(ABC):
 class FilterExpressionAuthor(FilterExpressionAbstract):
     """Author filter: multiple authors → OR, exclusions → NOT."""
 
+    def _build_not(self, field: str, value: str) -> Optional[Any]:
+        """Override: use word-intersection negation so 'Jane Doe' also excludes 'Doe, Jane'."""
+        if self._connector:
+            try:
+                return self._connector.get_author_exclude_filter_expression(value)
+            except (ValueError, AttributeError) as e:
+                logger.error(f"Failed to build author exclusion filter: {e}")
+                return None
+        return {"type": "author", "operator": "!=", "values": [value]}
+
     def build_filter(
         self, extractions: List[ExtractedMetadata]
     ) -> Optional[Any]:
@@ -100,7 +119,7 @@ class FilterExpressionAuthor(FilterExpressionAbstract):
                 "values": include_authors,
             }
 
-        # Exclusion filter (NOT) — uses generic base-class _build_not
+        # Exclusion filter — uses overridden _build_not with word-intersection negation
         for author in exclude_authors:
             exclude_filter = self._build_not("author", author)
             if exclude_filter is not None:
@@ -265,7 +284,26 @@ class FilterExpressionBuilder:
 
         if combined is not None:
             filter_str = str(combined) if self._connector else repr(combined)
+            # Build a human-readable summary of the filters
+            readable_parts = []
+            for field, field_exts in by_field.items():
+                for ext in field_exts:
+                    if field in ("creation_date", "ingestion_date", "last_update_date"):
+                        if ext.operator == "range" and isinstance(ext.value, tuple) and len(ext.value) == 2:
+                            readable_parts.append(
+                                f"{field}: {_ts_to_iso(int(ext.value[0]))} to {_ts_to_iso(int(ext.value[1]))}"
+                            )
+                        elif ext.operator == ">=":
+                            readable_parts.append(f"{field} >= {_ts_to_iso(int(ext.value))}")
+                        elif ext.operator == "<=":
+                            readable_parts.append(f"{field} <= {_ts_to_iso(int(ext.value))}")
+                        else:
+                            readable_parts.append(f"{field} {ext.operator} {ext.value}")
+                    else:
+                        readable_parts.append(f"{field} {ext.operator} {ext.value}")
             logger.info(f"Filter expression: {filter_str}")
+            if readable_parts:
+                logger.info(f"Filter summary (human-readable): {' AND '.join(readable_parts)}")
 
         return combined
 

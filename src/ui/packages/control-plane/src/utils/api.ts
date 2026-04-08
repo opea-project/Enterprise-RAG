@@ -3,7 +3,10 @@
 
 import { LLMInputGuardArgs } from "@/configs/guards/llmInputGuard";
 import { LLMOutputGuardArgs } from "@/configs/guards/llmOutputGuard";
-import { RetrieverSearchType } from "@/configs/services/retriever";
+import {
+  MetadataExtractionMode,
+  RetrieverSearchType,
+} from "@/configs/services/retriever";
 import { AppendArgumentsParameters } from "@/types/api/responses";
 import { FetchedServicesParameters } from "@/types/api/services";
 
@@ -28,6 +31,7 @@ export const parseServicesParameters = (
     rerank_score_threshold,
     score_threshold,
     top_n,
+    metadata_extraction_mode,
     input_guardrail_params,
     output_guardrail_params,
   } = parameters;
@@ -49,6 +53,8 @@ export const parseServicesParameters = (
       fetch_k,
       lambda_mult,
       score_threshold,
+      metadata_extraction_mode: (metadata_extraction_mode ??
+        "off") as MetadataExtractionMode,
     },
     rerankerArgs: { top_n, rerank_score_threshold },
     promptTemplateArgs: {

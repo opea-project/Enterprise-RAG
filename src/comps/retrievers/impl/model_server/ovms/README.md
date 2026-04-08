@@ -40,7 +40,7 @@ The NER OVMS container runs two processes:
 | `HF_TOKEN` | _(unset)_ | HuggingFace API token (for gated models) |
 
 > [!NOTE]
-> Retriever-side metadata filtering settings (`METADATA_FILTERING_ENABLED`, `NER_ENDPOINT`, `METADATA_EXTRACTION_MODE`, `METADATA_LANGUAGE`) are configured in the retriever microservice, not here. See the [Retriever README](../../README.md) for details.
+> Retriever-side metadata filtering settings (`METADATA_EXTRACTION_MODE`, `NER_ENDPOINT`, `METADATA_LANGUAGE`) are configured in the retriever microservice, not here. See the [Retriever README](../../README.md) for details.
 
 ### Model: tanaos-NER-v1
 
@@ -267,11 +267,11 @@ In regex-only mode, the retriever still extracts metadata such as authors and da
 
 ### Test Retriever without Metadata Filtering
 
-To disable metadata filtering entirely, set `METADATA_FILTERING_ENABLED=false` in [docker/.env](docker/.env) and restart the retriever. All queries will then perform a plain vector similarity search — no author, date, or title filters are applied.
+To disable metadata filtering entirely, set `METADATA_EXTRACTION_MODE=off` in [docker/.env](docker/.env) and restart the retriever. All queries will then perform a plain vector similarity search — no author, date, or title filters are applied.
 
 ```bash
 # docker/.env
-METADATA_FILTERING_ENABLED=false
+METADATA_EXTRACTION_MODE=off
 ```
 
 With filtering disabled, the retriever logs will show:
@@ -288,7 +288,7 @@ Building vector query with filter_expression=((@author:("John Smith") ...) | ism
 
 **Example — same query, no filtering:**
 
-With `METADATA_FILTERING_ENABLED=false`, all 3 seeded documents are returned regardless of author or date. The result set is ranked by vector distance only.
+With `METADATA_EXTRACTION_MODE=off`, all 3 seeded documents are returned regardless of author or date. The result set is ranked by vector distance only.
 
 
 ### Full End-to-End Validation Checklist

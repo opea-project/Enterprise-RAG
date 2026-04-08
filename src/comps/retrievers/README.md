@@ -33,7 +33,7 @@ Configuration is done by selecting the desired vector store type. In addition, t
 | `VECTOR_STORE`          | `redis`           | Vector Store database type                                                                       |
 | `RETRIEVER_USVC_PORT`          | `6620`           | (Optional) Retriever microservice port         |
 | `USE_HIERARCHICAL_INDICES` | `False`        | Enable/disable Hierarchical Indices Advanced RAG Technique         |
-| `METADATA_FILTERING_ENABLED` | `false`      | Enable/disable metadata-aware query filtering (see [OVMS NER](impl/model_server/ovms/README.md)) |
+| `METADATA_EXTRACTION_MODE` | `off`      | Metadata extraction mode: `off` (default), `regex_only`, `hybrid`, `ner_only` (see [OVMS NER](impl/model_server/ovms/README.md)) |
 
 ### Vector Store Support Matrix
 
@@ -158,13 +158,12 @@ See the [OVMS NER README](impl/model_server/ovms/README.md) for NER model server
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `METADATA_FILTERING_ENABLED` | `false` | Enable/disable metadata-aware query filtering |
+| `METADATA_EXTRACTION_MODE` | `off` | Metadata extraction mode: `off` (disabled), `regex_only`, `hybrid` (regex+NER), or `ner_only` |
 | `METADATA_LANGUAGE` | `en` | Language for regex patterns and name lemmatization (`en` or `pl`) |
-| `NER_ENDPOINT` | `http://retriever-ner-ovms:9001` | URL of the NER OVMS Gateway. Unset to use regex-only extraction |
-| `METADATA_EXTRACTION_MODE` | `hybrid` | `hybrid` (regex+NER), `regex_only`, or `ner_only` |
+| `NER_ENDPOINT` | _(unset)_ | URL of the NER OVMS Gateway. Required for `hybrid` and `ner_only` modes |
 
 > [!NOTE]
-> If the NER OVMS container is not running, the retriever falls back to regex-only mode automatically. To disable metadata filtering entirely, set `METADATA_FILTERING_ENABLED=false`.
+> If the NER OVMS container is not running, the retriever falls back to regex-only mode automatically. To disable metadata filtering entirely, set `METADATA_EXTRACTION_MODE=off` (this is the default).
 
 #### NER Endpoint Behavior
 

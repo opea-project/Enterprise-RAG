@@ -97,6 +97,9 @@ tdx: # enables Intel® Trust Domain Extensions
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
+ner:
+  enabled: false
+
 audio:
   enabled: false
 

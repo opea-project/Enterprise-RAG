@@ -8,6 +8,8 @@ import { ServiceArgumentSelectInput } from "@/components/ServiceArgumentSelectIn
 import { ServiceArgumentsTitle } from "@/components/ServiceArgumentsTitle/ServiceArgumentsTitle";
 import { RerankerArgs } from "@/configs/services/reranker";
 import {
+  metadataExtractionModes,
+  metadataExtractionModesWithNer,
   RetrieverArgs,
   retrieverFormConfig,
   searchTypesArgsMap,
@@ -23,6 +25,7 @@ import {
 export interface RetrieverCardProps extends ControlPlaneCardProps {
   isDebugEnabled?: boolean;
   rerankerArgs?: RerankerArgs;
+  nerEnabled?: boolean;
   onPostRetrieverQuery?: (
     request: PostRetrieverQueryRequest,
   ) => Promise<{ data?: unknown; error?: unknown }>;
@@ -34,6 +37,7 @@ export const RetrieverCard = ({
   changeArguments,
   isDebugEnabled,
   rerankerArgs,
+  nerEnabled = false,
   onPostRetrieverQuery,
   onGetErrorMessage,
   isReadOnly = false,
@@ -59,6 +63,7 @@ export const RetrieverCard = ({
       <RetrieverDebugDialog
         retrieverArgs={retrieverArgs}
         rerankerArgs={rerankerArgs}
+        nerEnabled={nerEnabled}
         onPostRetrieverQuery={onPostRetrieverQuery}
         onGetErrorMessage={onGetErrorMessage}
       />
@@ -128,6 +133,18 @@ export const RetrieverCard = ({
           isDisabled={isReadOnly}
         />
       )}
+      <ServiceArgumentsTitle>Metadata Filtering</ServiceArgumentsTitle>
+      <ServiceArgumentSelectInput
+        {...config.metadata_extraction_mode}
+        options={[
+          ...(nerEnabled
+            ? metadataExtractionModesWithNer
+            : metadataExtractionModes),
+        ]}
+        value={argumentsForm.metadata_extraction_mode}
+        onArgumentValueChange={onArgumentValueChange}
+        isDisabled={isReadOnly}
+      />
     </SelectedServiceCard>
   );
 };

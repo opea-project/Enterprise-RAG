@@ -235,7 +235,11 @@ class ConnectorRedis(VectorStoreConnector):
         filter_expression: Optional[Union[str, FilterExpression]] = None,
         return_fields: Optional[List[str]]=None
     ):
-        logger.info(f"Building vector query with k={k}, distance_threshold={distance_threshold}, dtype={dtype}, filter_expression={filter_expression}, return_fields={return_fields}")
+        filter_str = str(filter_expression) if filter_expression is not None else "None"
+        logger.info(
+            f"Building vector query: k={k}, distance_threshold={distance_threshold}, "
+            f"dtype={dtype}, filter_expression={filter_str}"
+        )
 
         if distance_threshold is not None:
             return VectorRangeQuery(
@@ -558,21 +562,21 @@ class ConnectorRedis(VectorStoreConnector):
         """
         # Normalize to list
         author_list = [authors] if isinstance(authors, str) else authors
-        
+
         if not author_list or (len(author_list) == 1 and not author_list[0].strip()):
             raise ValueError("Author(s) cannot be empty")
-        
+
         # Filter out empty strings and strip whitespace
         author_list = [a.strip() for a in author_list if a and a.strip()]
-        
+
         if not author_list:
             raise ValueError("Author(s) cannot be empty after filtering")
-        
+
         logger.debug(f"Adding author filter expression for {len(author_list)} author(s): {author_list}")
-        
-        result = Text("author") == author_list[0]
+
+        result = Text("author") % author_list[0]
         for author in author_list[1:]:
-            result |= Text("author") == author
+            result |= Text("author") % author
         return result
 
     def get_text_exclude_filter_expression(self, field: str, value: str) -> FilterExpression:
@@ -593,6 +597,18 @@ class ConnectorRedis(VectorStoreConnector):
         value = value.strip()
         logger.debug(f"Adding exclusion filter expression for {field}: {value}")
         return Text(field) != value
+
+    def get_author_exclude_filter_expression(self, author: str) -> FilterExpression:
+        """
+        Constructs a negated word-intersection filter for author.
+        Uses the same matching logic as inclusion (%) so that e.g.
+        excluding "Jane Doe" also excludes "Doe, Jane".
+        """
+        if not author or not author.strip():
+            raise ValueError("Author exclusion value cannot be empty")
+        author = author.strip()
+        logger.debug(f"Adding author exclusion filter expression: {author}")
+        return FilterExpression(f"(-@author:({author}))")
 
     # File extensions that indicate the query value is a filename (not a document title)
     _FILENAME_EXTENSIONS = frozenset({

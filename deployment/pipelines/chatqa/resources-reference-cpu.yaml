@@ -287,6 +287,15 @@ services:
           - type: Pods
             value: 1
             periodSeconds: 15
+  ovms_ner:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
   vllm:
     replicas: 1
     # NOTE:

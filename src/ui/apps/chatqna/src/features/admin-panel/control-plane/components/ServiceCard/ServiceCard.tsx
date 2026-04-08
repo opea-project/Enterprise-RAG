@@ -22,6 +22,7 @@ import {
   chatQnAGraphSelectedServiceNodeSelector,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import { useAppSelector } from "@/store/hooks";
+import { getChatQnAAppEnv } from "@/utils";
 import { getErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
 
@@ -72,6 +73,7 @@ const ServiceCard = ({ changeArguments }: ServiceCardProps) => {
         onPostRetrieverQuery={handlePostRetrieverQuery}
         onGetErrorMessage={handleGetErrorMessage}
         isReadOnly={isReadOnly}
+        nerEnabled={getChatQnAAppEnv("NER_ENABLED") === "true"}
       />
     ),
     reranker: (

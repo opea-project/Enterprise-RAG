@@ -235,7 +235,7 @@
     - name: Audio role
       ansible.builtin.include_role:
         name: audio
-      when: audio.enabled or "pre-upgrade" in ansible_run_tags
+      when: (audio is defined and audio.enabled) or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall

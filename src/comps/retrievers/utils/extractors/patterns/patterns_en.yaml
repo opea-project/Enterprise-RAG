@@ -96,16 +96,17 @@ patterns:
       examples:
         - "What did John Smith write?"
 
-    # Exclusion: "not by X", "excluding Y"
+    # Exclusion: "not by X", "not created by X", "excluding Y"
     - name: "author_exclude"
-      regex: '(?:not\s+(?:by|from)|except|excluding|without|but\s+not\s+(?:by|from))\s+(?:the\s+)?([A-Za-z][a-zA-Z\s]*(?:team|department|group|division)?|[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)'
+      regex: '(?:not\s+(?:created\s+by|written\s+by|authored?\s+by|made\s+by|by|from)|except|excluding|without|but\s+not\s+(?:created\s+by|written\s+by|authored?\s+by|by|from))\s+(?:the\s+)?([A-Za-z][a-zA-Z\s]*(?:team|department|group|division)?|[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)'
       field: "author"
       operator: "!="
       group: 1
-      priority: 9
+      priority: 11
       flags: "IGNORECASE"
       examples:
         - "but not from the legal team"
+        - "not created by Thomas"
 
     # Uppercase acronym (HR, CEO). Stop-word boundary.
     - name: "author_acronym"

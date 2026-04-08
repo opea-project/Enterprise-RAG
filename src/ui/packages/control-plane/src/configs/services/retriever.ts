@@ -6,6 +6,17 @@ import {
   ServiceArgumentNumberInputValue,
 } from "@/types/index";
 
+export const metadataExtractionModes = ["off", "regex_only"] as const;
+export const metadataExtractionModesWithNer = [
+  "off",
+  "regex_only",
+  "hybrid",
+  "ner_only",
+] as const;
+
+export type MetadataExtractionMode =
+  (typeof metadataExtractionModesWithNer)[number];
+
 export const searchTypesArgsMap = {
   similarity: ["k"],
   similarity_search_with_siblings: ["k", "distance_threshold"],
@@ -54,6 +65,12 @@ export const retrieverFormConfig = {
     tooltipText:
       "The minimum relevance score required for a document to be considered a match in similarity search with relevance scores.",
   },
+  metadata_extraction_mode: {
+    name: "metadata_extraction_mode",
+    options: [...metadataExtractionModes],
+    tooltipText:
+      "Controls how metadata is extracted from queries for filtering. 'off' disables metadata filtering (default), 'regex_only' uses pattern matching to extract authors, dates, and titles. 'hybrid' uses both regex and NER, 'ner_only' uses the NER model only. Hybrid and NER modes require the OVMS NER model server.",
+  },
 };
 
 export const retrieverArgumentsDefault: RetrieverArgs = {
@@ -63,6 +80,7 @@ export const retrieverArgumentsDefault: RetrieverArgs = {
   fetch_k: null,
   lambda_mult: null,
   score_threshold: null,
+  metadata_extraction_mode: "off",
 };
 
 export interface RetrieverArgs extends Record<
@@ -75,4 +93,5 @@ export interface RetrieverArgs extends Record<
   fetch_k: ServiceArgumentNumberInputValue;
   lambda_mult: ServiceArgumentNumberInputValue;
   score_threshold: ServiceArgumentNumberInputValue;
+  metadata_extraction_mode: MetadataExtractionMode;
 }

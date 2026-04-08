@@ -19,6 +19,14 @@ from comps.cores.mega.logger import get_opea_logger
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 
+
+def _ts_to_iso(ts: int) -> str:
+    """Convert Unix timestamp to human-readable ISO format."""
+    try:
+        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    except (OSError, ValueError, OverflowError):
+        return str(ts)
+
 # Language-agnostic configuration constants
 FUZZY_RECENT_DAYS = 30
 
@@ -79,9 +87,19 @@ class DateNormalizer:
                     norm_extraction = self._normalize_date_extraction(extraction, query_lower)
                     if norm_extraction:
                         normalized.append(norm_extraction)
+                        # Build human-readable value representation
+                        if norm_extraction.operator == 'range' and isinstance(norm_extraction.value, tuple):
+                            readable_value = (
+                                f"range({_ts_to_iso(int(norm_extraction.value[0]))} "
+                                f"to {_ts_to_iso(int(norm_extraction.value[1]))})"
+                            )
+                        elif norm_extraction.operator in ('>=', '<='):
+                            readable_value = f"{norm_extraction.operator} {_ts_to_iso(int(norm_extraction.value))}"
+                        else:
+                            readable_value = f"{norm_extraction.operator}({norm_extraction.value})"
                         logger.info(
                             f"Date normalized: {extraction.operator}({extraction.value}) → "
-                            f"{norm_extraction.field}:{norm_extraction.operator}({norm_extraction.value})"
+                            f"{norm_extraction.field}:{readable_value}"
                         )
                 except Exception as e:
                     logger.warning(f"Failed to normalize date extraction: {e}")

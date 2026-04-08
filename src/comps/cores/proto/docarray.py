@@ -99,6 +99,7 @@ class EmbedDoc(BaseDoc):
     fetch_k: PositiveInt = 20
     lambda_mult: NonNegativeFloat = 0.5
     score_threshold: NonNegativeFloat = 0.2
+    metadata_extraction_mode: Optional[str] = None
     metadata: Optional[dict] = {}
     history_id: Optional[str] = None
 

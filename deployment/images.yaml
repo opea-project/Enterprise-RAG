@@ -79,6 +79,10 @@ images:
     image_name: ovms_embedding
     dockerfile_path: src/comps/embeddings/impl/model_server/ovms/docker/Dockerfile
     docker_context: src/comps/embeddings/impl/model_server/ovms
+  ovmsNer:
+    image_name: ovms_ner
+    dockerfile_path: src/comps/retrievers/impl/model_server/ovms/docker/Dockerfile
+    docker_context: src/comps/retrievers/impl/model_server/ovms
   promptTemplateUsvc:
     image_name: prompt_template
     dockerfile_path: src/comps/prompt_template/impl/microservice/Dockerfile

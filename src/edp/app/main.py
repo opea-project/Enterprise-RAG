@@ -1254,6 +1254,7 @@ async def api_retrieve(request: Request):
         retriever_request['fetch_k'] =  get_f(d, 'fetch_k', '20')
         retriever_request['lambda_mult'] =  get_f(d, 'lambda_mult', '0.5')
         retriever_request['score_threshold'] =  get_f(d, 'score_threshold', '0.2')
+        retriever_request['metadata_extraction_mode'] = get_f(d, 'metadata_extraction_mode', 'off')
         retriever_request['search_by'] = get_f(d, 'search_by', {})
 
         logger.debug(f"Request to retriever: {retriever_request}")

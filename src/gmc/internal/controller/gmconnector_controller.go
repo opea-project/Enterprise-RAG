@@ -89,6 +89,7 @@ const (
 	TextSplitter			 = "TextSplitter"
 	DocSum				     = "DocSum"
 	LateChunking             = "LateChunking"
+	OvmsNer                  = "OvmsNer"
 	QueryRewrite             = "QueryRewrite"
 )
 
@@ -154,6 +155,7 @@ var yamlDict = map[string]string{
 	TextSplitter:        yaml_dir + "text-splitter-usvc.yaml",
 	DocSum:              yaml_dir + "docsum-usvc.yaml",
 	LateChunking:        yaml_dir + "late_chunking_usvc.yaml",
+	OvmsNer:             yaml_dir + "ovms_ner.yaml",
 	QueryRewrite:        yaml_dir + "query-rewrite-usvc.yaml",
 }
 
@@ -553,6 +555,7 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
 		keyname == "TEI_ENDPOINT" ||
+		keyname == "NER_ENDPOINT" ||
 		keyname == "QUERY_REWRITE_LLM_ENDPOINT"
 }
 

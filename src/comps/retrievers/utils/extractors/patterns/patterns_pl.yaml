@@ -102,15 +102,16 @@ patterns:
       examples:
         - "autorstwa Jana Kowalskiego"
 
-    # Exclusion: "nie autorstwa X", "oprócz Y"
+    # Exclusion: "nie autorstwa X", "nie stworzone przez X", "oprócz Y"
     - name: "author_exclude"
-      regex: '(?:nie\s+(?:autorstwa|przez|od)|oprócz|z\s+wyjątkiem|poza|lecz\s+nie|ale\s+nie\s+(?:od|przez))\s+(?:zespołu?\s+)?([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)*)'
+      regex: '(?:nie\s+(?:stworzone?\s+przez|napisane?\s+przez|przygotowane?\s+przez|opracowane?\s+przez|autorstwa|przez|od)|oprócz|z\s+wyjątkiem|poza|lecz\s+nie|ale\s+nie\s+(?:od|przez|stworzone?\s+przez))\s+(?:zespołu?\s+)?([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)*)'
       field: "author"
       operator: "!="
       group: 1
-      priority: 9
+      priority: 11
       examples:
         - "nie autorstwa Kowalskiego"
+        - "nie stworzone przez Tomasza"
 
     # Department/team: "z działu X", "od zespołu Y"
     - name: "author_team"

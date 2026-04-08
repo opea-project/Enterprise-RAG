@@ -18,7 +18,7 @@ from fastapi import UploadFile, HTTPException
 from pathvalidate import is_valid_filename
 
 from utils.opea_text_extractor import OPEATextExtractor
-from comps.text_extractor.utils.file_loaders.load_pdf import _process_single_page_from_file
+from comps.text_extractor.utils.file_loaders.load_pdf import _process_single_page_from_file, LoadPdf
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
 from comps.cores.proto.docarray import DataPrepInput, TextDoc, TextSplitterInput
@@ -233,7 +233,13 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
         doc.close()
         logger.info(f"{filename}: {page_count} pages — starting windowed processing ({_max_workers} workers)")
 
-        metadata = {'filename': filename, 'timestamp': time.time(), '_pdf_path': pdf_path}
+        # Extract document metadata (title, author, dates) using LoadPdf
+        try:
+            metadata = LoadPdf(pdf_path).extract_metadata()
+        except Exception as e:
+            logger.warning(f"PDF metadata extraction failed for {filename}: {e}. Using basic metadata.")
+            metadata = {'filename': filename}
+        metadata['_pdf_path'] = pdf_path
         all_tasks.append(asyncio.ensure_future(_process_pdf_windowed(pdf_path, filename, page_count, metadata)))
 
     # Plain texts — no CPU work, handle inline

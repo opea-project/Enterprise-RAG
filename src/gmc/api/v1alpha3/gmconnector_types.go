@@ -93,6 +93,8 @@ const (
 	TextSplitter StepNameType = "TextSplitter"
 	// DocSum
 	DocSum StepNameType = "DocSum"
+	// OvmsNer
+	OvmsNer StepNameType = "OvmsNer"
 	// QueryRewrite
 	QueryRewrite StepNameType = "QueryRewrite"
 )

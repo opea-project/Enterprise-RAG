@@ -25,6 +25,10 @@ export const createFilterRetrieverFormData = <
           copyData[argumentName as keyof T] = data[argumentName];
         }
       }
+      if ("metadata_extraction_mode" in data) {
+        (copyData as Record<string, unknown>)["metadata_extraction_mode"] =
+          data["metadata_extraction_mode" as keyof T];
+      }
       return copyData;
     } else {
       return data;

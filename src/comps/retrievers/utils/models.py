@@ -15,7 +15,7 @@ def spans_overlap(span: Tuple[int, int], existing_spans: List[Tuple[int, int]]) 
 @dataclass
 class ExtractedMetadata:
     """Single metadata constraint extracted from a query.
-    
+
     Fields: author, file_title, creation_date, ingestion_date, last_update_date.
     Operators: ==, >=, <=, range, contains, OR, !=, and fuzzy date variants.
     """
@@ -25,18 +25,19 @@ class ExtractedMetadata:
     confidence: float = 1.0
     source: str = "regex"
     span: Tuple[int, int] = (0, 0)
-    
+
     def __post_init__(self):
         """Validate field and operator values."""
         valid_fields = {'author', 'file_title', 'creation_date', 'ingestion_date', 'last_update_date'}
         if self.field not in valid_fields:
             raise ValueError(f"Invalid field: {self.field}. Must be one of {valid_fields}")
-        
+
         # Standard operators plus fuzzy date operators (resolved by DateNormalizer)
         valid_operators = {
             '==', '>=', '<=', 'range', 'contains', 'OR', '!=',
             'fuzzy_recent', 'fuzzy_last_year', 'fuzzy_last_n',
-            'fuzzy_this_year', 'quarter', 'quarter_range', 'fuzzy_last_quarter'
+            'fuzzy_this_year', 'quarter', 'quarter_range', 'fuzzy_last_quarter',
+            'month_range',
         }
         if self.operator not in valid_operators:
             raise ValueError(f"Invalid operator: {self.operator}. Must be one of {valid_operators}")
@@ -49,12 +50,12 @@ class QueryAnalysisResult:
     extracted_metadata: List[ExtractedMetadata] = field(default_factory=list)
     original_query: str = ""
     latency_ms: float = 0.0
-    
+
     @property
     def has_filters(self) -> bool:
         """Check if any metadata filters were extracted."""
         return self.filter_expression is not None
-    
+
     @property
     def extraction_count(self) -> int:
         """Count of extracted metadata items."""

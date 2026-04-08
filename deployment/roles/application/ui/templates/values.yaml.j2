@@ -28,6 +28,7 @@ extraUiConfigVars:
   audioEnabled: "{{ audio.enabled | default(false) }}"
   asrModel: "{{ audio.asr_model | default('openai/whisper-small') }}"
   useBearerTokenAuth: "{{ (edp.storageType | default('') == 'seaweedfs') and (edp.rbac.enabled | default(false)) }}"
+  nerEnabled: "{{ ner.enabled | default(false) }}"
 
 service:
   type: ClusterIP

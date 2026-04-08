@@ -24,6 +24,7 @@ llm_model: &cpu_model {{ llm_model }}
 llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 reranking_model_name: &reranking_model_name {{ reranking_model_name }}
+ner_model_name: &ner_model_name "tanaos/tanaos-NER-v1"
 
 chat_history:
   enabled: {{ chat_history.enabled }}
@@ -167,7 +168,13 @@ images:
 {% endif %}
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
-      METADATA_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+      METADATA_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
+{% if ner is defined and ner.enabled is defined and ner.enabled is true %}
+      METADATA_EXTRACTION_MODE: "hybrid"
+      NER_ENDPOINT: "http://retriever-ner-ovms-svc:9001"
+{% else %}
+      METADATA_EXTRACTION_MODE: "off"
+{% endif %}
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
       K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}
@@ -246,3 +253,13 @@ images:
     tag: *tag
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
+  ovms_ner:
+    image: "erag-ovms_ner"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envs:
+      NER_MODEL_NAME: *ner_model_name
+      NER_WEIGHT_FORMAT: "int8"
+      OVMS_INTERNAL_PORT: "9000"
+      GATEWAY_PORT: "9001"

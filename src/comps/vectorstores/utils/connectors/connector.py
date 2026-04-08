@@ -84,8 +84,12 @@ class VectorStoreConnector(ABC):
         """Generic negation for any text field (e.g. author != 'X')."""
         raise NotImplementedError
 
+    def get_author_exclude_filter_expression(self, author: str):
+        """Negation for author field using word-intersection matching."""
+        raise NotImplementedError
+
     def get_title_filter_expression(self, title_pattern: str, exact_match: bool = False):
         raise NotImplementedError
 
-    def get_date_range_filter_expression(self, field: str, start_timestamp: int = None, end_timestamp: int = None):
+    def get_date_range_filter_expression(self, field: str, start: int = None, end: int = None):
         raise NotImplementedError

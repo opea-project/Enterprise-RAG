@@ -154,8 +154,8 @@ class OPEAVectorStore():
     def get_title_filter_expression(self, title_pattern: str, exact_match: bool = False):
         return self.vector_store.get_title_filter_expression(title_pattern, exact_match)
 
-    def get_date_range_filter_expression(self, field: str, start_timestamp: int = None, end_timestamp: int = None):
-        return self.vector_store.get_date_range_filter_expression(field, start_timestamp, end_timestamp)
+    def get_date_range_filter_expression(self, field: str, start: int = None, end: int = None):
+        return self.vector_store.get_date_range_filter_expression(field, start=start, end=end)
 
     def _import_redis(self):
         """

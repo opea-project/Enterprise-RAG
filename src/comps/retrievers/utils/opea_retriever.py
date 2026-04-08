@@ -9,6 +9,7 @@ from comps.vectorstores.utils.opea_vectorstore import OPEAVectorStore
 from comps.cores.mega.logger import get_opea_logger, change_opea_logger_level
 from comps.vectorstores.utils.opea_rbac import retrieve_bucket_list
 from comps.retrievers.utils.query_metadata_parser import QueryMetadataParser
+from comps.retrievers.utils.query_metadata_parser import EXTRACTION_MODE_OFF
 from comps.retrievers.utils.models import QueryAnalysisResult
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
@@ -30,23 +31,23 @@ class OPEARetriever:
     def _initialize(self, vector_store: str, rbac_enabled: bool = False):
         self.vector_store = OPEAVectorStore(vector_store)
         self.rbac_enabled = rbac_enabled
-        
+
         # Initialize query metadata parser for metadata-aware filtering
-        self._query_parser: Optional[QueryMetadataParser] = None
-        self._query_parsing_enabled = os.getenv("METADATA_FILTERING_ENABLED", "true").lower() in ('true', '1', 'yes')
-        
-        if self._query_parsing_enabled:
-            try:
-                # OPEAVectorStore.vector_store is the underlying ConnectorRedis instance
-                redis_connector = getattr(self.vector_store, 'vector_store', None)
-                self._query_parser = QueryMetadataParser.from_env(
-                    redis_connector=redis_connector
-                )
-                logger.info("Query metadata parsing enabled")
-            except Exception as e:
-                logger.warning(f"Failed to initialize query parser, disabling: {e}")
-                self._query_parser = None
-                self._query_parsing_enabled = False
+        extraction_mode = os.getenv("METADATA_EXTRACTION_MODE", EXTRACTION_MODE_OFF).lower()
+        self._query_parsing_enabled = extraction_mode != EXTRACTION_MODE_OFF
+
+        try:
+            redis_connector = getattr(self.vector_store, 'vector_store', None)
+            self._query_parser = QueryMetadataParser.from_env(
+                redis_connector=redis_connector
+            )
+            if self._query_parsing_enabled:
+                logger.info(f"Query metadata parsing enabled (mode: {extraction_mode})")
+            else:
+                logger.info("Query metadata parsing default: off (per-request overrides still honoured)")
+        except Exception as e:
+            logger.warning(f"Failed to initialize query parser, disabling: {e}")
+            self._query_parser = None
 
     def filter_expression_from_rbac_by(self, rbac_by: dict = None):
         if rbac_by is None:
@@ -148,14 +149,14 @@ class OPEARetriever:
                 new_filter_expression = (filter_expression & additional_expression) | filter_links_expression
             else:
                 new_filter_expression = additional_expression | filter_links_expression # additional filter or links
-        
+
         logger.debug(f"Generated filter expression for hierarchical retrieval: {str(new_filter_expression)}")
         return new_filter_expression
 
     async def retrieve(
-        self, 
-        input: EmbedDoc, 
-        search_by: dict = None, 
+        self,
+        input: EmbedDoc,
+        search_by: dict = None,
         rbac_by: dict = None,
         metadata_filter: Optional[object] = None
     ) -> SearchedDoc:
@@ -163,17 +164,17 @@ class OPEARetriever:
         # Combine search_by filter with metadata filter
         search_filter = self.filter_expression_from_search_by(search_by=search_by)
         combined_filter = self.combine_filter_expressions(search_filter, metadata_filter)
-        
+
         rbac_filter_expression = self.filter_expression_from_rbac_by(rbac_by=rbac_by)
         retrieve_filter_expression = self.generate_retrieve_filter_expression(combined_filter, rbac_filter_expression)
         return await self.vector_store.search(input=input, filter_expression=retrieve_filter_expression)
 
     async def hierarchical_retrieve(
-        self, 
-        input: EmbedDoc, 
-        k_summaries: int, 
-        k_chunks: int, 
-        search_by: dict = None, 
+        self,
+        input: EmbedDoc,
+        k_summaries: int,
+        k_chunks: int,
+        search_by: dict = None,
         rbac_by: dict = None,
         metadata_filter: Optional[object] = None
     ) -> SearchedDoc:
@@ -181,7 +182,7 @@ class OPEARetriever:
         # Combine search_by filter with metadata filter
         search_filter = self.filter_expression_from_search_by(search_by=search_by)
         filter_expression = self.combine_filter_expressions(search_filter, metadata_filter)
-        
+
         rbac_filter_expression = self.filter_expression_from_rbac_by(rbac_by=rbac_by)
 
         # Fetch summaries using filter expression
@@ -227,13 +228,26 @@ class OPEARetriever:
             logger.error(f"Returning empty list of buckets due to RBAC request error: {e}")
             return { 'bucket_names': [], 'site_names': [] }
 
-    async def analyze_query(self, query: str) -> Optional[QueryAnalysisResult]:
-        """Parse query to extract metadata constraints and build filter expressions."""
-        if not self._query_parsing_enabled or self._query_parser is None:
+    async def analyze_query(self, query: str, metadata_extraction_mode: Optional[str] = None) -> Optional[QueryAnalysisResult]:
+        """Parse query to extract metadata constraints and build filter expressions.
+
+        Per-request metadata_extraction_mode overrides the server default.
+        If the server default is 'off' but the request sends 'regex_only', filtering runs.
+        """
+        # Skip if no parser available (init failed)
+        if self._query_parser is None:
             return None
-        
+
+        # Skip if server default is off AND no per-request override
+        if not self._query_parsing_enabled and not metadata_extraction_mode:
+            return None
+
+        # Skip if per-request mode is explicitly "off"
+        if metadata_extraction_mode and metadata_extraction_mode.lower().strip() == EXTRACTION_MODE_OFF:
+            return None
+
         try:
-            result = await self._query_parser.parse(query)
+            result = await self._query_parser.parse(query, extraction_mode=metadata_extraction_mode)
             if result.has_filters:
                 logger.info(
                     f"Query analysis extracted {result.extraction_count} metadata constraints "
@@ -243,16 +257,16 @@ class OPEARetriever:
         except Exception as e:
             logger.warning(f"Query analysis failed, continuing without metadata filter: {e}")
             return None
-    
+
     def filter_expression_from_query_analysis(
-        self, 
+        self,
         query_analysis: Optional[QueryAnalysisResult]
     ) -> Optional[object]:
         """Extract filter expression from query analysis result (None if no constraints)."""
         if query_analysis is None or not query_analysis.has_filters:
             return None
         return query_analysis.filter_expression
-    
+
     def combine_filter_expressions(
         self,
         search_filter: Optional[object],
@@ -265,6 +279,6 @@ class OPEARetriever:
             return metadata_filter
         if metadata_filter is None:
             return search_filter
-        
+
         # Combine with AND
         return search_filter & metadata_filter

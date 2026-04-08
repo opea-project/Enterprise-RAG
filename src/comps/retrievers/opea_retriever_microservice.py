@@ -60,7 +60,10 @@ async def process(input: Union[EmbedDoc, EmbedDocList], request: Request) -> Sea
     rbac_by = retriever.generate_rbac(request.headers.get("Authorization")) if retriever.rbac_enabled else None
     
     # Analyze query to extract metadata constraints for filtering
-    query_analysis = await retriever.analyze_query(vector.text)
+    query_analysis = await retriever.analyze_query(
+        vector.text,
+        metadata_extraction_mode=vector.metadata_extraction_mode
+    )
     metadata_filter = retriever.filter_expression_from_query_analysis(query_analysis)
     
     if query_analysis and query_analysis.has_filters:

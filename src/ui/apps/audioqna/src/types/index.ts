@@ -14,4 +14,5 @@ export type AppEnvKey =
   | "S3_URL"
   | "S3_SEND_BEARER_TOKEN"
   | "CHAT_DISCLAIMER_TEXT"
-  | "ERAG_VERSION";
+  | "ERAG_VERSION"
+  | "NER_ENABLED";

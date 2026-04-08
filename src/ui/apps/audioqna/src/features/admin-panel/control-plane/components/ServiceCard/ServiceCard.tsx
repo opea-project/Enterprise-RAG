@@ -22,6 +22,7 @@ import {
   audioQnAGraphSelectedServiceNodeSelector,
 } from "@/features/admin-panel/control-plane/store/audioQnAGraph.slice";
 import { useAppSelector } from "@/store/hooks";
+import { getAudioQnAAppEnv } from "@/utils";
 import { getErrorMessage } from "@/utils/api";
 
 type ChangeArgumentsFunction = (
@@ -69,6 +70,7 @@ const ServiceCard = ({ changeArguments }: ServiceCardProps) => {
         rerankerArgs={rerankerNode?.data?.rerankerArgs}
         onPostRetrieverQuery={handlePostRetrieverQuery}
         onGetErrorMessage={handleGetErrorMessage}
+        nerEnabled={getAudioQnAAppEnv("NER_ENABLED") === "true"}
       />
     ),
     reranker: <RerankerCard data={data} changeArguments={changeArguments} />,

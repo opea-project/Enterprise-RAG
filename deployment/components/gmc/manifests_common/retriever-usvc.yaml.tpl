@@ -72,6 +72,40 @@ spec:
         {{- else if eq (index .Values "images" .filename "vector_store") "mssql" }}
           {{- include "mssql_init_container" . | nindent 8 }}
         {{- end }}
+        - name: wait-for-ner-service
+          image: alpine/curl
+          envFrom:
+            - configMapRef:
+                name: retriever-usvc-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$NER_ENDPOINT" ]; then
+                  echo "NER_ENDPOINT is not set. Skipping NER readiness wait.";
+                  exit 0;
+                fi;
+                NER_READY_URL="${NER_ENDPOINT%/}/v2/health/ready";
+                MAX_WAIT_SECONDS=180;
+                SLEEP_SECONDS=2;
+                ELAPSED=0;
+                echo "Waiting for NER service at ${NER_READY_URL} ...";
+                until [ "$ELAPSED" -ge "$MAX_WAIT_SECONDS" ]; do
+                  if [ "$(curl -s -o /dev/null -w '%{http_code}' "$NER_READY_URL")" = "200" ]; then
+                    echo "NER service is ready.";
+                    exit 0;
+                  fi;
+                  echo "NER not ready yet (${ELAPSED}s/${MAX_WAIT_SECONDS}s). Retrying...";
+                  sleep "$SLEEP_SECONDS";
+                  ELAPSED=$((ELAPSED + SLEEP_SECONDS));
+                done;
+                echo "ERROR: Timed out waiting for NER service readiness.";
+                exit 1;
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: retriever-usvc

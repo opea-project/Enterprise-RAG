@@ -389,7 +389,7 @@ class MetadataBenchmark:
         self,
         language: str = "en",
         ner_endpoint: Optional[str] = None,
-        ner_timeout_ms: int = 200,
+        ner_timeout_ms: int = 500,
         ner_model_name: str = 'tanaos-NER-v1',
         simulate_ner: bool = False,
         simulated_ner_latency_ms: float = 150.0,

@@ -33,6 +33,8 @@ embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
 
 reranking_model_name: &reranking_model_name "BAAI/bge-reranker-base"
 
+ner_model_name: &ner_model_name "tanaos/tanaos-NER-v1"
+
 # imagePullSecrets:
 #   - name: regcred
 nameOverride: ""
@@ -127,6 +129,10 @@ pvc:
     name: model-volume-reranker
     accessMode: ReadWriteOnce
     storage: 10Gi
+  modelNer:
+    name: model-volume-ner
+    accessMode: ReadWriteOnce
+    storage: 1Gi
 
 images:
   gmcManager:
@@ -232,6 +238,16 @@ images:
     envfile: "src/comps/retrievers/impl/microservice/.env"
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
+  ovms_ner:
+    image: "erag-ovms_ner"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envs:
+      NER_MODEL_NAME: *ner_model_name
+      NER_WEIGHT_FORMAT: "int8"
+      OVMS_INTERNAL_PORT: "9000"
+      GATEWAY_PORT: "9001"
   ingestion-usvc:
     image: "erag-ingestion"
     repository: *repo

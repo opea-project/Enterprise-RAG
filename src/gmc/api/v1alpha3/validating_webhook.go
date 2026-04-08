@@ -62,6 +62,7 @@ var (
 		"TextCompression",
 		"TextSplitter",
 		"DocSum",
+		"OvmsNer",
 		"QueryRewrite",
 	}
 )

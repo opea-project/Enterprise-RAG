@@ -5,6 +5,7 @@ This guide provides recommendations for tuning the accuracy of your Intel® AI f
 ## Table of Contents
 
 - [Overview](#overview)
+- [Metadata Filtering](#metadata-filtering)
 - [Similarity Search with Siblings](#similarity-search-with-siblings)
 - [Late Chunking](#late-chunking)
 - [Accuracy Assessment and Monitoring](#accuracy-assessment-and-monitoring)
@@ -13,8 +14,68 @@ This guide provides recommendations for tuning the accuracy of your Intel® AI f
 
 In Retrieval-Augmented Generation (RAG) systems, the quality of generated answers depends on many interconnected factors, such as retriever configuration, prompt design, and LLM model selection. However, how well the most relevant, knowledge-rich document fragments are delivered to the LLM—is often the key driver of accuracy. This guide presents two advanced techniques that help deliver more informative and contextually relevant content to the LLM, improving the accuracy of generated answers:
 
-1. **Similarity Search with Siblings** - Retrieving contextually related chunks around the matched results
-2. **Late Chunking** - Embedding full documents prior to chunking to retain broader contextual meaning.
+1. **Metadata Filtering** - Extracting structured metadata (authors, dates, titles) from queries to narrow search results
+2. **Similarity Search with Siblings** - Retrieving contextually related chunks around the matched results
+3. **Late Chunking** - Embedding full documents prior to chunking to retain broader contextual meaning.
+
+## Metadata Filtering
+
+### What is Metadata Filtering?
+
+Metadata filtering extracts structured information (author names, dates, document titles) from natural language queries and uses it to narrow down the vector search results. For example, the query *"documents written by John Smith last month"* would automatically filter results to only include documents authored by John Smith within the last month.
+
+### Extraction Modes
+
+| Mode | Description | Requires NER Model Server |
+|------|-------------|-----------------|
+| `off` | Metadata filtering disabled (default) | No |
+| `regex_only` | Uses regex pattern matching to extract metadata | No |
+| `hybrid` | Combines regex patterns and NER model for broader coverage | Yes |
+| `ner_only` | Uses only the NER model (for testing purposes) | Yes |
+
+### How to Enable It
+
+Metadata filtering is **disabled by default** (`METADATA_EXTRACTION_MODE=off`). To enable it:
+
+#### Option 1: Regex-only mode (no additional infrastructure)
+
+Set `METADATA_EXTRACTION_MODE=regex_only` in the retriever environment. This can be done at runtime from the Control Plane Admin Panel under Retriever settings, or by editing the retriever `.env` file:
+
+```env
+METADATA_EXTRACTION_MODE=regex_only
+```
+
+#### Option 2: Hybrid mode (requires OVMS NER model server)
+
+For broader entity coverage, enable NER in your inventory `config.yaml`:
+
+```yaml
+ner:
+  enabled: true
+```
+
+and modify pipeline you're using by adding OvmsNer step after Retriever:
+
+```yaml
+- name: OvmsNer
+  dependency: Hard
+  internalService:
+    serviceName: retriever-ner-ovms-svc
+    isDownstreamService: true
+```
+
+This will:
+- Deploy the OVMS NER model server (`ovms_ner`) alongside the retriever
+- Set `METADATA_EXTRACTION_MODE=hybrid` and configure `NER_ENDPOINT` automatically
+- Add the `OvmsNer` step to the pipeline
+
+Then run the installation with the updated configuration by following the deployment steps in the [Application Deployment Guide](application_deployment_guide.md).
+
+### Benefits
+
+- **Precision**: Narrows results to specific authors, date ranges, or document titles
+- **Natural Language**: Users can express filters naturally (e.g., "reports from last quarter by the security team")
+- **Multilingual**: Supports English and Polish regex patterns with language-aware name normalization
 
 ## Similarity Search with Siblings
 

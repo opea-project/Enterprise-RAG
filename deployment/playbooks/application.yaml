@@ -143,6 +143,17 @@
         - install
         - uninstall
 
+    - name: Hyperthreading status check
+      include_role:
+        name: utils
+        tasks_from: verify_hyperthreading.yaml
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+        - update-configuration
+        - topology-preview
+
     - name: Install NRI balloons policy
       include_role:
         name: nri_balloons

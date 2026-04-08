@@ -1,0 +1,84 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Get nodes topology
+  ansible.builtin.include_tasks:
+    file: get_nodes_topology.yaml
+  when: cpu_topology_per_node is not defined
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Check for nodes with hyperthreading disabled
+  set_fact:
+    nodes_without_hyperthreading: >-
+      {{
+        cpu_topology_per_node
+        | dict2items
+        | selectattr('value.threads_per_core', 'defined')
+        | selectattr('value.threads_per_core', 'equalto', 1)
+        | map(attribute='key')
+        | list
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Check for nodes with hyperthreading enabled
+  set_fact:
+    nodes_with_hyperthreading: >-
+      {{
+        cpu_topology_per_node
+        | dict2items
+        | selectattr('value.threads_per_core', 'defined')
+        | selectattr('value.threads_per_core', 'gt', 1)
+        | map(attribute='key')
+        | list
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Fail if balloons are enabled but no node has hyperthreading enabled
+  fail:
+    msg: |
+      ERROR: Balloons require at least one node with Hyperthreading enabled.
+
+      Balloons feature can run on mixed clusters, but at least one node must have Hyperthreading enabled.
+
+      Nodes with Hyperthreading DISABLED (Thread(s) per core: 1):
+      {% for node in nodes_without_hyperthreading %}
+        - {{ node }}
+      {% endfor %}
+
+      Please either:
+        1. Enable Hyperthreading in the BIOS on at least one cluster node, or
+        2. Disable balloons in your config.yaml by setting: balloons.enabled: false
+  when:
+  - balloons.enabled | default(false) | bool
+  - nodes_with_hyperthreading | length == 0
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Wait for confirmation if hyperthreading is disabled
+  pause:
+    prompt: |
+      WARNING: Hyperthreading is disabled on all nodes.
+      This might lead to suboptimal performance. Please enable it in BIOS.
+
+      Nodes with Hyperthreading DISABLED (Thread(s) per core: 1):
+      {% for node in nodes_without_hyperthreading %}
+        - {{ node }}
+      {% endfor %}
+
+  when:
+  - nodes_with_hyperthreading | length == 0
+  tags:
+  - install
+  - topology-preview
+  - update-configuration

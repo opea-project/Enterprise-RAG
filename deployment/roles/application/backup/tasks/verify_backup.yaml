@@ -94,3 +94,67 @@
       ansible.builtin.debug:
         msg: "Verified backup for upgrade: {{ upgrade_verified_backup }} (completed: {{ upgrade_verified_backup_timestamp }})"
       when: upgrade_verified_backup is defined
+
+    - name: Find velero pod for backup data verification
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: "{{ velero.namespace | default('velero') }}"
+        label_selectors: >-
+          {{ velero.velero_pod_labels.keys() | zip(velero.velero_pod_labels.values()) | map('join', '=') | list }}
+        field_selectors:
+          - status.phase=Running
+      register: velero_pod_verify
+      when:
+        - velero_ns_check.resources | length > 0
+        - upgrade_verified_backup is defined
+
+    - name: Warn if no velero pod available for data check
+      ansible.builtin.debug:
+        msg: "WARNING: No running Velero pod found — cannot verify backup data accessibility from BSL."
+      when:
+        - velero_pod_verify is defined
+        - velero_pod_verify.resources | default([]) | length == 0
+
+    - name: Access backup resource list to verify BSL data connectivity
+      kubernetes.core.k8s_exec:
+        namespace: "{{ velero.namespace | default('velero') }}"
+        pod: "{{ velero_pod_verify.resources[0].metadata.name }}"
+        container: velero
+        command: >-
+          /velero backup describe {{ upgrade_verified_backup }} --details -o json
+          {{ '--insecure-skip-tls-verify' if (velero.external_bsl.enabled | default(false)) and (velero.external_bsl.tls.enabled | default(false)) else '' }}
+      register: backup_data_check
+      when:
+        - velero_ns_check.resources | length > 0
+        - upgrade_verified_backup is defined
+        - velero_pod_verify.resources | default([]) | length > 0
+
+    - name: Parse backup data details
+      ansible.builtin.set_fact:
+        backup_data_details: "{{ backup_data_check.stdout | from_json }}"
+      when:
+        - not (backup_data_check.skipped | default(false))
+        - backup_data_check.stdout | default('') != ''
+
+    - name: Fail if backup data is inaccessible from BSL
+      ansible.builtin.fail:
+        msg: |
+          Backup '{{ upgrade_verified_backup }}' metadata exists but its resource list cannot be retrieved from storage.
+          Error: {{ backup_data_details.status.errorGettingResourceList | default('Resource list empty') }}
+
+          This indicates a TLS or connectivity issue between Velero and the backup storage location.
+          Check: ca_cert_path, NO_PROXY settings, and BSL availability.
+          Run: kubectl get backupstoragelocations -n {{ velero.namespace | default('velero') }}
+      when:
+        - backup_data_details is defined
+        - backup_data_details.status.resourceList | default({}) | length == 0
+
+    - name: Display backup data verification result
+      ansible.builtin.debug:
+        msg: >-
+          Backup data accessible: {{ upgrade_verified_backup }} —
+          {{ backup_data_details.status.resourceList | default({}) | length }} resource types confirmed in BSL.
+      when:
+        - backup_data_details is defined
+        - backup_data_details.status.resourceList | default({}) | length > 0

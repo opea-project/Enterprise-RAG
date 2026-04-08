@@ -295,6 +295,28 @@
     - install
     - update-configuration
 
+- name: Delete GMConnector resources to allow graceful workload teardown
+  kubernetes.core.k8s:
+    state: absent
+    api_version: gmc.opea.io/v1alpha3
+    kind: GMConnector
+    namespace: "{{ item.namespace }}"
+    delete_all: true
+  ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Wait for pipeline workload pods to terminate before deleting namespace
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ item.namespace }}"
+  register: pipeline_pods_info
+  until: pipeline_pods_info.resources | length == 0
+  retries: 30
+  delay: 10
+  tags:
+    - uninstall
+
 - name: Remove pipeline namespace
   kubernetes.core.k8s:
     state: absent
@@ -311,6 +333,8 @@
     name: "{{ gmc.helm.release_name }}"
     namespace: "{{ gmc.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 

@@ -137,6 +137,8 @@
     name: "{{ apisix.helm.release_name }}"
     namespace: "{{ apisix.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 

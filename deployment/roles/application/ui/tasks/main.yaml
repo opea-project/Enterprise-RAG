@@ -118,6 +118,8 @@
     name: "{{ ui.helm.release_name }}"
     namespace: "{{ ui.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 

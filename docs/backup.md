@@ -7,7 +7,10 @@ This document gives a brief introduction to backup and restore operations in Int
 1. [Introduction](#introduction)
 1. [Installation](#installation)
 1. [User Data Backup](#user-data-backup)
+   - [Verifying a Backup](#verifying-a-backup)
 1. [User Data Restore](#user-data-restore)
+   - [Verifying a Restore](#verifying-a-restore)
+1. [External Backup Storage](#external-backup-storage)
 
 ## Introduction
 
@@ -77,6 +80,17 @@ backup-20250916t112104   21h
 
 `velero` namespace is used by default; review `config.yaml` to see where it can be changed.
 
+### Verifying a Backup
+
+To inspect a completed backup in detail (included resources, warnings, errors):
+
+```sh
+velero backup describe <BACKUP_NAME> --details
+```
+
+> [!NOTE]
+> If an [external backup storage location](#external-backup-storage) is configured, `velero` CLI commands may require additional environment setup — see that section.
+
 ## User Data Restore
 
 With Velero configured correctly, the data restore process can be started with the following command:
@@ -93,3 +107,39 @@ ansible-playbook -u $USER -K playbooks/backup.yaml --tags restore,monitor_restor
 
 ```
 Where `BACKUP_RESOURCE_ID` is the name of the Kubernetes `backup` resource to restore from.
+
+### Verifying a Restore
+
+Once the playbook completes, check that the restore finished without errors:
+
+```sh
+kubectl get restores -n velero
+```
+
+For a detailed view (resource counts, warnings, duration):
+
+```sh
+velero restore describe <RESTORE_NAME> --details
+```
+
+> [!NOTE]
+> If an [external backup storage location](#external-backup-storage) is configured, `velero` CLI commands that fetch data from the BSL (such as `describe --details`) require additional environment setup — see the section below.
+
+## External Backup Storage
+
+By default Velero uses an in-cluster SeaweedFS instance. To use an external S3-compatible store instead (required for real disaster recovery), see [Velero Backup Storage Configuration](backup_storage_configuration.md) for a full operator guide covering the local vs external trade-offs and configuration reference.
+
+### CLI access with external BSL
+
+When an external BSL is configured, the velero CLI on the Ansible controller must bypass the corporate proxy and (if TLS is in use) trust the BSL certificate. Without this, commands that read detailed backup or restore data directly from storage — like `velero backup describe --details` — will fail.
+
+After post-install, Ansible writes a ready-to-source helper to `deployment/ansible-logs/velero-env.sh`:
+
+```sh
+source deployment/ansible-logs/velero-env.sh
+velero backup get
+velero backup describe <BACKUP_NAME> --details
+velero restore describe <RESTORE_NAME>
+```
+
+The script sets `no_proxy` / `NO_PROXY` to bypass the proxy for the BSL endpoint, and `SSL_CERT_FILE` to the CA certificate when TLS is enabled.

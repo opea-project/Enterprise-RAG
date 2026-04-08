@@ -363,6 +363,8 @@
     name: prometheus-adapter
     release_namespace: "{{ telemetry.monitoring.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 
@@ -371,6 +373,8 @@
     name: telemetry
     release_namespace: "{{ telemetry.monitoring.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 
@@ -379,6 +383,8 @@
     name: telemetry-logs
     release_namespace: "{{ telemetry.monitoring.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 
@@ -387,6 +393,8 @@
     name: telemetry-traces-instr
     release_namespace: "{{ telemetry.traces.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   when: telemetry.traces.enabled
   tags:
     - uninstall
@@ -396,6 +404,8 @@
     name: telemetry-traces
     release_namespace: "{{ telemetry.traces.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   when: telemetry.traces.enabled
   tags:
     - uninstall

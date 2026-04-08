@@ -1,0 +1,97 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# External SeaweedFS instance for Velero off-cluster BSL
+# Usage: see setup.sh
+
+# Common no_proxy fragment applied to every service so that corporate HTTP
+# proxies do not intercept intra-cluster and loopback traffic.
+# SeaweedFS binds to its container IP (not 127.0.0.1), so healthchecks use
+# $(hostname -i) rather than localhost.
+x-no-proxy: &no-proxy
+  environment:
+    - no_proxy=localhost,127.0.0.1,master,volume,filer,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    - NO_PROXY=localhost,127.0.0.1,master,volume,filer,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+
+services:
+  master:
+    image: chrislusf/seaweedfs:4.16
+    container_name: seaweedfs-master
+    ports:
+      - "9333:9333"
+      - "19333:19333"
+    command: "master -port=9333 -volumeSizeLimitMB=1024"
+    volumes:
+      - master-data:/data
+    networks:
+      - seaweedfs
+    restart: unless-stopped
+    <<: *no-proxy
+    healthcheck:
+      # SeaweedFS binds to the container IP, not loopback — use hostname -i
+      # Unset all proxy vars so corporate proxy never intercepts intra-container traffic
+      test: ["CMD-SHELL", "http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= curl -sf --max-time 4 http://$(hostname -i):9333/cluster/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  volume:
+    image: chrislusf/seaweedfs:4.16
+    container_name: seaweedfs-volume
+    ports:
+      - "8080:8080"
+      - "18080:18080"
+    command: "volume -mserver=master:9333 -port=8080 -dir=/data -max=0"
+    volumes:
+      - volume-data:/data
+    depends_on:
+      master:
+        condition: service_healthy
+    networks:
+      - seaweedfs
+    restart: unless-stopped
+    <<: *no-proxy
+
+  filer:
+    image: chrislusf/seaweedfs:4.16
+    container_name: seaweedfs-filer
+    ports:
+      - "8888:8888"
+      - "18888:18888"
+      # Port 8333 is NOT exposed here — in TLS mode nginx owns it.
+      # In plain HTTP mode the override adds it directly.
+    # s3.config points to the mounted credentials file.
+    # In TLS mode the override replaces this command to use port 8444 (nginx proxies).
+    command: >
+      filer -master=master:9333
+            -s3
+            -s3.port=8333
+            -s3.config=/config/s3config.json
+    volumes:
+      - filer-data:/data
+      - ./s3config.json:/config/s3config.json:ro
+    depends_on:
+      master:
+        condition: service_healthy
+      volume:
+        condition: service_started
+    networks:
+      - seaweedfs
+    restart: unless-stopped
+    <<: *no-proxy
+    healthcheck:
+      # nc -z: checks TCP port — no TLS handshake, proxy-immune.
+      # In TLS mode the override changes this to port 8444.
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 8333"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+
+volumes:
+  master-data:
+  volume-data:
+  filer-data:
+
+networks:
+  seaweedfs:
+    driver: bridge

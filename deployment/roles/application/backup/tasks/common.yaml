@@ -136,6 +136,57 @@
       Backup/restore operations may fail if storage is not accessible.
   when: bsl_unavailable | length > 0
 
+- name: Extract BSL host for proxy bypass
+  ansible.builtin.set_fact:
+    bsl_host: "{{ (velero.external_bsl.s3_url | default('') | urlsplit('hostname')) if (velero.external_bsl.s3_url | default('')) != '' else '' }}"
+    bsl_host_ip: "{{ velero.external_bsl.tls.host_ip | default('') }}"
+  when: velero.external_bsl.enabled | default(false)
+
+- name: Resolve CA cert path for external BSL TLS
+  ansible.builtin.set_fact:
+    velero_bsl_ca_cert_path: "{{ velero.external_bsl.tls.ca_cert_path }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+    - velero.external_bsl.tls.ca_cert_path | default('') != ''
+
+- name: Write CA cert to disk for CLI use (from inline base64)
+  ansible.builtin.copy:
+    content: "{{ velero.external_bsl.tls.ca_cert | b64decode }}"
+    dest: "{{ log_dir }}/velero-bsl-ca.crt"
+    mode: '0644'
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+    - velero.external_bsl.tls.ca_cert_path | default('') == ''
+    - velero.external_bsl.tls.ca_cert | default('') != ''
+
+- name: Set velero CLI environment for external BSL with TLS
+  ansible.builtin.set_fact:
+    velero_cli_env:
+      SSL_CERT_FILE: >-
+        {{ velero_bsl_ca_cert_path if velero_bsl_ca_cert_path | default('') != ''
+           else log_dir + '/velero-bsl-ca.crt' }}
+      NO_PROXY: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip | default('') != '' and bsl_host_ip != bsl_host else '' }}"
+      no_proxy: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip | default('') != '' and bsl_host_ip != bsl_host else '' }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+
+- name: Set velero CLI environment for external BSL without TLS
+  ansible.builtin.set_fact:
+    velero_cli_env:
+      NO_PROXY: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip | default('') != '' and bsl_host_ip != bsl_host else '' }}"
+      no_proxy: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip | default('') != '' and bsl_host_ip != bsl_host else '' }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - not (velero.external_bsl.tls.enabled | default(false))
+
+- name: Set empty velero CLI environment when no external BSL
+  ansible.builtin.set_fact:
+    velero_cli_env: {}
+  when: not (velero.external_bsl.enabled | default(false))
+
 - name: Display Velero readiness confirmation
   ansible.builtin.debug:
     msg: |

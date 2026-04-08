@@ -50,7 +50,15 @@ To install additional infrastructure components to your cluster:
    ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
    This will install and configure the NFS server, Gaudi operator, local registry, or Velero as specified in your configuration.
-   
+
 > [!NOTE]
 > You can enable several components in the same run if multiple components are needed. Additional components may be supported via post-install in the future.
 
+## Velero Backup Storage
+
+Velero requires a Backup Storage Location (BSL) — an S3-compatible object store — to hold backup metadata and volume-snapshot data. Two modes are supported:
+
+- **Local (default):** An in-cluster SeaweedFS instance is deployed alongside Velero automatically. Suitable for evaluation; backup data does not survive cluster loss.
+- **External:** Velero connects to any S3-compatible service outside the cluster (AWS S3, MinIO, Ceph, etc.). Required for real disaster-recovery scenarios.
+
+For a full comparison and configuration reference, see [docs/backup_storage_configuration.md](backup_storage_configuration.md).

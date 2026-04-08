@@ -13,6 +13,7 @@ velero:
   velero_pod_labels:
     app.kubernetes.io/instance: velero
     app.kubernetes.io/name: velero
+    name: velero
 
   install_server: true
   install_client: true

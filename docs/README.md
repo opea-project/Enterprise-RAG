@@ -43,6 +43,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[backup.md](backup.md)**
   Comprehensive guide for configuring backup functionality with Velero, creating backups, and restoring user data and configurations.
 
+- **[backup_storage_configuration.md](backup_storage_configuration.md)**
+  Instructions for configuring storage including external kind for backup functionality with Velero.
+
 ### Performance, Accuracy and Monitoring
 
 - **[performance_tuning_tips.md](performance_tuning_tips.md)**

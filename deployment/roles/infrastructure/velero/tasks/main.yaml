@@ -34,6 +34,20 @@
     - install
     - post-install
 
+- name: Validate external BSL credentials configuration
+  ansible.builtin.fail:
+    msg: >-
+      Invalid configuration: both credentials_secret and credentials_file_path are set.
+      Use credentials_file_path to let Ansible create the secret automatically, OR
+      use credentials_secret to reference a pre-existing Kubernetes secret — not both.
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.credentials_secret | default('') != ''
+    - velero.external_bsl.credentials_file_path | default('') != ''
+  tags:
+    - install
+    - post-install
+
 - name: Set roles facts
   ansible.builtin.set_fact:
     velero_helm_override_values_path: "{{ tmp_dir }}/{{ velero.helm.chart_name }}-override-values.yaml"
@@ -56,7 +70,9 @@
     name: "{{ velero.helm.repo_seaweedfs_name }}"
     repo_url: "{{ velero.helm.repo_seaweedfs_url }}"
     state: present
-  when: velero.install_server
+  # Skip when using external BSL: SeaweedFS is not deployed so the repo is not needed.
+  # helm dependency build will use the cached tarball in components/velero/charts/ if present.
+  when: velero.install_server and not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -109,6 +125,14 @@
     - { name: VELERO_SEAWEEDFS_ACCESS_KEY }
     - { name: VELERO_SEAWEEDFS_SECRET_KEY }
   no_log: "{{ secure_logs }}"
+  when: not (velero.external_bsl.enabled | default(false))
+  tags:
+    - install
+    - post-install
+
+- name: Set default StorageClass name for Velero
+  ansible.builtin.set_fact:
+    velero_storage_class_name: ""
   tags:
     - install
     - post-install
@@ -118,6 +142,7 @@
     api_version: storage.k8s.io/v1
     kind: StorageClass
   register: sc_list
+  when: not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -134,6 +159,7 @@
           {%- endif -%}
         {%- endfor -%}
       {%- endif -%}
+  when: not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -141,7 +167,7 @@
 - name: Fail if no StorageClass available for Velero
   ansible.builtin.fail:
     msg: "No StorageClass available for Velero. Either set velero.storage_class in config.yaml or ensure a default StorageClass exists in your cluster."
-  when: velero_storage_class_name == ""
+  when: velero_storage_class_name == "" and not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -154,6 +180,7 @@
           {{ item }}
         {%- endif -%}
       {%- endfor -%}
+  when: not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -161,10 +188,109 @@
 - name: Fail if specified StorageClass not found
   ansible.builtin.fail:
     msg: "StorageClass '{{ velero_storage_class_name }}' not found in cluster. Available: {{ sc_list.resources | map(attribute='metadata.name') | list | join(', ') }}"
-  when: velero_sc_object == ""
+  when: velero_sc_object is defined and velero_sc_object == "" and not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
+
+- name: Validate external BSL TLS configuration
+  ansible.builtin.assert:
+    that:
+      - velero.external_bsl.tls.host_ip != ""
+      - (velero.external_bsl.tls.ca_cert_path | default('') != '') or (velero.external_bsl.tls.ca_cert | default('') != '')
+      - velero.external_bsl.s3_url is match("^https://")
+    fail_msg: >-
+      When external_bsl.tls.enabled is true, tls.host_ip and either
+      tls.ca_cert_path or tls.ca_cert (base64) must be set. s3_url must
+      start with https://.
+      Run: deployment/components/external-seaweedfs/setup.sh --hostname <name>
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
+- name: Read CA cert from file path
+  ansible.builtin.slurp:
+    src: "{{ velero.external_bsl.tls.ca_cert_path }}"
+  register: ca_cert_file_content
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+    - velero.external_bsl.tls.ca_cert_path | default('') != ''
+  tags:
+    - install
+    - post-install
+
+- name: Resolve CA cert for velero BSL (from path or inline)
+  ansible.builtin.set_fact:
+    velero_bsl_ca_cert_b64: >-
+      {{ ca_cert_file_content.content | default('') if (velero.external_bsl.tls.ca_cert_path | default('') != '')
+         else velero.external_bsl.tls.ca_cert | default('') }}
+    velero_bsl_ca_cert_path: >-
+      {{ velero.external_bsl.tls.ca_cert_path if (velero.external_bsl.tls.ca_cert_path | default('') != '')
+         else '' }}
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
+- name: Set empty CA cert facts when no external TLS
+  ansible.builtin.set_fact:
+    velero_bsl_ca_cert_b64: ""
+    velero_bsl_ca_cert_path: ""
+  when: not (velero.external_bsl.enabled | default(false) and velero.external_bsl.tls.enabled | default(false))
+  tags:
+    - install
+    - post-install
+
+- name: Extract BSL host from s3_url
+  ansible.builtin.set_fact:
+    bsl_host: "{{ (velero.external_bsl.s3_url | default('') | urlsplit('hostname')) if (velero.external_bsl.s3_url | default('')) != '' else '' }}"
+    bsl_host_ip: "{{ velero.external_bsl.tls.host_ip | default('') }}"
+  when: velero.external_bsl.enabled | default(false)
+  tags:
+    - install
+    - post-install
+    - delete
+    - post-delete
+    - velero-delete
+
+- name: Set empty BSL host facts when no external BSL
+  ansible.builtin.set_fact:
+    bsl_host: ""
+    bsl_host_ip: ""
+  when: not (velero.external_bsl.enabled | default(false))
+  tags:
+    - install
+    - post-install
+    - delete
+    - post-delete
+    - velero-delete
+
+- name: Determine BSL credentials secret name
+  ansible.builtin.set_fact:
+    velero_bsl_credentials_secret_name: >-
+      {{ velero.external_bsl.credentials_secret if (velero.external_bsl.credentials_secret | default('') != '')
+         else 'velero-bsl-credentials' }}
+  when: velero.external_bsl.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
+- name: Set default BSL credentials secret name when no external BSL
+  ansible.builtin.set_fact:
+    velero_bsl_credentials_secret_name: "velero-seaweedfs-access-secrets"
+  when: not (velero.external_bsl.enabled | default(false))
+  tags:
+    - install
+    - post-install
+    - delete
+    - post-delete
+    - velero-delete
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -189,6 +315,7 @@
             - "List"
             - "Tagging"
             - "Admin"
+  when: not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -207,9 +334,127 @@
         admin_access_key_id: "{{ VELERO_SEAWEEDFS_ACCESS_KEY | b64encode }}"
         admin_secret_access_key: "{{ VELERO_SEAWEEDFS_SECRET_KEY | b64encode }}"
         seaweedfs_s3_config: "{{ velero_s3_auth_config | to_json | b64encode }}"
+  when: not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
+
+- name: Read credentials file for external BSL
+  ansible.builtin.slurp:
+    src: "{{ velero.external_bsl.credentials_file_path }}"
+  register: bsl_credentials_file_content
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.credentials_file_path | default('') != ''
+  tags:
+    - install
+    - post-install
+
+- name: Create BSL credentials secret from credentials file
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ velero_bsl_credentials_secret_name }}"
+        namespace: "{{ velero.namespace }}"
+      type: Opaque
+      stringData:
+        cloud: "{{ bsl_credentials_file_content.content | b64decode }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.credentials_file_path | default('') != ''
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+    - post-install
+
+- name: Verify external BSL credentials secret exists
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ velero_bsl_credentials_secret_name }}"
+    namespace: "{{ velero.namespace }}"
+  register: ext_bsl_secret_check
+  when:
+    - velero.external_bsl.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
+- name: Fail if external BSL credentials secret is missing
+  ansible.builtin.fail:
+    msg: >-
+      External BSL credentials secret '{{ velero_bsl_credentials_secret_name }}'
+      not found in namespace '{{ velero.namespace }}'.
+      Provide credentials_file_path to a credentials file (AWS format) for auto-creation,
+      or set credentials_secret to the name of a pre-existing secret.
+      Generate credentials with: deployment/components/external-seaweedfs/setup.sh
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - ext_bsl_secret_check.resources | length == 0
+  tags:
+    - install
+    - post-install
+
+- name: Write CA cert to disk for CLI use (from inline base64)
+  ansible.builtin.copy:
+    content: "{{ velero.external_bsl.tls.ca_cert | b64decode }}"
+    dest: "{{ log_dir }}/velero-bsl-ca.crt"
+    mode: '0644'
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+    - velero.external_bsl.tls.ca_cert_path | default('') == ''
+    - velero.external_bsl.tls.ca_cert | default('') != ''
+  tags:
+    - install
+    - post-install
+
+- name: Set velero CLI environment for external BSL with TLS
+  ansible.builtin.set_fact:
+    velero_cli_env:
+      SSL_CERT_FILE: >-
+        {{ velero_bsl_ca_cert_path if velero_bsl_ca_cert_path | default('') != ''
+           else log_dir + '/velero-bsl-ca.crt' }}
+      NO_PROXY: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip and bsl_host_ip != bsl_host else '' }}"
+      no_proxy: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip and bsl_host_ip != bsl_host else '' }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+  tags:
+    - install
+    - post-install
+    - delete
+    - post-delete
+    - velero-delete
+
+- name: Set velero CLI environment for external BSL without TLS
+  ansible.builtin.set_fact:
+    velero_cli_env:
+      NO_PROXY: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip and bsl_host_ip != bsl_host else '' }}"
+      no_proxy: "{{ bsl_host }}{{ ',' + bsl_host_ip if bsl_host_ip and bsl_host_ip != bsl_host else '' }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - not (velero.external_bsl.tls.enabled | default(false))
+  tags:
+    - install
+    - post-install
+    - delete
+    - post-delete
+    - velero-delete
+
+- name: Set empty velero CLI environment when no external BSL
+  ansible.builtin.set_fact:
+    velero_cli_env: {}
+  when: not (velero.external_bsl.enabled | default(false))
+  tags:
+    - install
+    - post-install
+    - delete
+    - post-delete
+    - velero-delete
 
 - name: Create VolumeSnapshotClass for NFS CSI driver
   kubernetes.core.k8s:
@@ -230,6 +475,25 @@
     - velero.install_snapshot_class
     - install_csi is defined
     - install_csi == "nfs"
+  tags:
+    - install
+    - post-install
+
+- name: Create ConfigMap with BSL CA certificate for velero pod
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: velero-bsl-ca-cert
+        namespace: "{{ velero.namespace }}"
+      data:
+        ca.crt: "{{ velero_bsl_ca_cert_b64 | b64decode }}"
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - velero.external_bsl.tls.enabled | default(false)
+    - velero_bsl_ca_cert_b64 | default('') != ''
   tags:
     - install
     - post-install
@@ -278,6 +542,7 @@
     password_mappings:
       - { key: admin_access_key_id, variable: VELERO_SEAWEEDFS_ACCESS_KEY, user: "" }
       - { key: admin_secret_access_key, variable: VELERO_SEAWEEDFS_SECRET_KEY, user: "" }
+  when: not (velero.external_bsl.enabled | default(false))
   tags:
     - install
     - post-install
@@ -288,6 +553,7 @@
     namespace: "{{ velero.namespace }}"
     label_selectors:
       - app.kubernetes.io/name=velero
+      - name=velero
   register: velero_pods_info
   until: velero_pods_info.resources | length > 0 and velero_pods_info.resources[0].status.phase == "Running"
   retries: 30
@@ -299,6 +565,41 @@
 - name: Get velero server running pod name
   ansible.builtin.set_fact:
     velero_pod_name: "{{ velero_pods_info.resources[0].metadata.name }}"
+  tags:
+    - install
+    - post-install
+
+- name: Wait for external BSL to become Available
+  kubernetes.core.k8s_info:
+    api_version: velero.io/v1
+    kind: BackupStorageLocation
+    name: default
+    namespace: "{{ velero.namespace }}"
+  register: bsl_status
+  until: >
+    bsl_status.resources | length > 0 and
+    (bsl_status.resources[0].status.phase | default('')) == 'Available'
+  retries: 18
+  delay: 10
+  ignore_errors: true
+  when:
+    - velero.external_bsl.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
+- name: Fail if external BSL did not become Available
+  ansible.builtin.fail:
+    msg: >
+      External BSL 'default' is not Available
+      (phase: '{{ (bsl_status.resources[0].status.phase | default('Unknown')) if bsl_status.resources | length > 0 else 'not found' }}').
+      Check Velero logs: kubectl -n {{ velero.namespace }} logs deployment/velero | grep -i 'backupstoragelocation\|error'
+      Verify: S3 endpoint reachability, bucket name, credentials format, region, and CA cert (if TLS).
+  when:
+    - velero.external_bsl.enabled | default(false)
+    - bsl_status is defined
+    - (bsl_status.resources | length == 0) or
+      ((bsl_status.resources[0].status.phase | default('')) != 'Available')
   tags:
     - install
     - post-install
@@ -467,6 +768,46 @@
     - install
     - post-install
 
+- name: Generate velero CLI environment snippet for external BSL
+  ansible.builtin.copy:
+    content: |
+      # Source this file to configure velero CLI for external BSL access.
+      # Usage: source {{ log_dir }}/velero-env.sh
+      {% if velero.external_bsl.tls.enabled | default(false) %}
+      {% set cert_path = velero_bsl_ca_cert_path if velero_bsl_ca_cert_path | default('') != '' else log_dir + '/velero-bsl-ca.crt' %}
+      export SSL_CERT_FILE="{{ cert_path }}"
+      {% endif %}
+      {% set bsl_host = (velero.external_bsl.s3_url | default('') | urlsplit('hostname')) if (velero.external_bsl.s3_url | default('')) != '' else '' %}
+      {% set bsl_host_ip = velero.external_bsl.tls.host_ip | default('') %}
+      {% set extra_entries = ([bsl_host] if bsl_host else []) + ([bsl_host_ip] if bsl_host_ip and bsl_host_ip != bsl_host else []) %}
+      _velero_no_proxy="{{ extra_entries | join(',') }}"
+      if [ -n "${no_proxy:-}" ]; then
+        export no_proxy="${no_proxy},${_velero_no_proxy}"
+      else
+        export no_proxy="${_velero_no_proxy}"
+      fi
+      export NO_PROXY="$no_proxy"
+      unset _velero_no_proxy
+    dest: "{{ log_dir }}/velero-env.sh"
+    mode: '0644'
+  when:
+    - velero.external_bsl.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
+- name: Display velero CLI hints for external BSL
+  ansible.builtin.debug:
+    msg: |
+      External BSL configured. For ad-hoc velero CLI usage, either:
+        source {{ log_dir }}/velero-env.sh
+      or ensure no_proxy includes the BSL host{{ ' and SSL_CERT_FILE points to the CA cert' if (velero.external_bsl.tls.enabled | default(false)) else '' }}.
+  when:
+    - velero.external_bsl.enabled | default(false)
+  tags:
+    - install
+    - post-install
+
 - name: Get all Restore objects
   kubernetes.core.k8s_info:
     api_version: velero.io/v1
@@ -481,9 +822,10 @@
     - post-delete
     - velero-delete
 
-- name: Delete all Restore objects using velero CLI
+- name: Delete all Restore objects using velero CLI (internal BSL - deletes data)
   ansible.builtin.command:
     cmd: velero restore delete {{ item.metadata.name }} --confirm --namespace {{ velero.namespace }}
+  environment: "{{ velero_cli_env | default({}) }}"
   loop: "{{ restore_objects.resources }}"
   loop_control:
     label: "{{ item.metadata.name }}"
@@ -491,6 +833,28 @@
     - velero.enabled
     - velero.install_server
     - restore_objects.resources | length > 0
+    - not (velero.external_bsl.enabled | default(false))
+  ignore_errors: true
+  tags:
+    - delete
+    - post-delete
+    - velero-delete
+
+- name: Delete Restore CRs only (external BSL - preserve data in remote storage)
+  kubernetes.core.k8s:
+    api_version: velero.io/v1
+    kind: Restore
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ velero.namespace }}"
+    state: absent
+  loop: "{{ restore_objects.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+  when:
+    - velero.enabled
+    - velero.install_server
+    - restore_objects.resources | length > 0
+    - velero.external_bsl.enabled | default(false)
   ignore_errors: true
   tags:
     - delete
@@ -511,9 +875,10 @@
     - post-delete
     - velero-delete
 
-- name: Delete all Backup objects using velero CLI
+- name: Delete all Backup objects using velero CLI (internal BSL - deletes data)
   ansible.builtin.command:
     cmd: velero backup delete {{ item.metadata.name }} --confirm --namespace {{ velero.namespace }}
+  environment: "{{ velero_cli_env | default({}) }}"
   loop: "{{ backup_objects.resources }}"
   loop_control:
     label: "{{ item.metadata.name }}"
@@ -521,6 +886,28 @@
     - velero.enabled
     - velero.install_server
     - backup_objects.resources | length > 0
+    - not (velero.external_bsl.enabled | default(false))
+  ignore_errors: true
+  tags:
+    - delete
+    - post-delete
+    - velero-delete
+
+- name: Delete Backup CRs only (external BSL - preserve data in remote storage)
+  kubernetes.core.k8s:
+    api_version: velero.io/v1
+    kind: Backup
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ velero.namespace }}"
+    state: absent
+  loop: "{{ backup_objects.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+  when:
+    - velero.enabled
+    - velero.install_server
+    - backup_objects.resources | length > 0
+    - velero.external_bsl.enabled | default(false)
   ignore_errors: true
   tags:
     - delete

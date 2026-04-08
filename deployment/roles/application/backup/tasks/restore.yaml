@@ -1,11 +1,25 @@
 # Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
+- name: Get existing namespaces for restore
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+  register: existing_namespaces_info
+
+- name: Filter namespaceOrder to only existing namespaces
+  ansible.builtin.set_fact:
+    restore_namespaces: >-
+      {{ velero.backup.backupConfig.namespaceOrder
+         | select('in', existing_namespaces_info.resources | map(attribute='metadata.name') | list)
+         | list }}
+
 - name: Generate order of cleanup before restore
   ansible.builtin.set_fact:
     cleanup_list: >-
       {% set ns_filter = enabled_namespaces | default([]) %}
       {% set result = [] %}
+      {% set existing = restore_namespaces %}
       {% for ns in velero.backup.backupConfig.namespaceOrder | default([]) %}
         {% if ns in ns_filter %}
           {% for dp in velero.backup.backupConfig.deployments[ns] | default([]) %}
@@ -78,6 +92,7 @@
 - name: Get backup details using velero client
   ansible.builtin.command:
     cmd: velero backup describe {{ selected_backup }} --details -o json
+  environment: "{{ velero_cli_env | default({}) }}"
   register: backup_details_client
   when: velero.backup_details_from == "client"
 
@@ -105,7 +120,9 @@
     namespace: "{{ velero.namespace }}"
     pod: "{{ velero_pods.resources[0].metadata.name }}"
     container: velero
-    command: /velero backup describe {{ selected_backup }} --details -o json
+    command: >-
+      /velero backup describe {{ selected_backup }} --details -o json
+      {{ '--insecure-skip-tls-verify' if (velero.external_bsl.enabled | default(false)) and (velero.external_bsl.tls.enabled | default(false)) else '' }}
   register: backup_details_server
   when: velero.backup_details_from == "server"
 
@@ -126,6 +143,14 @@
         {% set _ = result.append({'namespace': parts[0], 'name': parts[1]}) %}
       {% endfor %}
       {{ result }}
+
+- name: Fail when resource list is unavailable
+  ansible.builtin.fail:
+    msg: >-
+      Backup resource list is empty. Error: {{ backup_details.status.errorGettingResourceList | default('unknown') }}.
+      This usually indicates a TLS or connectivity issue between the velero CLI and the BSL.
+      Check that ca_cert_path / ca_cert and NO_PROXY are properly configured for external BSL.
+  when: pvc_list | from_yaml | length == 0
 
 
 # Cleanup resources using selector format first
@@ -206,6 +231,7 @@
 - name: Restore from backup
   ansible.builtin.command:
     cmd: velero restore create "{{ restore_name }}" --exclude-resources "instrumentations.opentelemetry.io,pods,replicasets.apps,gmconnectors.gmc.opea.io,validatingwebhookconfigurations.admissionregistration.k8s.io" --existing-resource-policy update --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
+  environment: "{{ velero_cli_env | default({}) }}"
 
 - name: Monitor restore completion
   kubernetes.core.k8s_info:

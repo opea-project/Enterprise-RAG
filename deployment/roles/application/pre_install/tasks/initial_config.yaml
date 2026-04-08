@@ -48,7 +48,9 @@
           {{
             (['localhost', '.svc', '.monitoring'] +
              (['.monitoring-traces'] if telemetry.traces.enabled | default(false) else []) +
-             ((additionalNoProxy | default('', true)) | string | split(',') | list)) |
+             ((additionalNoProxy | default('', true)) | string | split(',') | list) +
+             ([velero.external_bsl.s3_url | urlsplit('hostname')] if (velero.external_bsl.enabled | default(false)) and (velero.external_bsl.s3_url | default('') != '') else []) +
+             ([velero.external_bsl.tls.host_ip] if (velero.external_bsl.enabled | default(false)) and (velero.external_bsl.tls.host_ip | default('') != '') else [])) |
             reject('equalto', '') |
             list |
             unique |

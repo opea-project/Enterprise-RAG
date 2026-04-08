@@ -176,6 +176,8 @@
     name: "{{ chat_history.helm.release_name }}"
     namespace: "{{ chat_history.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 

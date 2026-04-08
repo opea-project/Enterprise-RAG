@@ -2,7 +2,37 @@
 Copyright (C) 2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
+{% set use_external_bsl = velero.external_bsl.enabled | default(false) %}
+{% set use_tls = use_external_bsl and (velero.external_bsl.tls.enabled | default(false)) %}
+{% set bsl_host = (velero.external_bsl.s3_url | urlsplit('hostname')) if use_external_bsl and (velero.external_bsl.s3_url | default('')) != '' else '' %}
+{% set bsl_host_ip = velero.external_bsl.tls.host_ip | default('') if use_external_bsl else '' %}
+{% set needs_host_alias = use_external_bsl and bsl_host_ip != '' and bsl_host != bsl_host_ip %}
+{# Auto-configure node_agent and data_mover: "auto" uses external_bsl state, true/false overrides #}
+{% set node_agent_cfg = velero.node_agent.enabled | default('auto') %}
+{% set node_agent_enabled = use_external_bsl if node_agent_cfg == 'auto' else node_agent_cfg %}
+{% set data_mover_cfg = velero.data_mover.enabled | default('auto') %}
+{% set data_mover_enabled = use_external_bsl if data_mover_cfg == 'auto' else data_mover_cfg %}
+{% set bsl_credentials_secret = velero_bsl_credentials_secret_name | default('velero-seaweedfs-access-secrets') %}
+{#
+  pod_no_proxy: combined NO_PROXY for the Velero pod.
+  Always excludes:
+  - the in-cluster SeaweedFS S3 endpoint and BSL host(s)
+  - RFC 1918 private CIDRs (10/8, 172.16/12, 192.168/16): ensures Velero reaches
+    the Kubernetes API server by IP without going through the proxy on any standard
+    cluster (kind, baremetal, on-prem).  For cloud-managed clusters (EKS/GKE/AKS)
+    where the API endpoint is a public hostname, add it to additionalNoProxy in config.yaml.
+  When a corporate proxy is configured, also propagates the noProxy fact set by
+  initial_config.yaml (domain patterns: .svc, localhost, monitoring, etc.).
+#}
+{% set _np = ['seaweedfs-s3.velero.svc', 'localhost', '127.0.0.1', '::1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'] %}
+{% if bsl_host != '' %}{% set _np = _np + [bsl_host] %}{% endif %}
+{% if bsl_host_ip != '' and bsl_host_ip != bsl_host %}{% set _np = _np + [bsl_host_ip] %}{% endif %}
+{% if httpProxy is defined and httpProxy != '' and noProxy is defined and noProxy != '' %}
+  {% for entry in noProxy.split(',') %}{% if entry | trim != '' %}{% set _np = _np + [entry | trim] %}{% endif %}{% endfor %}
+{% endif %}
+{% set pod_no_proxy = _np | unique | join(',') %}
 
+{% if not use_external_bsl %}
 veleroAccessKey: "{{ VELERO_SEAWEEDFS_ACCESS_KEY }}"
 veleroSecretKey: "{{ VELERO_SEAWEEDFS_SECRET_KEY }}"
 
@@ -56,9 +86,37 @@ seaweedfs:
       enabled: false
   admin:
     enabled: false
+{% else %}
+
+seaweedfs:
+  enabled: false
+{% endif %}
+
 
 velero:
   resources: {}
+  deployNodeAgent: {{ node_agent_enabled | lower }}
+
+{% if needs_host_alias %}
+  hostAliases:
+    - ip: "{{ bsl_host_ip }}"
+      hostnames:
+        - "{{ bsl_host }}"
+{% else %}
+  hostAliases: []
+{% endif %}
+{% if use_tls %}
+  extraVolumes:
+    - name: bsl-ca-cert
+      configMap:
+        name: velero-bsl-ca-cert
+  extraVolumeMounts:
+    - name: bsl-ca-cert
+      mountPath: /certs
+      readOnly: true
+{% endif %}
+
+
 
   initContainers:
     - name: velero-plugin-for-aws
@@ -69,26 +127,60 @@ velero:
           name: plugins
   credentials:
     useSecret: true
-    existingSecret: velero-seaweedfs-access-secrets
+    existingSecret: {{ bsl_credentials_secret }}
   configuration:
     features: EnableCSI
     snapshotsEnabled: false
+{% if data_mover_enabled %}
+    uploaderType: "kopia"
+    defaultSnapshotMoveData: true
+{% endif %}
     defaultItemOperationTimeout: 120m
     extraArgs:
       - "--resource-timeout=120m"
     backupStorageLocation:
       - name: default
         provider: aws
+{% if use_external_bsl %}
+        bucket: {{ velero.external_bsl.bucket | default('velero') }}
+{% if use_tls and velero_bsl_ca_cert_b64 | default('') != '' %}
+        caCert: "{{ velero_bsl_ca_cert_b64 }}"
+{% endif %}
+{% else %}
         bucket: velero
+{% endif %}
         default: true
         config:
+{% if use_external_bsl %}
+          region: {{ velero.external_bsl.region | default('us-east-1') }}
+          s3ForcePathStyle: "{{ velero.external_bsl.s3_force_path_style | default('true') }}"
+{% if (velero.external_bsl.s3_url | default('')) != '' %}
+          s3Url: {{ velero.external_bsl.s3_url }}
+{% endif %}
+{% for key, value in (velero.external_bsl.config | default({})).items() %}
+          {{ key }}: "{{ value }}"
+{% endfor %}
+{% else %}
           region:
           s3ForcePathStyle: "true"
           s3Url: http://seaweedfs-s3.velero.svc:8333
+{% endif %}
     volumeSnapshotLocation: []
     extraEnvVars:
       - name: "NO_PROXY"
-        value: "seaweedfs-s3.velero.svc"
+        value: "{{ pod_no_proxy }}"
+      - name: "no_proxy"
+        value: "{{ pod_no_proxy }}"
+{% if use_tls %}
+      - name: "SSL_CERT_FILE"
+        value: "/certs/ca.crt"
+{% endif %}
+{% if httpProxy is defined and httpProxy != "" %}
+      - name: "HTTP_PROXY"
+        value: "{{ httpProxy }}"
+      - name: "HTTPS_PROXY"
+        value: "{{ httpsProxy | default(httpProxy) }}"
+{% endif %}
   kubectl:
     image:
 {% if use_alternate_tagging is defined and use_alternate_tagging %}

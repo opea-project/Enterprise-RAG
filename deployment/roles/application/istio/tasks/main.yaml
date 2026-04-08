@@ -102,6 +102,8 @@
     namespace: "{{ istio.namespace }}"
     state: absent
     purge: true
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall
 

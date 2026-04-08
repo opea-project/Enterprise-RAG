@@ -9,6 +9,7 @@ velero:
   velero_pod_labels:
     app.kubernetes.io/instance: velero
     app.kubernetes.io/name: velero
+    name: velero
 
   install_server: true
   install_client: true
@@ -40,3 +41,48 @@ velero:
         size: "2Gi"
       volume:
         size: "500Gi"
+
+  # Deploy the node-agent DaemonSet (required for the data mover).
+  # Use "auto" to enable when external_bsl is enabled; set true/false to override.
+  node_agent:
+    enabled: "auto"
+
+  # Use the Kopia-based data mover for PV backups (requires node_agent.enabled: true).
+  # Use "auto" to enable when external_bsl is enabled; set true/false to override.
+  data_mover:
+    enabled: "auto"
+
+  # External BSL: use an off-cluster S3-compatible store instead of in-cluster SeaweedFS.
+  # When enabled, no SeaweedFS will be deployed and the credentials below are used.
+  external_bsl:
+    enabled: false
+    s3_url: ""
+    bucket: "velero"
+    # Kubernetes secret holding BSL credentials in AWS credentials-file format (key: cloud).
+    # Use credentials_secret to reference a pre-existing secret that was created externally.
+    # Cannot be used together with credentials_file_path.
+    credentials_secret: ""
+    # Path to a credentials file in AWS format (INI with [default] section).
+    # Ansible reads this file and creates a Kubernetes Secret automatically.
+    # Cannot be used together with credentials_secret.
+    # Generate with: ./setup.sh (writes cloud-credentials)
+    credentials_file_path: ""
+    region: "us-east-1"
+    s3_force_path_style: "true"
+
+    # Extra BSL config options passed directly to velero-plugin-for-aws.
+    # Merged into the BackupStorageLocation .spec.config alongside region/s3Url/s3ForcePathStyle.
+    # See: https://github.com/vmware-tanzu/velero-plugin-for-aws/blob/v1.12.1/backupstoragelocation.md
+    config: {}
+
+    # TLS and hostname resolution for the external BSL endpoint.
+    # When tls.enabled is true: s3_url must use https://, ca_cert_path or ca_cert is required.
+    # When tls.enabled is false: s3_url uses http://, no certs needed.
+    # In either mode, set host_ip when s3_url uses a hostname not resolvable via DNS
+    # (injects hostAliases into the Velero pod for in-cluster resolution).
+    tls:
+      enabled: false
+      hostname: ""        # deprecated: extracted from s3_url
+      host_ip: ""         # server IP (hostAliases / NO_PROXY); not needed if s3_url uses an IP
+      ca_cert_path: ""    # path to PEM cert file on the Ansible controller (preferred)
+      ca_cert: ""         # base64-encoded PEM cert (fallback; ca_cert_path takes precedence)

@@ -75,6 +75,7 @@
     release_namespace: "{{ audio.namespace }}"
     state: absent
     wait: true
+    wait_timeout: "300s"
   ignore_errors: true
   tags:
     - uninstall

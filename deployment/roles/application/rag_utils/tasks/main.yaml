@@ -48,5 +48,7 @@
     name: "{{ rag_utils.helm.release_name }}"
     namespace: "{{ rag_utils.namespace }}"
     state: absent
+    wait: true
+    wait_timeout: "300s"
   tags:
     - uninstall

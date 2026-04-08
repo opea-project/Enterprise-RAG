@@ -137,6 +137,22 @@ def verify_debug_bundle_created(deployment_dir, debug_bundles_before):
     # Verify bundle structure
     verify_debug_bundle_structure(debug_bundle_path)
 
+    # Check for topology_preview_report.yaml (warn if missing, don't fail)
+    topology_report_path = os.path.join(debug_bundle_path, "topology_preview_report.yaml")
+    if os.path.isfile(topology_report_path):
+        logger.info(f"  [+] topology_preview_report.yaml found in bundle ({os.path.getsize(topology_report_path)} bytes)")
+    else:
+        warning_msg = "topology_preview_report.yaml not found in debug bundle - topology preview may not have been generated yet"
+        logger.warning(f"  [!] {warning_msg}")
+
+    # Check for ansible.log (warn if missing, don't fail)
+    ansible_log_path = os.path.join(debug_bundle_path, "ansible.log")
+    if os.path.isfile(ansible_log_path):
+        logger.info(f"  [+] ansible.log found in bundle ({os.path.getsize(ansible_log_path)} bytes)")
+    else:
+        warning_msg = "ansible.log not found in debug bundle - deployment log may not have been generated yet"
+        logger.warning(f"  [!] {warning_msg}")
+
     # Verify tar.gz file exists
     tar_gz_file = f"{debug_bundle_path}.tar.gz"
     assert os.path.isfile(tar_gz_file), f"debug_bundle tar.gz file not found at {tar_gz_file}"

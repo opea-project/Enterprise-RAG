@@ -33,13 +33,13 @@ After running these commands, the virtual environment will be ready to use for f
 
 ```bash
 cd deployment/
-python tools/debug_tool.py [--output-dir <dir>] [--config /path/to/config.yaml]
+python tools/debug_tool.py --config /path/to/config.yaml [--output-dir <dir>]
 ```
 
 ### Parameters
 
+- `--config` (required): Path to the deployment configuration file (same file used during deployment). Must include the `kubeconfig` variable pointing to a valid kubeconfig file. The kubeconfig path can be absolute or relative to the config file location.
 - `--output-dir` (optional): Output directory for debug bundle. Defaults to `debug_bundle`. A timestamp is appended to create a unique directory.
-- `--config` (optional): Path to the deployment configuration file (same file used during deployment). Must include the `kubeconfig` variable pointing to a valid kubeconfig file. The kubeconfig path can be absolute or relative to the config file location.
 
 ## Output Bundle Contents
 
@@ -47,8 +47,9 @@ python tools/debug_tool.py [--output-dir <dir>] [--config /path/to/config.yaml]
 - `kubectl_get/`: `kubectl get -o wide` output per resource type
 - `kubectl_getyaml/`: `kubectl get -o yaml` output per resource type
 - `kubectl_describe/`: `kubectl describe` output per resource type
-- `topology_preview.txt`: Ansible topology preview output (if config provided)
+- `topology_preview_report.yaml`: Topology preview report from `deployment/ansible-logs/` (if available)
 - `config_redacted.yaml`: Deployment config with sensitive values redacted (if provided)
+- `ansible.log`: Ansible deployment log (if available)
 - `SUMMARY.json`: Quick overview of collected data
 - `debug_tool_execution.log`: Complete log of debug tool execution
 

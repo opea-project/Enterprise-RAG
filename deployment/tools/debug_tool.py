@@ -166,10 +166,6 @@ class EnterpriseRAGDebugger:
 
     def collect_config(self):
         """Load config file, extract kubeconfig path, and save redacted config."""
-        if not self.config_path:
-            self.logger.info("[*] No config file provided (--config not specified), skipping")
-            return
-
         self.logger.info(f"[*] Loading config file: {os.path.abspath(self.config_path)}")
 
         self.config_data = self._load_config_file(self.config_path)
@@ -347,64 +343,44 @@ class EnterpriseRAGDebugger:
         return data
 
     def collect_topology_preview(self):
-        """Run ansible-playbook topology-preview and save the output."""
-        self.logger.info("[*] Collecting topology preview...")
+        """Collect topology preview report from deployment/ansible-logs/."""
+        self.logger.info("[*] Collecting topology preview report...")
 
-        if not self.config_path:
-            self.logger.warning("  [!] No config file provided (--config), skipping topology preview")
-            return
-
-        config_path = os.path.abspath(self.config_path)
-        if not os.path.exists(config_path):
-            self.logger.warning(f"  [!] Config file not found: {config_path}, skipping topology preview")
-            return
-
-        # Playbook is in deployment/playbooks/ relative to this script (tools/)
         tools_dir = os.path.dirname(os.path.abspath(__file__))
         deployment_dir = os.path.normpath(os.path.join(tools_dir, ".."))
-        playbook_path = os.path.join(deployment_dir, "playbooks", "application.yaml")
+        report_path = os.path.join(deployment_dir, "ansible-logs", "topology_preview_report.yaml")
 
-        if not os.path.exists(playbook_path):
-            self.logger.warning(f"  [!] Playbook not found: {playbook_path}, skipping topology preview")
+        if not os.path.exists(report_path):
+            self.logger.warning(f"  [!] Topology preview report not found at {report_path}, skipping")
             return
 
-        cmd = (
-            f"ansible-playbook {playbook_path} "
-            f"--tags topology-preview "
-            f"-e @{config_path}"
-        )
+        try:
+            dest_path = os.path.join(self.base_path, "topology_preview_report.yaml")
+            shutil.copy(report_path, dest_path)
+            file_size = os.path.getsize(dest_path)
+            self.logger.info(f"  [+] Saved topology_preview_report.yaml ({file_size / 1024:.2f} KB)")
+        except Exception as e:
+            self.logger.error(f"  [!] Failed to collect topology preview report: {e}")
 
-        self.logger.info(f"  [*] Running: {cmd}")
+    def collect_ansible_log(self):
+        """Collect deployment/ansible.log file into the debug bundle."""
+        self.logger.info("[*] Collecting ansible.log...")
+
+        tools_dir = os.path.dirname(os.path.abspath(__file__))
+        deployment_dir = os.path.normpath(os.path.join(tools_dir, ".."))
+        ansible_log_path = os.path.join(deployment_dir, "ansible.log")
+
+        if not os.path.exists(ansible_log_path):
+            self.logger.warning(f"  [!] ansible.log not found at {ansible_log_path}, skipping")
+            return
 
         try:
-            # Inherit current environment and apply kubeconfig
-            env = os.environ.copy()
-            env["K8S_AUTH_VERIFY_SSL"] = "false"
-            if self.kubeconfig_path:
-                env["KUBECONFIG"] = self.kubeconfig_path
-
-            process = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True,
-                cwd=deployment_dir, env=env
-            )
-            output = ""
-            if process.stdout:
-                output += process.stdout
-            if process.stderr:
-                output += "\n--- STDERR ---\n" + process.stderr
-
-            if output.strip():
-                out_file = os.path.join(self.base_path, "topology_preview.txt")
-                with open(out_file, "w") as f:
-                    f.write(output)
-                self.logger.info("  [+] Saved topology preview output")
-            else:
-                self.logger.warning("  [!] Topology preview produced no output")
-
-            if process.returncode != 0:
-                self.logger.warning(f"  [!] Topology preview playbook exited with code {process.returncode}")
+            dest_path = os.path.join(self.base_path, "ansible.log")
+            shutil.copy(ansible_log_path, dest_path)
+            file_size = os.path.getsize(dest_path)
+            self.logger.info(f"  [+] Saved ansible.log ({file_size / 1024:.2f} KB)")
         except Exception as e:
-            self.logger.error(f"  [!] Failed to run topology preview: {e}")
+            self.logger.error(f"  [!] Failed to collect ansible.log: {e}")
 
     def create_summary_report(self):
         """Generate SUMMARY.json."""
@@ -489,6 +465,7 @@ class EnterpriseRAGDebugger:
         self.collect_config()
         self.check_prerequisites()
         self.collect_topology_preview()
+        self.collect_ansible_log()
         self.collect_pod_logs()
         self.collect_kubectl_get()
         self.collect_kubectl_getyaml()
@@ -512,9 +489,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--config",
-        default=None,
+        required=True,
         metavar="PATH",
-        help="Path to deployment config.yaml (optional). Must contain 'kubeconfig' variable. Sensitive values will be redacted."
+        help="Path to deployment config.yaml. Must contain 'kubeconfig' variable. Sensitive values will be redacted."
     )
 
     args = parser.parse_args()

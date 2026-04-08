@@ -89,6 +89,30 @@
   tags:
     - pre-upgrade
 
+- name: Get existing APISIX IngressClass
+  kubernetes.core.k8s_info:
+    api_version: networking.k8s.io/v1
+    kind: IngressClass
+    name: apisix
+  register: _apisix_ingressclass_info
+  failed_when: false
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Remove APISIX IngressClass if controller field changed (immutable field)
+  kubernetes.core.k8s:
+    api_version: networking.k8s.io/v1
+    kind: IngressClass
+    name: apisix
+    state: absent
+  when:
+    - _apisix_ingressclass_info.resources | default([]) | length > 0
+    - "'apisix-ingress-controller' not in (_apisix_ingressclass_info.resources[0].spec.controller | default(''))"
+  tags:
+    - install
+    - pre-upgrade
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ apisix.helm.release_name }}"
@@ -97,11 +121,14 @@
     values_files: "{{ apisix.helm.default_values_file }}"
     state: present
     create_namespace: true
+    wait: true
     timeout: "{{ helm_timeout }}"
+    force: true
   register: helm_repo_install_result
-  until: helm_repo_install_result is succeeded
   retries: 5
   delay: 15
+  until: helm_repo_install_result.status is defined and helm_repo_install_result.status.status == "deployed"
+  failed_when: helm_repo_install_result.status is not defined or helm_repo_install_result.status.status != "deployed"
   tags:
     - install
 

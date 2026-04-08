@@ -17,6 +17,7 @@ export default defineConfig({
       entry: resolve(__dirname, "src/index.ts"),
       name: "intel-enterprise-rag-ui-components",
       fileName: "intel-enterprise-rag-ui-components",
+      cssFileName: "style",
       formats: ["es"],
     },
     rollupOptions: {

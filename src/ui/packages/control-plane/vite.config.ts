@@ -17,6 +17,7 @@ export default defineConfig({
       entry: resolve(__dirname, "src/index.ts"),
       name: "intel-enterprise-rag-ui-control-plane",
       fileName: "intel-enterprise-rag-ui-control-plane",
+      cssFileName: "style",
       formats: ["es"],
     },
     rollupOptions: {

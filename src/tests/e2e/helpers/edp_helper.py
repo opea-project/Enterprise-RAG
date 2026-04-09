@@ -59,6 +59,131 @@ class EdpHelper(ApiRequestHelper):
         )
         return response
 
+    def list_sites(self):
+        """Call api/v1/edp/sharepoint/sites"""
+        response = requests.get(
+            url=f"{self.edp_api_path}/sharepoint/sites",
+            headers=self.get_headers(),
+            verify=False
+        )
+        return response
+
+    def get_site_id_by_name(self, site_name):
+        """Get site ID by site name. Return None if site with the given name is not found."""
+        sites = self.list_sites()
+        site_id = next((site["id"] for site in sites.json().get("sites", []) if site["name"] == site_name), None)
+        if not site_id:
+            logger.warning(f"Site with name {site_name} not found.")
+        return site_id
+
+    def connect_site(self, site_name):
+        """Connect the site with the given name"""
+        logger.info(f"Connecting site with name: {site_name}")
+        payload = {"site_url": f"https://intel.sharepoint.com/sites/{site_name}"}
+        response = requests.post(
+            url=f"{self.edp_api_path}/sharepoint/sites",
+            headers=self.get_headers(),
+            json=payload,
+            verify=False
+        )
+        return response
+
+    def disconnect_site(self, site_name, site_id=None):
+        """Disconnect the site with the given name. If there is no connected site with such name, return 404 response"""
+        if not site_id:
+            site_id = self.get_site_id_by_name(site_name)
+        if not site_id:
+            logger.warning(f"Site with name {site_name} not found. Returning 404.")
+            response = requests.Response()
+            response.status_code = 404
+            return response
+        logger.info(f"Disconnecting site with id: {site_id} and name: {site_name}")
+
+        response = requests.delete(
+            url=f"{self.edp_api_path}/sharepoint/sites/{site_id}",
+            headers=self.get_headers(),
+            verify=False
+        )
+
+        return response
+
+    def sync_sharepoint(self) -> requests.Response:
+        """
+        Trigger a SharePoint sync via the EDP API.
+        POST /api/v1/edp/sharepoint/sync
+        """
+        url = f"{self.edp_api_path}/sharepoint/sync"
+        response = requests.post(
+            url,
+            headers=self.get_headers(),
+            verify=False
+        )
+        logger.info(f"SharePoint sync triggered. Status: {response.status_code}")
+        return response
+
+    def upload_to_sharepoint(self, site_name, file_path, site_id=None) -> requests.Response:
+        """
+        Upload a file to a connected SharePoint site via the EDP API.
+        POST /api/v1/edp/sharepoint/files
+        """
+        url = f"{self.edp_api_path}/sharepoint/files"
+        if not site_id:
+            site_id = self.get_site_id_by_name(site_name)
+        params = {"site_id": site_id}
+        headers = self.get_headers()
+        headers.pop('Content-Type', None)
+
+        with open(file_path, 'rb') as f:
+            file_name = os.path.basename(file_path)
+            files = {'file': (file_name, f, 'text/plain')}
+            response = requests.post(
+                url,
+                params=params,
+                headers=headers,
+                files=files,
+                verify=False
+            )
+        logger.info(f"File {file_name} upload to SharePoint site {site_name} (site_id: {site_id}) attempted. Status: {response.status_code}")
+        return response
+
+    def remove_from_sharepoint(self, site_name, object_name) -> requests.Response:
+        """
+        Delete a file from a connected SharePoint site via the EDP API.
+        DELETE /api/v1/edp/sharepoint/files
+        """
+        url = f"{self.edp_api_path}/sharepoint/files"
+        payload = {
+            "site_name": site_name,
+            "object_name": object_name
+        }
+        response = requests.delete(
+            url,
+            headers=self.get_headers(),
+            json=payload,
+            verify=False
+        )
+        logger.info(f"File {object_name} removal from SharePoint site {site_name} attempted. Status: {response.status_code}")
+        return response
+
+    def get_file_url(self, site_name, object_name) -> requests.Response:
+        """
+        Fetch a URL used to download an uploaded file from a SharePoint site via the EDP API.
+        POST /api/v1/edp/sharepoint/file-url
+        """
+        url = f"{self.edp_api_path}/sharepoint/file-url"
+        payload = {
+            "site_name": site_name,
+            "object_name": object_name
+        }
+        response = requests.post(
+            url,
+            headers=self.get_headers(),
+            json=payload,
+            verify=False
+        )
+        logger.info(f"File URL request for {object_name} on site {site_name}. Status: {response.status_code}")
+        return response
+
     def list_links(self, as_user=False):
         """Call /api/links endpoint"""
         response = requests.get(
@@ -285,7 +410,7 @@ class EdpHelper(ApiRequestHelper):
             files = self.list_files().json()
             file_found = False
             for file in files:
-                if file.get("object_name") == filename:
+                if filename in file.get("object_name"):
                     file_found = True
                     if file.get("status") == "error" and desired_status != "error":
                         last_status_message = "no previous status known."

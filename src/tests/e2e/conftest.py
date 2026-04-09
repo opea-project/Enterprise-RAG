@@ -22,13 +22,13 @@ from tests.e2e.helpers.api_request_helper import ApiRequestHelper
 from tests.e2e.helpers.chatqa_api_helper import ChatQaApiHelper
 from tests.e2e.helpers.chat_history_helper import ChatHistoryHelper
 from tests.e2e.helpers.docsum_helper import DocSumHelper
-
 from tests.e2e.helpers.edp_helper import EdpHelper
 from tests.e2e.helpers.fingerprint_api_helper import FingerprintApiHelper
 from tests.e2e.helpers.guard_helper import GuardHelper
 from tests.e2e.helpers.istio_helper import IstioHelper
 from tests.e2e.helpers.k8s_helper import K8sHelper
 from tests.e2e.helpers.keycloak_helper import KeycloakHelper
+from tests.e2e.helpers.sharepoint_helper import SharepointHelper
 
 # List of namespaces to fetch logs from
 NAMESPACES = ["auth", "auth-apisix", "chat-history", "chatqa", "docsum", "edp", "fingerprint",
@@ -321,6 +321,9 @@ def collect_k8s_logs(request):
 def edp_helper(keycloak_helper, validation_user_persistent):
     return EdpHelper(keycloak_helper=keycloak_helper)
 
+@pytest.fixture(scope="session")
+def sharepoint_helper(keycloak_helper):
+    return SharepointHelper()
 
 @pytest.fixture(scope="session")
 def chatqa_api_helper(keycloak_helper, validation_user_persistent):

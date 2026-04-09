@@ -109,37 +109,38 @@ async def _open_upload_dialog(chat_ui_helper) -> bool:
     return True
 
 
-async def _select_bucket_if_needed(page):
-    """Select the first available S3 bucket from the dropdown.
+async def _select_destination_if_needed(page):
+    """Select the first available upload destination from the dropdown.
 
-    The bucket dropdown is required for file uploads — the Upload button stays
-    disabled until a bucket is selected.  This helper waits for the dropdown
-    options to be populated (the list comes from ``/list_buckets`` API) and
-    picks the first available bucket.
+    The destination dropdown is required for file uploads — the Upload button
+    stays disabled until a destination (S3 bucket or SharePoint site) is
+    selected.  This helper waits for the dropdown options to be populated
+    (the list comes from ``/list_buckets`` and/or SharePoint APIs) and picks
+    the first available destination.
 
-    Note: ``s3-bucket-dropdown`` renders a React Aria ``<SelectInput>`` which
+    Note: ``destination-dropdown`` renders a React Aria ``<SelectInput>`` which
     is **not** a native ``<select>``.  It renders a ``<button>`` containing the
     selected value text.  We check ``text_content()`` on that button, not
     ``input_value()``.
     """
-    dropdown = page.locator('[data-testid="s3-bucket-dropdown"]')
+    dropdown = page.locator('[data-testid="destination-dropdown"]')
     try:
         await dropdown.wait_for(state="visible", timeout=10000)
     except Exception:
-        logger.warning("s3-bucket-dropdown not visible — skipping bucket selection")
+        logger.warning("destination-dropdown not visible — skipping destination selection")
         return
 
-    # Check if a bucket is already selected by reading the button text.
+    # Check if a destination is already selected by reading the button text.
     # The SelectInput renders an AriaButton with the selected value text or
-    # a placeholder like "Select a bucket".
+    # a placeholder like "Please select destination to upload files".
     select_button = dropdown.locator("button").first
     try:
         current_text = (await select_button.text_content() or "").strip()
     except Exception:
         current_text = ""
 
-    if current_text and "select bucket" not in current_text.lower():
-        logger.info(f"Bucket already selected: {current_text}")
+    if current_text and "select destination" not in current_text.lower():
+        logger.info(f"Destination already selected: {current_text}")
         return
 
     # Click the button to open the option list
@@ -152,9 +153,9 @@ async def _select_bucket_if_needed(page):
         await option.wait_for(state="visible", timeout=15000)
         await option.click()
         await page.wait_for_timeout(500)
-        logger.info("Selected first bucket from s3-bucket-dropdown")
+        logger.info("Selected first destination from destination-dropdown")
     except Exception as exc:
-        logger.warning(f"No bucket options appeared: {exc}")
+        logger.warning(f"No destination options appeared: {exc}")
 
 
 async def _upload_file_via_dialog(chat_ui_helper, file_path: str):
@@ -165,8 +166,8 @@ async def _upload_file_via_dialog(chat_ui_helper, file_path: str):
     """
     page = chat_ui_helper.page
 
-    # Select a bucket first (required before file upload is enabled)
-    await _select_bucket_if_needed(page)
+    # Select a destination first (required before file upload is enabled)
+    await _select_destination_if_needed(page)
 
     # Intercept the file chooser triggered by "Browse Files" button
     async with page.expect_file_chooser() as fc_info:

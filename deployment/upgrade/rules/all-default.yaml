@@ -73,6 +73,26 @@ validation_rules:
   #   response: "approve"
   #   note: "YAML structure formatting differences"
 
+  # Timeout and logger level variables (safe operational tuning)
+  - data_regex: ".*(TIMEOUT|LOGGER_LEVEL).*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] Timeout or logger level variable - setting these is okay for any component"
+
+  # Proxy-related environment variables
+  - data_regex: ".*(http_proxy|https_proxy|no_proxy|HTTP_PROXY|HTTPS_PROXY|NO_PROXY).*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] Proxy environment variable - setting proxy vars is okay for any component"
+
+  # VLLM KV cache space configuration
+  - data_regex: ".*KVCACHE_SPACE.*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] VLLM KV cache space configuration - changing this is okay for any component"
+
+  # common_tag and tag-related configuration variables
+  - data_regex: ".*common_tag.*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] Common tag variable - setting tag-related variables is okay for any component"
+
   # Default fallback - reject all other changes
   - path_regex: ".*"
     response: "reject"

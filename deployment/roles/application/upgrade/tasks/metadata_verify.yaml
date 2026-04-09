@@ -67,8 +67,11 @@
 
 - name: Identify clean components (no rejections or mitigations)
   ansible.builtin.set_fact:
-    clean_components: "{{ metadata_validations | selectattr('response', 'in', ['approve']) | map(attribute='component') | unique | list }}"
     problem_components: "{{ (metadata_validations | selectattr('response', 'in', ['reject', 'mitigate']) | map(attribute='component') | unique | list) }}"
+
+- name: Identify clean components (all changes approved, no rejections or mitigations)
+  ansible.builtin.set_fact:
+    clean_components: "{{ (metadata_validations | map(attribute='component') | unique | list) | difference(problem_components) }}"
 
 - name: Clean metadata artifacts for clean components only
   when: clean_components | length > 0
@@ -102,7 +105,13 @@
     msg: "Metadata verification issues detected - diff files retained for components: {{ problem_components | join(', ') }}"
   when: problem_components | length > 0
 
-# Generate report before failing so it's always available
+# Generate reports before failing so they are always available
+- name: Generate detailed metadata check report
+  ansible.builtin.include_tasks:
+    file: metadata_report.yaml
+  tags:
+    - pre-upgrade
+
 - name: Generate pre-upgrade report
   ansible.builtin.include_tasks:
     file: pre_upgrade_report.yaml

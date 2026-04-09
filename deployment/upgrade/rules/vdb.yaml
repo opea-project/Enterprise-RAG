@@ -26,6 +26,10 @@ validation_rules:
     response: "approve"
     note: "Approve changes in Redis common configuration"
 
+  - path_regex: ".*redis-cluster/redis/resources/(requests|limits).*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] Redis cluster resource adjustment - approved for performance/cost tuning"
+
   - path_regex: ".*"
     response: "reject"
     note: "Uncategorized vdb changes require explicit approval"

@@ -377,7 +377,21 @@ create_client() {
   if curl_keycloak "$url" "$json"; then
     log_success "Client '$client_name' created"
   elif [[ $HTTP_CODE == 409 ]]; then
-    log_info "Client '$client_name' already exists"
+    log_info "Client '$client_name' already exists - ensuring correct configuration"
+    local client_uuid
+    client_uuid=$(get_client_id "$realm_name" "$client_name")
+    local update_url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/${client_uuid}"
+    local update_json='{
+      "publicClient": '$public_client',
+      "serviceAccountsEnabled": '$authentication',
+      "directAccessGrantsEnabled": '$direct_access',
+      "authorizationServicesEnabled": '$authorization'
+    }'
+    if curl_keycloak "$update_url" "$update_json" PUT; then
+      log_success "Client '$client_name' updated to desired configuration"
+    else
+      log_error "Failed to update existing client '$client_name' (HTTP $HTTP_CODE)"
+    fi
   else
     log_error "Failed to create client '$client_name' (HTTP $HTTP_CODE)"
   fi

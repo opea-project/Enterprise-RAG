@@ -1,0 +1,17 @@
+# Copyright (C) 2025-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Component-specific validation rules for rag-ui-chatqa-app
+# These rules are checked FIRST (before default rules)
+# Using first-match logic: the first matching rule determines the action
+
+validation_rules:
+  # New role configuration fields added to extraUiConfigVars
+  - path_regex: ".*extraUiConfigVars.*"
+    data_regex: ".*(maintainer|user)ResourceRole.*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] New UI role configuration field - adding role definitions is always okay"
+
+  - data_regex: ".*(MAINTAINER|USER)_RESOURCE_ROLE.*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] Role environment variable added to config - adding any new role is okay"

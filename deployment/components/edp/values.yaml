@@ -865,9 +865,7 @@ textExtractor:
   replicas: 1
   environment:
     - name: OMP_NUM_THREADS
-      valueFrom:
-        resourceFieldRef:
-          resource: limits.cpu
+      value: "1"
     - name: TEXT_EXTRACTOR_MAX_WORKERS
       valueFrom:
         resourceFieldRef:
@@ -875,10 +873,10 @@ textExtractor:
   resources:
     requests:
       cpu: "4"
-      memory: "4Gi"
+      memory: "8Gi"
     limits:
       cpu: "12"
-      memory: "24Gi"
+      memory: "30Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 2

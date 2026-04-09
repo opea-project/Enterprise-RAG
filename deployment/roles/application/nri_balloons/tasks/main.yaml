@@ -41,7 +41,7 @@
     apply:
       tags:
         - pre-upgrade
-  when: cpu_topology_per_node is not defined
+  when: cpu_topology_per_node is not defined or optimal_replicas is not defined
   tags:
     - install
     - pre-upgrade

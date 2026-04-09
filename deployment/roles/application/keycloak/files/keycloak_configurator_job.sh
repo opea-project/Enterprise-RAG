@@ -58,13 +58,13 @@ log_success() { echo "[SUCCESS] $1"; }
 
 # Password generation
 generate_random_password() {
-  local LENGTH=16
+  local LENGTH=12
   local password=""
   password+=$(tr -dc '0-9' < /dev/urandom | head -c 1)
   password+=$(tr -dc 'A-Z' < /dev/urandom | head -c 1)
   password+=$(tr -dc 'a-z' < /dev/urandom | head -c 1)
-  password+=$(tr -dc '!@#$%' < /dev/urandom | head -c 1)
-  password+=$(tr -dc 'A-Za-z0-9!@#$%' < /dev/urandom | head -c $(($LENGTH - 4)))
+  password+=$(tr -dc '!_)' < /dev/urandom | head -c 1)
+  password+=$(tr -dc 'A-Za-z0-9!_)' < /dev/urandom | head -c $(($LENGTH - 4)))
   echo "$password" | fold -w1 | shuf | tr -d '\n'
 }
 

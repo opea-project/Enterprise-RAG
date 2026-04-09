@@ -154,8 +154,6 @@
     dest: "{{ log_dir }}/default_credentials.txt"
     mode: '0600'
     content: |
-      # Keycloak default credentials - generated {{ ansible_date_time.iso8601 }}
-      # Remove this file after first successful login.
       KEYCLOAK_ERAG_ADMIN_USERNAME={{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_ADMIN_USERNAME'] | b64decode }}
       KEYCLOAK_ERAG_ADMIN_PASSWORD="{{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_ADMIN_PASSWORD'] | b64decode }}"
       KEYCLOAK_ERAG_USER_USERNAME={{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_USER_USERNAME'] | b64decode }}

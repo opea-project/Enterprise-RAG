@@ -6,6 +6,21 @@
 # Using first-match logic: the first matching rule determines the action
 
 validation_rules:
+  # HTTPRoute additions (replacing legacy keycloakx Ingress)
+  - path_regex: ".*httpRoute.*"
+    response: "approve"
+    note: "HTTPRoute configuration for Gateway API migration"
+
+  # Top-level httpRoute section added (content match)
+  - data_regex: ".*httpRoute.*"
+    response: "approve"
+    note: "HTTPRoute section addition for Gateway API migration"
+
+  # Ingress configuration changes (disabled in favor of HTTPRoute)
+  - path_regex: ".*ingress.*"
+    response: "approve"
+    note: "Ingress configuration change - disabled in favor of Gateway API HTTPRoute"
+
   - path_regex: ".*keycloak.*"
     response: "approve"
     note: "Keycloak configuration formatting changes are approved"

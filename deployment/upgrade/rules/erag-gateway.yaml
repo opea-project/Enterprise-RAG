@@ -1,0 +1,11 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Component-specific validation rules for erag-gateway
+# New component introduced in 2.2.0, replacing ingress-nginx.
+# All additions are expected during first upgrade to 2.2.0.
+
+validation_rules:
+  - path_regex: ".*"
+    response: "approve"
+    note: "Gateway component additions approved - new component replacing ingress-nginx"

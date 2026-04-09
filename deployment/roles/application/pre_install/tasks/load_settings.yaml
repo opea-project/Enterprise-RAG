@@ -99,7 +99,7 @@
 
       Services Status:
         • Istio: {{ istio.enabled | default('undefined') }}
-        • Ingress: {{ ingress.enabled | default('undefined') }}
+        • Gateway: {{ gateway.enabled | default('undefined') }}
         • Keycloak: {{ keycloak.enabled | default('undefined') }}
         • APISIX: {{ apisix.enabled | default('undefined') }}
         • Vector DB: {{ vector_databases.enabled | default('undefined') }}

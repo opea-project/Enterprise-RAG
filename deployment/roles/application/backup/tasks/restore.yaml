@@ -276,3 +276,19 @@
     check_pods_role_retries: 120
   tags:
     - monitor_restore
+
+- name: Force APISIX ingress controller to re-sync upstreams after restore
+  kubernetes.core.k8s:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ apisix.namespace }}"
+    name: "{{ apisix.helm.release_name }}-ingress-controller"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              erag/restore-resync: "{{ ansible_date_time.iso8601 }}"
+  when: apisix.enabled | default(false)
+  tags:
+    - monitor_restore

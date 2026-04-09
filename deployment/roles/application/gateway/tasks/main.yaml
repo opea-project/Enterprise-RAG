@@ -34,6 +34,18 @@
     - install
     - pre-upgrade
 
+- name: Remove legacy ingress-nginx namespace (upgrade from pre-2.2.0)
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ingress-nginx
+  ignore_errors: true
+  tags:
+    - install
+
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     state: present

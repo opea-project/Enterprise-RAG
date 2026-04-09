@@ -6,12 +6,36 @@
 # Using first-match logic: the first matching rule determines the action
 
 validation_rules:
-  # New role configuration fields added to extraUiConfigVars
+  # New UI configuration fields added to extraUiConfigVars
   - path_regex: ".*extraUiConfigVars.*"
     data_regex: ".*(maintainer|user)ResourceRole.*"
     response: "approve"
     note: "[2.1.1/2.2.0] New UI role configuration field - adding role definitions is always okay"
 
+  - path_regex: ".*extraUiConfigVars.*"
+    data_regex: ".*nerEnabled.*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] NER feature toggle added to UI configuration"
+
   - data_regex: ".*(MAINTAINER|USER)_RESOURCE_ROLE.*"
     response: "approve"
     note: "[2.1.1/2.2.0] Role environment variable added to config - adding any new role is okay"
+
+  - data_regex: ".*NER_ENABLED.*"
+    response: "approve"
+    note: "[2.1.1/2.2.0] NER feature toggle environment variable added to config"
+
+  # HTTPRoute additions (replacing legacy Ingress)
+  - path_regex: ".*httpRoute.*"
+    response: "approve"
+    note: "HTTPRoute configuration for Gateway API migration"
+
+  # Top-level httpRoute section added (content match)
+  - data_regex: ".*httpRoute.*"
+    response: "approve"
+    note: "HTTPRoute section addition for Gateway API migration"
+
+  # Ingress enablement changes (disabled in favor of HTTPRoute)
+  - path_regex: ".*ingress.*"
+    response: "approve"
+    note: "Ingress configuration change - disabled in favor of Gateway API HTTPRoute"

@@ -30,6 +30,11 @@ validation_rules:
     response: "approve"
     note: "[2.1.1/2.2.0] Redis cluster resource adjustment - approved for performance/cost tuning"
 
+  # Broader redis-cluster changes for gateway migration
+  - path_regex: ".*redis-cluster/redis.*"
+    response: "approve"
+    note: "Approve Redis cluster configuration changes"
+
   - path_regex: ".*"
     response: "reject"
     note: "Uncategorized vdb changes require explicit approval"

@@ -32,17 +32,30 @@ embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 {% set fqdn = FQDN | default('erag.com') %}
 {% set s3_prefix = edp.s3DomainPrefix if edp.s3DomainPrefix is defined else 's3' %}
 {% set ui_prefix = edp.uiBrowserDomainPrefix if edp.uiBrowserDomainPrefix is defined else 'seaweedfs' %}
+{% if routing_mode | default('subdomain') == 'path' %}
+{% set s3_api_domain = fqdn %}
+{% set ui_browser_domain = fqdn %}
+{% set s3_path_prefix = edp.s3PathPrefix | default('/s3') %}
+{% set seaweedfs_path_prefix = edp.seaweedfsPathPrefix | default('/seaweedfs') %}
+{% else %}
 {% set s3_api_domain = edp.s3ApiDomain if edp.s3ApiDomain is defined else s3_prefix ~ '.' ~ fqdn %}
 {% set ui_browser_domain = edp.uiBrowserDomain if edp.uiBrowserDomain is defined else ui_prefix ~ '.' ~ fqdn %}
+{% set s3_path_prefix = '' %}
+{% set seaweedfs_path_prefix = '' %}
+{% endif %}
 
 s3ApiDomain: &s3ApiDomain "{{ s3_api_domain }}"
 uiBrowserDomain: &uiBrowserDomain "{{ ui_browser_domain }}"
+{% if s3_path_prefix %}
+seaweedfsPathPrefix: "{{ seaweedfs_path_prefix }}"
+s3PathPrefix: "{{ s3_path_prefix }}"
+{% endif %}
 
 {% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "seaweedfs" %}
 {% if storage == "minio" %}
 edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
 edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
-edpExternalUrl: "https://{{ s3_api_domain }}"
+edpExternalUrl: "https://{{ s3_api_domain }}{{ s3_path_prefix }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
@@ -55,7 +68,7 @@ bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) 
 {% elif storage == "seaweedfs" %}
 edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
 edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
-edpExternalUrl: "https://{{ s3_api_domain }}"
+edpExternalUrl: "https://{{ s3_api_domain }}{{ s3_path_prefix }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
@@ -89,7 +102,7 @@ edpInternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.e
 bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3compatible.bucketNameRegexFilter | default('.*', true) }}
 {% endif %}
 
-edpOidcConfigUrl: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcConfigUrl: "http://keycloak-http.{{ keycloak.namespace | default('auth') }}.svc{{ keycloak.pathPrefix | default('') }}/realms/{{ ui.extraUiConfigVars.keycloakRealm | default('EnterpriseRAG') }}/.well-known/openid-configuration"
 
 # Use external Redis Operator cluster in same namespace
 redisHost: "edp-redis"

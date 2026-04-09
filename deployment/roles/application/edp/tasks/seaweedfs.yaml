@@ -58,9 +58,9 @@
 
 - name: Set OIDC endpoints for SeaweedFS
   vars:
-    keycloak_realm_url: "http://keycloak-http.{{ keycloak.namespace }}.svc:80/realms/{{ keycloakRealm }}"
+    keycloak_realm_url: "http://keycloak-http.{{ keycloak.namespace }}.svc:80{{ keycloak.pathPrefix | default('') }}/realms/{{ keycloakRealm }}"
   ansible.builtin.set_fact:
-    oidc_issuer: "https://{{ keycloak.domainName | default('auth.erag.com') }}/realms/{{ keycloakRealm }}"
+    oidc_issuer: "https://{{ keycloak.domainName | default('auth.erag.com') }}{{ keycloak.pathPrefix | default('') }}/realms/{{ keycloakRealm }}"
     oidc_jwksUri: "{{ keycloak_realm_url }}/protocol/openid-connect/certs"
     oidc_userInfoUri: "{{ keycloak_realm_url }}/protocol/openid-connect/userinfo"
     sts: "{{ seaweedfs.iamKeycloak.sts | default('{}') }}"

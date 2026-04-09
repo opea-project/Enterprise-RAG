@@ -7,7 +7,7 @@
     - install
     - display-configuration
 
-- name: Set facts for domain names if not defined
+- name: Set facts for domain names (subdomain routing)
   ansible.builtin.set_fact:
     ui: >
       {{ ui | combine({'domainName': FQDN | default(ui.domainName)}) }}
@@ -23,6 +23,38 @@
           })
         })
       }}
+  when: routing_mode == 'subdomain'
+  tags:
+    - install
+    - display-configuration
+
+- name: Set facts for domain names (path-based routing)
+  ansible.builtin.set_fact:
+    ui: >
+      {{ ui | combine({'domainName': FQDN | default(ui.domainName)}) }}
+    keycloak: >
+      {{ keycloak | combine({
+          'domainName': FQDN | default(ui.domainName),
+          'pathPrefix': keycloak.defaultPathPrefix | default('/auth')
+        })
+      }}
+    telemetry: >
+      {{ telemetry | combine({
+          'domainName': FQDN | default(ui.domainName),
+          'pathPrefix': telemetry.defaultPathPrefix | default('/grafana')
+        })
+      }}
+    edp: >
+      {{ edp | combine({
+          'minio': edp.minio | default({}) | combine({
+            'domainName': FQDN | default(ui.domainName),
+            'apiDomainName': FQDN | default(ui.domainName)
+          }),
+          's3PathPrefix': edp.defaultS3PathPrefix | default('/s3'),
+          'seaweedfsPathPrefix': edp.defaultSeaweedfsPathPrefix | default('/seaweedfs')
+        })
+      }}
+  when: routing_mode == 'path'
   tags:
     - install
     - display-configuration

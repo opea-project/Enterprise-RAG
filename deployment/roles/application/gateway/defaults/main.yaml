@@ -3,7 +3,7 @@
 
 ---
 gateway:
-  enabled: false
+  enabled: true
   namespace: "erag-gateway"
   service_type: "ClusterIP"    # ClusterIP for hostPort, LoadBalancer for cloud
   hostport:
@@ -15,3 +15,5 @@ gateway:
     chart_directory: "{{ playbook_dir }}/../components/gateway"
     release_name: "erag-gateway"
     default_values_file: "{{ playbook_dir }}/../components/gateway/values.yaml"
+
+routing_mode: "subdomain"

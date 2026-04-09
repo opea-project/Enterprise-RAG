@@ -223,7 +223,7 @@
 - name: Create HTTPRoute for external storage backend
   kubernetes.core.k8s:
     state: present
-    definition: |
+    definition:
       apiVersion: gateway.networking.k8s.io/v1
       kind: HTTPRoute
       metadata:
@@ -231,19 +231,20 @@
         namespace: default
       spec:
         parentRefs:
-          - name: {{ gateway.helm.release_name }}
-            namespace: {{ gateway.namespace }}
+          - name: "{{ gateway.helm.release_name }}"
+            namespace: "{{ gateway.namespace }}"
             sectionName: https
         hostnames:
-          - "s3.{{ FQDN }}"
+          - "{{ FQDN if (routing_mode | default('subdomain')) == 'path' else 's3.' ~ FQDN }}"
         rules:
           - matches:
               - path:
                   type: PathPrefix
-                  value: /
+                  value: "{{ (edp.s3PathPrefix | default('/s3')) if (routing_mode | default('subdomain')) == 'path' else '/' }}"
+            filters: "{{ [{'type': 'URLRewrite', 'urlRewrite': {'path': {'type': 'ReplacePrefixMatch', 'replacePrefixMatch': '/'}}}] if (routing_mode | default('subdomain')) == 'path' else omit }}"
             backendRefs:
               - name: external-backend
-                port: {{ _rps_port }}
+                port: "{{ _rps_port }}"
   when: reverse_proxy_storage | default(false) | bool
   tags:
     - install

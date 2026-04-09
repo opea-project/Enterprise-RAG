@@ -33,6 +33,14 @@ spec:
         - path:
             type: {{ .pathType | default "PathPrefix" }}
             value: {{ .path }}
+      {{- if .urlRewrite }}
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: {{ .urlRewrite.replacePrefixMatch | default "/" }}
+      {{- end }}
       backendRefs:
         - name: {{ .backendRef.name }}
           port: {{ .backendRef.port }}

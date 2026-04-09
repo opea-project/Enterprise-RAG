@@ -27,7 +27,7 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /
+            value: {{ .Values.httpRoute.pathPrefix | default "/" }}
       backendRefs:
         - name: {{ .Values.httpRoute.backendRef.name | default "telemetry-grafana" }}
           port: {{ .Values.httpRoute.backendRef.port | default 80 }}

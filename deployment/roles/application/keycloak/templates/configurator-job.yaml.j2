@@ -95,7 +95,7 @@ spec:
           command: ["/bin/bash", "/scripts/configurator.sh"]
           env:
             - name: KEYCLOAK_URL
-              value: "http://keycloak-http.{{ keycloak_namespace }}.svc:80"
+              value: "http://keycloak-http.{{ keycloak_namespace }}.svc:80{{ keycloak_path_prefix | default('') }}"
             - name: KEYCLOAK_ADMIN_USER
               value: "{{ keycloak_admin_user }}"
             - name: KEYCLOAK_ADMIN_PASSWORD
@@ -105,6 +105,10 @@ spec:
                   key: admin-password
             - name: MINIO_DOMAIN
               value: "{{ minio_domain }}"
+{% if minio_path_prefix is defined %}
+            - name: MINIO_PATH_PREFIX
+              value: "{{ minio_path_prefix }}"
+{% endif %}
             - name: CREDENTIALS_SECRET_NAME
               value: "{{ credentials_secret_name }}"
             - name: CREDENTIALS_SECRET_NAMESPACE

@@ -241,7 +241,11 @@
         apisix_routes_raw_config
         | combine({
             'endpoints': merged_endpoints,
-            'routeHost': (ui.domainName if (ui is defined and ui.domainName is defined and ui.domainName | length > 0) else '')
+            'routeHost': (ui.domainName if (ui is defined and ui.domainName is defined and ui.domainName | length > 0) else ''),
+            'auth': apisix_routes_raw_config.auth | combine({
+              'resource_registration_endpoint': 'http://keycloak-http.' ~ keycloak.namespace ~ '.svc' ~ (keycloak.pathPrefix | default('')) ~ '/realms/' ~ (ui.extraUiConfigVars.keycloakRealm | default('EnterpriseRAG')) ~ '/authz/protection/resource_set',
+              'token_endpoint': 'http://keycloak-http.' ~ keycloak.namespace ~ '.svc' ~ (keycloak.pathPrefix | default('')) ~ '/realms/' ~ (ui.extraUiConfigVars.keycloakRealm | default('EnterpriseRAG')) ~ '/protocol/openid-connect/token'
+            })
           }, recursive=True)
       }}
   when: apisix.enabled

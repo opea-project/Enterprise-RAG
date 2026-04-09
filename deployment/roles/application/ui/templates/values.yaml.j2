@@ -16,13 +16,22 @@ tlsSecret: &tsecret {{ ui.tls.secret_name }}
 
 extraUiConfigVars:
   keycloakDomainName: "{{ keycloak.domainName }}"
+{% if keycloak.pathPrefix is defined %}
+  keycloakPathPrefix: "{{ keycloak.pathPrefix }}"
+{% endif %}
   keycloakRealm: "{{ ui.extraUiConfigVars.keycloakRealm }}"
   keycloakClientId: "{{ ui.extraUiConfigVars.keycloakClientId }}"
   adminResourceRole: "{{ ui.extraUiConfigVars.adminResourceRole }}"
   maintainerResourceRole: "{{ ui.extraUiConfigVars.maintainerResourceRole }}"
   grafanaDomainName: "{{ telemetry.domainName }}"
+{% if telemetry.pathPrefix is defined %}
+  grafanaPathPrefix: "{{ telemetry.pathPrefix }}"
+{% endif %}
   keycloakAdminPanelDomainName: "{{ keycloak.domainName }}"
   s3DomainName: "{{ edp.minio.apiDomainName }}"
+{% if edp.s3PathPrefix is defined %}
+  s3PathPrefix: "{{ edp.s3PathPrefix }}"
+{% endif %}
   chatDisclaimerText: "{{ ui.extraUiConfigVars.chatDisclaimerText }}"
   chatMaintenanceMode: "{{ upload_pipelines | default(false) | string | lower }}"
   audioEnabled: "{{ audio.enabled | default(false) }}"

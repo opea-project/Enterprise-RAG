@@ -9,9 +9,18 @@ httpRoute:
   enabled: true
   hostnames:
     - {{ telemetry.domainName }}
+{% if telemetry.pathPrefix is defined %}
+  pathPrefix: {{ telemetry.pathPrefix }}
+{% endif %}
 
 kube-prometheus-stack:
     grafana:
+{% if telemetry.pathPrefix is defined %}
+        grafana.ini:
+            server:
+                root_url: "https://{{ telemetry.domainName }}{{ telemetry.pathPrefix }}/"
+                serve_from_sub_path: true
+{% endif %}
 {% if telemetry.additional_values.ingress is not defined %}
         ingress:
             enabled: false

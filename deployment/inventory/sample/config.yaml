@@ -61,6 +61,13 @@ additionalNoProxy: "" #"custom.domain.com,192.168.1.0/24"
 
 FQDN: "erag.com" # Provide the FQDN for the deployment
 
+# Routing mode: how external services (Keycloak, Grafana, S3, etc.) are exposed.
+#   "subdomain" — each service gets its own subdomain (auth.erag.com, grafana.erag.com, s3.erag.com, …)
+#                  Requires wildcard DNS or individual DNS records per service.
+#   "path"      — all services share the single FQDN under different paths (erag.com/auth, erag.com/grafana, erag.com/s3, …)
+#                  Only a single DNS record is needed. Recommended for cloud deployments.
+routing_mode: "subdomain"
+
 gaudi_operator: false # set to true when Gaudi operator is to be installed
 habana_driver_version: "1.23.0-695" # gaudi device plugin from https://github.com/HabanaAI/gaudi-device-plugin/tags
 

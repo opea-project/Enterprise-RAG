@@ -78,7 +78,7 @@
 
         - name: Set Keycloak URL
           ansible.builtin.set_fact:
-            keycloak_url: "http://localhost:{{ keycloak_fport }}"
+            keycloak_url: "http://localhost:{{ keycloak_fport }}{{ keycloak.pathPrefix | default('') }}"
           when: keycloak_service.resources | length > 0
 
         - name: Get Keycloak access token via local curl

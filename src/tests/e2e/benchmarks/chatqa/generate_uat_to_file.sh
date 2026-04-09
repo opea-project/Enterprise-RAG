@@ -13,7 +13,11 @@ generate_uat_to_file()
 
 	VITE_KEYCLOAK_REALM="EnterpriseRAG"
 	VITE_KEYCLOAK_CLIENT_ID="EnterpriseRAG-oidc"
-	VITE_KEYCLOAK_URL="https://auth.${ERAG_DOMAIN_NAME:-erag.com}"
+	if [[ "${ERAG_ROUTING_MODE:-subdomain}" == "path" ]]; then
+		VITE_KEYCLOAK_URL="https://${ERAG_DOMAIN_NAME:-erag.com}/auth"
+	else
+		VITE_KEYCLOAK_URL="https://auth.${ERAG_DOMAIN_NAME:-erag.com}"
+	fi
 
 	if [[ -z "${KEYCLOAK_REALM_ADMIN_PASSWORD}" ]]; then
 		echo "missing KEYCLOAK_REALM_ADMIN_PASSWORD env variable"

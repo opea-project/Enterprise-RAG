@@ -22,6 +22,9 @@ httpRoute:
     namespace: erag-gateway
   hostnames:
     - {{ keycloak.domainName }}
+{% if keycloak.pathPrefix is defined %}
+  pathPrefix: {{ keycloak.pathPrefix }}
+{% endif %}
   backendRef:
     name: keycloak-http
     port: 80
@@ -50,7 +53,7 @@ keycloakx:
 
   # Set http.relativePath - chart generates KC_HTTP_RELATIVE_PATH from this
   http:
-    relativePath: /
+    relativePath: {{ keycloak.pathPrefix | default('/') }}
 
   # Override chart defaults - chart generates ispn/jdbc-ping which doesn't work in restricted environments
   cache:
@@ -94,7 +97,11 @@ keycloakx:
     - name: KC_CACHE
       value: "local"
     - name: KC_HOSTNAME
+{% if keycloak.pathPrefix is defined %}
+      value: "https://{{ keycloak.domainName }}{{ keycloak.pathPrefix }}"
+{% else %}
       value: "https://{{ keycloak.domainName }}"
+{% endif %}
     - name: KC_HOSTNAME_STRICT
       value: "false"
     - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC

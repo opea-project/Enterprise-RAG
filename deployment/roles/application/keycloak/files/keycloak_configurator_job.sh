@@ -15,6 +15,7 @@ KEYCLOAK_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://keycloak-http:80}"
 MINIO_DOMAIN="${MINIO_DOMAIN:-minio.erag.com}"
+MINIO_PATH_PREFIX="${MINIO_PATH_PREFIX:-}"
 CREDENTIALS_SECRET_NAME="${CREDENTIALS_SECRET_NAME:-erag-credentials}"
 CREDENTIALS_SECRET_NAMESPACE="${CREDENTIALS_SECRET_NAMESPACE:-auth}"
 
@@ -961,8 +962,14 @@ set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 
 # MinIO client
 log_info "Creating MinIO client..."
-minio_redirect_uri="https://$MINIO_DOMAIN/oauth_callback"
-create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "false" "true" "false" "https://$MINIO_DOMAIN" "$minio_redirect_uri" "false"
+if [ -n "$MINIO_PATH_PREFIX" ]; then
+  minio_base_url="https://${MINIO_DOMAIN}${MINIO_PATH_PREFIX}"
+  minio_redirect_uri="https://${MINIO_DOMAIN}${MINIO_PATH_PREFIX}/oauth_callback"
+else
+  minio_base_url="https://$MINIO_DOMAIN"
+  minio_redirect_uri="https://$MINIO_DOMAIN/oauth_callback"
+fi
+create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "false" "true" "false" "$minio_base_url" "$minio_redirect_uri" "false"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-admin-group"

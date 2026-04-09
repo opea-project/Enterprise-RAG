@@ -5,6 +5,10 @@
 edp:
   enabled: false
   namespace: "edp"
+  # Path prefixes: set dynamically by solution_config.yaml when routing_mode == "path"
+  # Default values used in path mode:
+  defaultS3PathPrefix: "/s3"
+  defaultSeaweedfsPathPrefix: "/seaweedfs"
   helm:
     version: "{{ helm_version }}"
     repo_name: "bitnami"

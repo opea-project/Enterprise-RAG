@@ -28,7 +28,12 @@ class KeycloakHelper:
 
     def __init__(self, credentials_file, k8s_helper):
         credentials = self.get_credentials(credentials_file)
-        self.erag_auth_domain = f"https://auth.{cfg.get('FQDN')}"
+        fqdn = cfg.get('FQDN', 'erag.com')
+        routing_mode = cfg.get('routing_mode', 'subdomain')
+        if routing_mode == 'path':
+            self.erag_auth_domain = f"https://{fqdn}/auth"
+        else:
+            self.erag_auth_domain = f"https://auth.{fqdn}"
         self.erag_admin_username = credentials["KEYCLOAK_ERAG_ADMIN_USERNAME"]
         self.erag_admin_password = credentials["KEYCLOAK_ERAG_ADMIN_PASSWORD"]
         self.erag_user_username = credentials["KEYCLOAK_ERAG_USER_USERNAME"]
@@ -119,9 +124,8 @@ class KeycloakHelper:
         # Common troubleshooting instructions
         troubleshooting = (
             "\nTroubleshooting:\n"
-            "1. Verify that 'auth.erag.com' is present in /etc/hosts:\n"
-            "   grep 'auth.erag.com' /etc/hosts\n"
-            "   Expected entry: 127.0.0.1 erag.com auth.erag.com minio.erag.com s3.erag.com\n\n"
+            f"1. Verify that the Keycloak domain is reachable. Current auth domain: {self.erag_auth_domain}\n"
+            "   Check /etc/hosts has the correct entry for your FQDN.\n\n"
             "2. Check connectivity with a simple request:\n"
             f"   curl -v -k {token_url}\n"
             "   Expected: an HTTP response of any kind, indicating that the endpoint is reachable\n\n"

@@ -133,12 +133,14 @@ spec:
               port: llm-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: llm-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           startupProbe:
             failureThreshold: {{ if and (hasKey .Values "startupProbe") (hasKey .Values.startupProbe "failureThreshold") }}{{ .Values.startupProbe.failureThreshold }}{{ else }}120{{ end }}
             httpGet:
@@ -146,6 +148,7 @@ spec:
               port: llm-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           resources:
             {{- $defaultValues := "{requests: {cpu: '1', memory: '2Gi'}, limits: {cpu: '4', memory: '6Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

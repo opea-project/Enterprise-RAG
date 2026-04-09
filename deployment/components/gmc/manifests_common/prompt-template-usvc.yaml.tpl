@@ -121,12 +121,14 @@ spec:
               port: prmpt-tmpl-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: prmpt-tmpl-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           startupProbe:
             failureThreshold: 120
             httpGet:
@@ -134,6 +136,7 @@ spec:
               port: prmpt-tmpl-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           resources:
             {{- $defaultValues := "{requests: {cpu: '1', memory: '2Gi'}, limits: {cpu: '4', memory: '2Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

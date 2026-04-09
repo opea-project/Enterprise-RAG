@@ -125,12 +125,14 @@ spec:
               port: fgp-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: fgp-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           startupProbe:
             failureThreshold: 60
             httpGet:
@@ -138,6 +140,7 @@ spec:
               port: fgp-usvc
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           resources:
             {{- $defaultValues := "{requests: {cpu: '250m', memory: '64Mi'}, limits: {cpu: '500m', memory: '1Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

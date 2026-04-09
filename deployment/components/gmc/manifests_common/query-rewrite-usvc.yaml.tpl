@@ -143,12 +143,14 @@ spec:
               port: query-rewrite
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: query-rewrite
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           startupProbe:
             failureThreshold: {{ if and (hasKey .Values "startupProbe") (hasKey .Values.startupProbe "failureThreshold") }}{{ .Values.startupProbe.failureThreshold }}{{ else }}120{{ end }}
             httpGet:
@@ -156,6 +158,7 @@ spec:
               port: query-rewrite
             initialDelaySeconds: 5
             periodSeconds: 60
+            timeoutSeconds: 10
           resources:
             {{- $defaultValues := "{requests: {cpu: '500m', memory: '1Gi'}, limits: {cpu: '2', memory: '2Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

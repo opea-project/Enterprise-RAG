@@ -138,10 +138,14 @@ spec:
             httpGet:
               path: /health
               port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
             httpGet:
               path: /health
               port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources:
             {{- $defaultValues := toYaml .Values.backend.resources | nindent 12 -}}
             {{- include "manifest.getResource" (list .Values.backend.nameOverride $defaultValues .Values) | nindent 12 }}

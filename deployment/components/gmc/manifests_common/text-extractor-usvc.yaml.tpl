@@ -111,12 +111,14 @@ spec:
               port: text-extractor
             initialDelaySeconds: 5
             periodSeconds: 30
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: text-extractor
             initialDelaySeconds: 5
             periodSeconds: 30
+            timeoutSeconds: 10
           startupProbe:
             failureThreshold: 120
             httpGet:
@@ -124,6 +126,7 @@ spec:
               port: text-extractor
             initialDelaySeconds: 5
             periodSeconds: 30
+            timeoutSeconds: 10
           resources:
             {{- $defaultValues := "{requests: {cpu: '1', memory: '1Gi'}, limits: {cpu: '4', memory: '8Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

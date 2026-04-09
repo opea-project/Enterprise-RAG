@@ -92,12 +92,14 @@ spec:
               port: txt-compression
             initialDelaySeconds: 5
             periodSeconds: 30
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: txt-compression
             initialDelaySeconds: 5
             periodSeconds: 30
+            timeoutSeconds: 10
           startupProbe:
             failureThreshold: 120
             httpGet:
@@ -105,6 +107,7 @@ spec:
               port: txt-compression
             initialDelaySeconds: 5
             periodSeconds: 30
+            timeoutSeconds: 10
           resources:
             {{- $defaultValues := "{requests: {cpu: '0.5', memory: '64Mi'}, limits: {cpu: '2', memory: '1Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

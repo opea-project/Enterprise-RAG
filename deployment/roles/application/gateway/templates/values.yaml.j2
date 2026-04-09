@@ -16,7 +16,7 @@ image:
 
 routes:
   - name: seaweedfs-admin-route
-    enabled: {{ ((edp.storageType | default('seaweedfs')) == 'seaweedfs') | lower }}
+    enabled: {{ (edp.enabled | default(false) and (edp.storageType | default('seaweedfs')) == 'seaweedfs') | lower }}
     namespace: seaweedfs
     hostnames:
       - "{{ (edp.uiBrowserDomainPrefix | default('seaweedfs')) ~ '.' ~ FQDN }}"
@@ -28,7 +28,7 @@ routes:
           port: 23646
 
   - name: seaweedfs-s3-route
-    enabled: {{ ((edp.storageType | default('seaweedfs')) == 'seaweedfs') | lower }}
+    enabled: {{ (edp.enabled | default(false) and (edp.storageType | default('seaweedfs')) == 'seaweedfs') | lower }}
     namespace: seaweedfs
     hostnames:
       - "{{ (edp.s3DomainPrefix | default('s3')) ~ '.' ~ FQDN }}"

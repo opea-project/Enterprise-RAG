@@ -109,6 +109,24 @@ class TableAwareSplitter(Splitter):
     _TABLE_ROW_RE = re.compile(r'^\|.+\|$')
     _TABLE_SEPARATOR_RE = re.compile(r'^\|[\s:-]+(\|[\s:-]+)*\|$')
 
+    _PIPE_TOKEN_EXTRA_WEIGHT = 3  # counts each | as 4 chars instead of 1
+    _NEWLINE_TOKEN_EXTRA_WEIGHT = 3  # counts each \n as 4 chars instead of 1
+
+    @classmethod
+    def _estimate_table_size(cls, text: str) -> int:
+        """Estimate effective size of table text accounting for token overhead.
+
+        Pipe characters ``|`` and newlines each consume roughly one full token
+        but are only a single character.  Regular text averages ~4 characters
+        per token.  This helper inflates the character count so that
+        chunk_size comparisons approximate a token budget.
+        """
+        return (
+            len(text)
+            + text.count('|') * cls._PIPE_TOKEN_EXTRA_WEIGHT
+            + text.count('\n') * cls._NEWLINE_TOKEN_EXTRA_WEIGHT
+        )
+
     def split_text(self, text: str) -> List[Document]:
         segments = self._segment_text(text)
         chunks: List[Document] = []
@@ -117,8 +135,9 @@ class TableAwareSplitter(Splitter):
         for seg_type, content in segments:
             if seg_type == 'table':
                 normalized_content = self._normalize_table(content)
-                logger.info(f"Processing table segment of length {len(normalized_content)} at offset {offset}")
-                if len(normalized_content) <= self.chunk_size:
+                estimated = self._estimate_table_size(normalized_content)
+                logger.info(f"Processing table segment of length {len(normalized_content)} (estimated size {estimated}) at offset {offset}")
+                if estimated <= self.chunk_size:
                     chunks.append(Document(
                         page_content=normalized_content,
                         metadata={"start_index": offset},
@@ -212,22 +231,37 @@ class TableAwareSplitter(Splitter):
             row_offsets.append(pos if pos != -1 else search_from)
             search_from = row_offsets[-1] + len(row)
 
-        header_len = len(header) + 1
+        header_len = self._estimate_table_size(header) + self._NEWLINE_TOKEN_EXTRA_WEIGHT + 1
         chunks: List[tuple] = []
         current_rows: List[str] = []
         current_len = header_len
         first_row_idx = 0
 
         for i, row in enumerate(data_rows):
-            row_len = len(row) + 1
+            row_len = self._estimate_table_size(row) + self._NEWLINE_TOKEN_EXTRA_WEIGHT + 1
             if current_len + row_len > self.chunk_size and current_rows:
                 chunks.append((
                     header + '\n' + '\n'.join(current_rows),
                     row_offsets[first_row_idx],
                 ))
-                current_rows = [row]
-                current_len = header_len + row_len
+                current_rows = []
+                current_len = header_len
                 first_row_idx = i
+
+            # If a single row (plus header) exceeds chunk_size, fall back
+            # to RecursiveCharacterTextSplitter on the concatenated text.
+            if header_len + row_len > self.chunk_size:
+                row_with_header = header + '\n' + row
+                sub_docs = self.text_splitter.split_documents(
+                    [Document(page_content=row_with_header)]
+                )
+                for sub_doc in sub_docs:
+                    local_idx = sub_doc.metadata.get("start_index", 0)
+                    chunks.append((sub_doc.page_content, row_offsets[i] + local_idx))
+                logger.warning(
+                    f"Table row {i} exceeds chunk_size ({row_len} + header {header_len - 1} "
+                    f"> {self.chunk_size}), split into {len(sub_docs)} sub-chunks"
+                )
             else:
                 current_rows.append(row)
                 current_len += row_len

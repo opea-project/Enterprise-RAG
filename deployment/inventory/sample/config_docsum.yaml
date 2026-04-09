@@ -32,7 +32,7 @@ nfs_csi_storage_class: "nfs-csi"
 # Setup when install_csi is "netapp-trident"
 # Configure NetApp Trident CSI driver for ONTAP storage
 # Requires existing NetApp ONTAP system with configured SVM
-trident_operator_version: "2506.0"    # Trident operator version (becomes 100.2506.0 in Helm chart)
+trident_operator_version: "2510.0"    # Trident operator version (becomes 100.2510.0 in Helm chart)
 trident_namespace: "trident"          # Kubernetes namespace for Trident
 trident_storage_class: "netapp-trident" # StorageClass name for Trident
 trident_backend_name: "ontap-nas"     # Backend configuration name
@@ -42,7 +42,6 @@ ontap_data_lif: ""                    # ONTAP data LIF IP address
 ontap_svm: ""                         # Storage Virtual Machine (SVM) name
 ontap_username: ""                    # ONTAP username with admin privileges
 ontap_password: ""                    # ONTAP password
-ontap_aggregate: ""                   # ONTAP aggregate name for volume creation
 
 huggingToken: "" # Huggingface token is required for gated/private models
 
@@ -74,7 +73,7 @@ clusterCerts:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "2.1.0"
+tag: "2.1.1"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
@@ -110,6 +109,9 @@ balloons:
   namespace: kube-system # alternatively, set custom namespace for balloons
   wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
   throughput_mode: true # set to true to optimize for horizontal scaling
+  memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested; valid range: 0.0 to 1.0
+  max_replicas_per_node: 10 # maximum number of each inference service replicas per node; helps to limit overloading nodes with too many pods
+  vllm_custom_name: "" # Optional: Custom container name reference for vLLM balloon
 
 pipelines:
   - namespace: docsum
@@ -127,9 +129,8 @@ gmc:
         name: model-volume-llm
         storage: 100Gi
 
-ingress:
+gateway:
   enabled: true
-  service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
 
 keycloak:
   enabled: true
@@ -150,40 +151,22 @@ velero:
   install_server: true
   install_client: true
 
-  # name of a velero Backup resource, created in result of backup in velero namespace;
-  # if not specified, most recent backup resource will be looked up.
   restore_from: ""
 
   backup:
-    prefix: backup
-    restore_prefix: restore
-    backupConfig:
-      namespaceOrder: [system, auth, docsum, default]
-      # NOTE: resourceSelectors and orSelectors are MUTUALLY EXCLUSIVE
-      resourceSelectors: []
-      orSelectors:
-        - app.kubernetes.io/component=deployment-manifest
-        - app.kubernetes.io/instance notin (torchserve_embedding,vllm_embedding,torchserve_reranking,vllm,vllm-gaudi)
-      deployments:
-        auth: [Helm/keycloak]
-        docsum: ["Deployment/selector: app.kubernetes.io/managed-by=Helm"]
-        default: []
-        system: [Helm/gmc]
-
     # labels to apply to backup object itself
     labels:
       backup-reason: regular
     # labels to apply to a restore object
     restore_labels:
       restore-reason: recovery
-    itemOperationTimeout: 2h0m0s
-    csiSnapshotTimeout: 2h0m0s
-    ttl: 720h
 
 telemetry:
   enabled: true
   traces:
     enabled: false
+  logging:
+    enabled: true
 
 ui:
   enabled: true

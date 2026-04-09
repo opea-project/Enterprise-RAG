@@ -319,3 +319,40 @@ def test_table_aware_splitter_start_index_split_table():
     indices = [c.metadata["start_index"] for c in chunks]
     assert indices == sorted(indices), f"start_index values not sorted: {indices}"
     assert len(set(indices)) == len(indices), f"Duplicate start_index values: {indices}"
+
+
+def test_table_aware_splitter_oversized_row_split():
+    """Test that a table row exceeding chunk_size (together with the header)
+    is split using RecursiveCharacterTextSplitter, producing multiple chunks
+    that each respect chunk_size."""
+    # Build a wide table: header + single row that exceeds chunk_size
+    num_cols = 20
+    header_cells = [f"Header{i}" for i in range(num_cols)]
+    data_cells = [f"LongValue{i}_" + "x" * 30 for i in range(num_cols)]
+
+    header = "| " + " | ".join(header_cells) + " |"
+    row = "| " + " | ".join(data_cells) + " |"
+    table = header + "\n" + row
+
+    chunk_size = 500
+    splitter = TableAwareSplitter(chunk_size=chunk_size, chunk_overlap=10)
+
+    # Verify the table actually exceeds chunk_size by estimated size (precondition)
+    estimated = TableAwareSplitter._estimate_table_size(header + "\n" + row)
+    assert estimated > chunk_size, f"Test precondition: estimated table size {estimated} must exceed chunk_size {chunk_size}"
+
+    chunks = splitter.split_text(table)
+
+    assert len(chunks) > 1, f"Expected multiple chunks, got {len(chunks)}"
+
+    # Every chunk must respect chunk_size (character-based, enforced by RecursiveCharacterTextSplitter)
+    for i, chunk in enumerate(chunks):
+        assert len(chunk.page_content) <= chunk_size, (
+            f"Chunk {i} exceeds chunk_size: {len(chunk.page_content)} > {chunk_size}\n"
+            f"Content: {chunk.page_content!r}"
+        )
+
+    # All original data should be present across chunks
+    all_content = " ".join(c.page_content for c in chunks)
+    for cell in data_cells:
+        assert cell in all_content, f"Data cell '{cell}' missing from chunks"

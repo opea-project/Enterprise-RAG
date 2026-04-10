@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG NER Model Server powered by OpenVINO™

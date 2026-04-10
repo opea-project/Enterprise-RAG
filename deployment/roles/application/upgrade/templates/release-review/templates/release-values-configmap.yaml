@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  creationTimestamp: null
-  name: release-values
-  namespace: {{ .Release.Namespace }}
-data:
-  release-values.yaml: |-
-    {{- toYaml .Values | nindent 4 }}

@@ -1,2 +1,0 @@
-Below line contains pretty complicated one-liner statement in Python. Make it a multiline script wrapped into a function with proper documentation:
-even_fibs = [x for x in (lambda f: (f := (lambda n: f(n-1) + f(n-2) if n > 1 else n))(i) for i in range(50)) if x % 2 == 0)]

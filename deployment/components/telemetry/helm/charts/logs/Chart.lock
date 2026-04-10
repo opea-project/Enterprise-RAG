@@ -1,9 +1,0 @@
-dependencies:
-- name: loki
-  repository: https://grafana.github.io/helm-charts
-  version: 6.41.1
-- name: opentelemetry-collector
-  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-  version: 0.136.1
-digest: sha256:1bd31dda7219040d4f96331915aac9eac13c412d5b1cdbb36b5703b8c16143f1
-generated: "2025-12-05T10:12:05.188952089+01:00"

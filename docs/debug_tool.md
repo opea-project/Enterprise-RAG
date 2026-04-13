@@ -10,7 +10,7 @@ The debug tool requires Python dependencies to run. During the initial deploymen
 
 ```bash
 cd deployment/
-source .erag-venv/bin/activate
+source erag-venv/bin/activate
 ```
 
 If the virtual environment was deleted or is no longer available, you can recreate it following the instructions below.

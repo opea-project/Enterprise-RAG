@@ -251,7 +251,7 @@ json: { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vec
 
 To find validated models running on Gaudi, refer to the following resources:
 
- - **For vLLM**, see the [Supported Configuration](https://github.com/HabanaAI/vllm-fork/releases#Supported-Configurations).
+ - **For vLLM**, see the [Supported Configuration](https://docs.vllm.ai/projects/gaudi/en/0.13.0/getting_started/validated_models.html).
 
 
 ## Additional Information

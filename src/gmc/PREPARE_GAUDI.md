@@ -52,7 +52,7 @@ Make sure Firmware is installed on Gaudi nodes. Follow the [Gaudi Firmware Insta
     ```
     For more details, refer to the [Gaudi Firmware installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare) guide.
 
-5. Finally, install the K8s plugin by following the instructions in [How to install K8s Plugin for Gaudi](https://docs.habana.ai/en/latest/Orchestration/Gaudi_Kubernetes/Device_Plugin_for_Kubernetes.html). Once the plugin is installed, verify its functionality by checking if Kubernetes can detect Gaudi resources on the node. You should see Gaudi devices listed:
+5. Finally, install the K8s plugin by following the instructions in [How to install K8s Plugin for Gaudi](https://docs.habana.ai/en/latest/Installation_Guide/Additional_Installation/Kubernetes_Installation/Intel_Gaudi_Kubernetes_Device_Plugin.html). Once the plugin is installed, verify its functionality by checking if Kubernetes can detect Gaudi resources on the node. You should see Gaudi devices listed:
     ```
     capacity:
       cpu: "192"

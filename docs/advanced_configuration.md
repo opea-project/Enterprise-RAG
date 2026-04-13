@@ -35,6 +35,8 @@ This document describes configuration options available when deploying Intel® A
    7. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
    8. [Registry Configuration](#registry-configuration)
    9. [Local Image Building](#local-image-building)
+   10. [Routing Mode](#routing-mode)
+   11. [Pipeline Language](#pipeline-language)
 
 ---
 
@@ -613,15 +615,24 @@ Intel® Trust Domain Extensions (Intel® TDX) provides hardware-based trusted ex
 # Default: disabled (experimental feature)
 tdx:
   enabled: false                    # Default: false
-  td_type: "one-td"                # Default: "one-td"
+  one_td:
+    enabled: false                  # Incompatible with coco
+  coco:
+    enabled: false                  # Incompatible with one_td
+    install_kata: false             # Set to true for automatic Kata Containers installation
+    runtime_class_name: kata-qemu-tdx
   attestation:
     enabled: false                  # Default: false
+    kbs_address: ""                 # Protocol, address, and port for Key Broker Service
 ```
 
 **Configuration Options**:
 - `enabled`: Enables Intel TDX protection for microservices
-- `td_type`: Deployment type - "one-td" (single Trust Domain) or "coco" (Confidential Containers)
-- `attestation.enabled`: Enables TDX-based remote attestation for verification
+- `one_td.enabled`: Use single Trust Domain mode (cannot be combined with `coco`)
+- `coco.enabled`: Use Confidential Containers mode (cannot be combined with `one_td`)
+- `coco.install_kata`: Automatically install Kata Containers during deployment
+- `attestation.enabled`: Enables TDX-based remote attestation via KBS
+- `attestation.kbs_address`: Full address of the Key Broker Service (e.g. `http://127.0.0.1:8080`)
 
 **Requirements**:
 - 4th Gen Intel® Xeon® Scalable processors or later
@@ -675,3 +686,34 @@ This option will create a Kubernetes pod with registry functionality and configu
 > Installation of the local registry pod is performed by running the `infrastructure.yaml` playbook. For detailed instructions, see the [Infrastructure Components Guide](infrastructure_components_guide.md).
 
 For detailed instructions on building images locally, including prerequisites, build processes, and troubleshooting, refer to the [Building Images Guide](building_images.md).
+
+### Routing Mode
+
+Controls how external services (Keycloak, Grafana, S3, etc.) are exposed outside the cluster:
+
+```yaml
+# Default: "subdomain"
+routing_mode: "subdomain"  # or "path"
+```
+
+- **`subdomain`** (default): Each service gets its own subdomain (`auth.erag.com`, `grafana.erag.com`, `s3.erag.com`). Requires a wildcard DNS record or individual DNS records for each subdomain.
+- **`path`**: All services share the single FQDN under different URL paths (`erag.com/auth`, `erag.com/grafana`, `erag.com/s3`). Only a single DNS record is needed. Recommended for cloud deployments where wildcard DNS is not available.
+
+> [!NOTE]
+> When using `routing_mode: "path"`, ensure that any identity provider or SSO configuration (e.g. Keycloak) is updated to use path-based redirect URIs.
+
+### Pipeline Language
+
+Controls the language used for pipeline prompts, metadata extraction, and system fingerprint:
+
+```yaml
+# Default: "auto"
+solution_language: "auto"  # or "en" or "pl"
+```
+
+- **`auto`** (default): Automatically selects Polish when `llm_model` contains "PLLuM" or "Bielik", otherwise uses English.
+- **`en`**: Forces English prompts regardless of model name.
+- **`pl`**: Forces Polish prompts regardless of model name.
+
+> [!NOTE]
+> When setting `solution_language` explicitly, ensure the selected LLM, embedding, and reranking models support the target language.

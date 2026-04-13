@@ -176,15 +176,12 @@ This will test the document summarization functionality by sending a sample docu
 ## Access the UI/Grafana
 
 To access the UI, follow these steps:
-1. Forward the port from the ingress pod:
-    ```bash
-    sudo -E kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
-    ```
-2. If you want to access the UI from another machine, tunnel the port from the host:
+1. The erag-gateway uses Kubernetes `hostPort` to bind ports 80 and 443 directly on the cluster node - no `kubectl port-forward` is required.
+   If you want to access the UI from another machine, tunnel the port from the host:
     ```bash
     ssh -L 443:localhost:443 user@ip
     ```
-3. Update the `/etc/hosts` file on the machine where you want to access the UI to match the domain name with the externally exposed IP address of the cluster. On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
+2. Update the `/etc/hosts` file on the machine where you want to access the UI to match the domain name with the externally exposed IP address of the cluster. On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
 
     For example, the updated file content should resemble the following:
 

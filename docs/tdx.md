@@ -118,7 +118,7 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
    registry: "<IMAGE_REGISTRY>"     # [OPTIONAL] Provide your_container_registry - can be left intact for default image
    tag: "<IMAGE_TAG>"          # [OPTIONAL] Provide your_tag - can be left intact for default image
    tdx:
-     enabled: true|false    # Set to true to Intel® TDX.
+     enabled: true|false    # Set to true to enable Intel® TDX.
      one_td:
        enabled: true|false  # Set accordingly to your deployment case. 
      coco:

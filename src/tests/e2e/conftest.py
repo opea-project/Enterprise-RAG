@@ -31,8 +31,8 @@ from tests.e2e.helpers.keycloak_helper import KeycloakHelper
 from tests.e2e.helpers.sharepoint_helper import SharepointHelper
 
 # List of namespaces to fetch logs from
-NAMESPACES = ["auth", "auth-apisix", "chat-history", "chatqa", "docsum", "edp", "fingerprint",
-              "ingress-nginx", "istio-system", "rag-ui", "seaweedfs", "system", "vdb"]
+NAMESPACES = ["auth", "auth-apisix", "chat-history", "chatqa", "docsum", "edp", "erag-gateway", "fingerprint",
+              "istio-system", "rag-ui", "seaweedfs", "system", "vdb"]
 TEST_LOGS_DIR = "test_logs"
 
 logger = logging.getLogger(__name__)

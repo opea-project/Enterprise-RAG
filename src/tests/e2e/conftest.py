@@ -3,6 +3,7 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import hashlib
+import sys
 from pathlib import Path
 
 import allure
@@ -38,6 +39,42 @@ TEST_LOGS_DIR = "test_logs"
 logger = logging.getLogger(__name__)
 
 
+def _generate_log_filename(prefix):
+    """Generate a unique log filename with a timestamp."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{timestamp}.log"
+
+
+class TeeWriter:
+    """
+    Duplicates writes to both the original stream and a log file so that the
+    full pytest terminal output (including 'Captured log teardown' sections,
+    tracebacks, test results, etc.) is preserved in a file.
+    """
+
+    def __init__(self, original, log_file_handle):
+        self._original = original
+        self._log_file = log_file_handle
+
+    def write(self, data):
+        self._original.write(data)
+        try:
+            self._log_file.write(data)
+            self._log_file.flush()
+        except ValueError:
+            pass  # file already closed during teardown
+
+    def flush(self):
+        self._original.flush()
+        try:
+            self._log_file.flush()
+        except ValueError:
+            pass
+
+    def __getattr__(self, name):
+        return getattr(self._original, name)
+
+
 def pytest_addoption(parser):
     parser.addoption("--credentials-file", action="store", default="",
                      help="Path to credentials file. Required fields: "
@@ -49,7 +86,18 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """
     Load build configuration from the specified YAML file and store it in the global cfg dictionary.
+    Tee stdout/stderr to a log file to capture the full pytest terminal output.
     """
+    # Set up tee-writing so the full terminal output (including "Captured log teardown"
+    # sections, tracebacks, test results, etc.) is saved to a file.
+    full_log_path = _generate_log_filename("tests_output")
+    log_fh = open(full_log_path, "w", encoding="utf-8")
+    config._full_log_fh = log_fh
+    config._original_stdout = sys.stdout
+    config._original_stderr = sys.stderr
+    sys.stdout = TeeWriter(sys.stdout, log_fh)
+    sys.stderr = TeeWriter(sys.stderr, log_fh)
+
     # Manually configure logging here since pytest configures it only after this hook
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
@@ -68,6 +116,21 @@ def pytest_configure(config):
     root = logging.getLogger()
     for h in root.handlers[:]:
         root.removeHandler(h)
+
+
+def pytest_unconfigure(config):
+    """
+    Restore original stdout/stderr and close the full-output log file.
+    """
+    original_stdout = getattr(config, "_original_stdout", None)
+    original_stderr = getattr(config, "_original_stderr", None)
+    if original_stdout:
+        sys.stdout = original_stdout
+    if original_stderr:
+        sys.stderr = original_stderr
+    log_fh = getattr(config, "_full_log_fh", None)
+    if log_fh:
+        log_fh.close()
 
 
 def pytest_runtest_call(item):

@@ -199,7 +199,7 @@ def test_chatqa_concurrent_requests(chatqa_api_helper, temporarily_remove_brute_
     for result in results:
         if result.exception is not None:
             logger.info(result.exception)
-            failed_requests_counter = + 1
+            failed_requests_counter += 1
         elif result.status_code != 200:
             logger.info(f"Request failed with status code {result.status_code}. Response body: {result.text}")
             failed_requests_counter += 1

@@ -33,6 +33,26 @@ tox -e e2e -- --build-config-file=<build configuration file> --credentials-file=
 * `<credentials file>` - full path to `default_credentials.txt` file which contains credentials for admin and user
 * `<regex>` - desired test name you want to run
 
+## SharePoint Tests
+
+SharePoint tests require the following environment variables to be set before running:
+
+| Variable | Description | Example |
+|---|---|---|
+| `SP_SITE_URL_ALL` | SharePoint site URL accessible by all test users | `https://intel.sharepoint.com/sites/my-shared-site` |
+| `SP_SITE_URL_ADMIN` | SharePoint site URL accessible only by admin | `https://intel.sharepoint.com/sites/my-admin-site` |
+| `SP_SITE_URL_USER` | SharePoint site URL accessible only by user | `https://intel.sharepoint.com/sites/my-user-site` |
+
+Export them before running the tests:
+
+```bash
+export SP_SITE_URL_ALL="https://intel.sharepoint.com/sites/my-shared-site"
+export SP_SITE_URL_ADMIN="https://intel.sharepoint.com/sites/my-admin-site"
+export SP_SITE_URL_USER="https://intel.sharepoint.com/sites/my-user-site"
+```
+
+If any of these variables are not set, SharePoint tests will be **skipped** with a message indicating which variables are missing.
+
 ## Allure Integration
 We use Allure for test reporting. When tests are run via tox, results are automatically collected and stored in `allure-results` directory (as specified in tox.ini).
 

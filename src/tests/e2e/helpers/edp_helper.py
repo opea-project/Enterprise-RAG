@@ -68,18 +68,31 @@ class EdpHelper(ApiRequestHelper):
         )
         return response
 
+    @staticmethod
+    def _extract_site_name(site_url_or_name):
+        """Extract the short site name from a full SharePoint URL.
+        E.g. 'https://intel.sharepoint.com/sites/test-site' -> 'test-site'
+        If the input is already a short name (no '/'), return it as-is.
+        """
+        if "/" in site_url_or_name:
+            return site_url_or_name.rstrip("/").rsplit("/", 1)[-1]
+        return site_url_or_name
+
     def get_site_id_by_name(self, site_name):
-        """Get site ID by site name. Return None if site with the given name is not found."""
+        """Get site ID by site name or URL. Return None if site with the given name is not found."""
+        short_name = self._extract_site_name(site_name)
         sites = self.list_sites()
-        site_id = next((site["id"] for site in sites.json().get("sites", []) if site["name"] == site_name), None)
+        site_id = next((site["id"] for site in sites.json().get("sites", []) if site["name"] == short_name), None)
         if not site_id:
-            logger.warning(f"Site with name {site_name} not found.")
+            logger.warning(f"Site with name {short_name} not found.")
         return site_id
 
-    def connect_site(self, site_name):
-        """Connect the site with the given name"""
-        logger.info(f"Connecting site with name: {site_name}")
-        payload = {"site_url": f"https://intel.sharepoint.com/sites/{site_name}"}
+    def connect_site(self, site_url):
+        """Connect the site with the given URL or name.
+        If a short name is provided (e.g. from restore logic), it is not sent as a URL.
+        """
+        logger.info(f"Connecting site: {site_url}")
+        payload = {"site_url": site_url}
         response = requests.post(
             url=f"{self.edp_api_path}/sharepoint/sites",
             headers=self.get_headers(),
@@ -107,7 +120,7 @@ class EdpHelper(ApiRequestHelper):
 
         return response
 
-    def sync_sharepoint(self) -> requests.Response:
+    def sync_sharepoint(self, as_user=False) -> requests.Response:
         """
         Trigger a SharePoint sync via the EDP API.
         POST /api/v1/edp/sharepoint/sync
@@ -115,13 +128,13 @@ class EdpHelper(ApiRequestHelper):
         url = f"{self.edp_api_path}/sharepoint/sync"
         response = requests.post(
             url,
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         logger.info(f"SharePoint sync triggered. Status: {response.status_code}")
         return response
 
-    def upload_to_sharepoint(self, site_name, file_path, site_id=None) -> requests.Response:
+    def upload_to_sharepoint(self, site_name, file_path, site_id=None, as_user=False) -> requests.Response:
         """
         Upload a file to a connected SharePoint site via the EDP API.
         POST /api/v1/edp/sharepoint/files
@@ -130,7 +143,7 @@ class EdpHelper(ApiRequestHelper):
         if not site_id:
             site_id = self.get_site_id_by_name(site_name)
         params = {"site_id": site_id}
-        headers = self.get_headers()
+        headers = self.get_headers(as_user)
         headers.pop('Content-Type', None)
 
         with open(file_path, 'rb') as f:
@@ -153,7 +166,7 @@ class EdpHelper(ApiRequestHelper):
         """
         url = f"{self.edp_api_path}/sharepoint/files"
         payload = {
-            "site_name": site_name,
+            "site_name": self._extract_site_name(site_name),
             "object_name": object_name
         }
         response = requests.delete(
@@ -172,7 +185,7 @@ class EdpHelper(ApiRequestHelper):
         """
         url = f"{self.edp_api_path}/sharepoint/file-url"
         payload = {
-            "site_name": site_name,
+            "site_name": self._extract_site_name(site_name),
             "object_name": object_name
         }
         response = requests.post(

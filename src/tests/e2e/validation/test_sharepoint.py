@@ -15,17 +15,59 @@ logger = logging.getLogger(__name__)
 
 _oidc = cfg.get("keycloak", {}).get("oidc", {})
 if not all(_oidc.get(k) for k in ("endpoint", "alias", "client_id", "tenant_id", "client_secret")):
-    pytestmark = pytest.mark.skip(reason="SharePoint OIDC configuration is not fully set (keycloak.oidc.*)")
+    _msg = ("SharePoint OIDC configuration is not fully set (keycloak.oidc.*). "
+            "Ensure endpoint, alias, client_id, tenant_id, and client_secret are configured.")
+    logger.warning(_msg)
+    pytest.skip(_msg, allow_module_level=True)
 
-DEFAULT_SP_SITE = "erag-test-site-all"
+_SP_ENV_VARS = ("SP_SITE_URL_ALL", "SP_SITE_URL_ADMIN", "SP_SITE_URL_USER")
+_missing_sp_vars = [v for v in _SP_ENV_VARS if not os.environ.get(v)]
+if _missing_sp_vars:
+    _msg = (f"SharePoint site URL environment variable(s) not set: {', '.join(_missing_sp_vars)}. "
+            f"Export them before running SharePoint tests, e.g.:\n"
+            f"  export SP_SITE_URL_ALL='https://intel.sharepoint.com/sites/my-site'\n"
+            f"  export SP_SITE_URL_ADMIN='https://intel.sharepoint.com/sites/my-admin-site'\n"
+            f"  export SP_SITE_URL_USER='https://intel.sharepoint.com/sites/my-user-site'")
+    logger.warning(_msg)
+    pytest.skip(_msg, allow_module_level=True)
+
+SP_SITE_ALL = os.environ.get("SP_SITE_URL_ALL", "")
+SP_SITE_ADMIN = os.environ.get("SP_SITE_URL_ADMIN", "")
+SP_SITE_USER = os.environ.get("SP_SITE_URL_USER", "")
+
+DEFAULT_SP_SITE = SP_SITE_ALL
+
+
+def _site_short_name(site_url):
+    """Extract the short site name from a full SharePoint URL.
+    E.g. 'https://intel.sharepoint.com/sites/test-site' -> 'test-site'
+    """
+    if "/" in site_url:
+        return site_url.rstrip("/").rsplit("/", 1)[-1]
+    return site_url
 
 SHAREPOINT_TEST_SITES = [
-    DEFAULT_SP_SITE,
-    "erag-test-site-user",
-    "erag-test-site-admin",
+    SP_SITE_ALL,
+    SP_SITE_USER,
+    SP_SITE_ADMIN,
 ]
 
 _rbac_enabled = cfg.get("edp", {}).get("rbac", {}).get("enabled", False)
+
+_SSO_ENV_VARS = (
+    "KEYCLOAK_ERAG_SSO_ADMIN_USERNAME", "KEYCLOAK_ERAG_SSO_ADMIN_PASSWORD",
+    "KEYCLOAK_ERAG_SSO_USER_USERNAME", "KEYCLOAK_ERAG_SSO_USER_PASSWORD",
+)
+_missing_sso_vars = [v for v in _SSO_ENV_VARS if not os.environ.get(v)]
+_sso_credentials_missing = len(_missing_sso_vars) > 0
+_sso_skip_reason = (
+    f"SSO credential environment variable(s) not set: {', '.join(_missing_sso_vars)}. "
+    f"Export them before running RBAC SharePoint tests, e.g.:\n"
+    f"  export KEYCLOAK_ERAG_SSO_ADMIN_USERNAME='admin@example.com'\n"
+    f"  export KEYCLOAK_ERAG_SSO_ADMIN_PASSWORD='secret'\n"
+    f"  export KEYCLOAK_ERAG_SSO_USER_USERNAME='user@example.com'\n"
+    f"  export KEYCLOAK_ERAG_SSO_USER_PASSWORD='secret'"
+) if _sso_credentials_missing else ""
 
 
 def _cleanup_sharepoint_sites(sharepoint_helper, edp_helper):
@@ -64,17 +106,17 @@ def cleanup_sharepoint_files(sharepoint_helper, edp_helper):
 def restore_connected_sites(edp_helper):
     """Save connected sites before the test suite and restore them after."""
     response = edp_helper.list_sites()
-    original_sites = {site["name"] for site in response.json().get("sites", [])}
-    logger.info(f"Connected sites before test suite: {original_sites}")
+    original_sites = {site["name"]: site.get("web_url", "") for site in response.json().get("sites", [])}
+    logger.info(f"Connected sites before test suite: {set(original_sites.keys())}")
 
     yield
 
     response = edp_helper.list_sites()
-    current_sites = {site["name"] for site in response.json().get("sites", [])}
-    logger.info(f"Connected sites after test suite: {current_sites}")
+    current_sites = {site["name"]: site.get("web_url", "") for site in response.json().get("sites", [])}
+    logger.info(f"Connected sites after test suite: {set(current_sites.keys())}")
 
     # Disconnect sites that were added during tests
-    sites_to_disconnect = current_sites - original_sites
+    sites_to_disconnect = set(current_sites.keys()) - set(original_sites.keys())
     for site_name in sites_to_disconnect:
         try:
             edp_helper.disconnect_site(site_name)
@@ -83,11 +125,12 @@ def restore_connected_sites(edp_helper):
             logger.warning(f"Restore: failed to disconnect '{site_name}': {e}")
 
     # Reconnect sites that were removed during tests
-    sites_to_reconnect = original_sites - current_sites
+    sites_to_reconnect = set(original_sites.keys()) - set(current_sites.keys())
     for site_name in sites_to_reconnect:
         try:
-            edp_helper.connect_site(site_name)
-            logger.info(f"Restore: reconnected '{site_name}'")
+            site_url = original_sites[site_name]
+            edp_helper.connect_site(site_url)
+            logger.info(f"Restore: reconnected '{site_name}' ({site_url})")
         except Exception as e:
             logger.warning(f"Restore: failed to reconnect '{site_name}': {e}")
 
@@ -103,7 +146,7 @@ def test_sp_connect_site(edp_helper):
     assert response.status_code == 201, f"Failed to connect site. Response: {response.text}"
     logger.info(f"Site connected: {response.json()}")
     sites = edp_helper.list_sites()
-    assert any(site.get("name") == DEFAULT_SP_SITE for site in sites.json().get("sites", [])), "Connected site not found in the list of sites"
+    assert any(site.get("name") == _site_short_name(DEFAULT_SP_SITE) for site in sites.json().get("sites", [])), "Connected site not found in the list of sites"
 
     # Connect the same site again
     response = edp_helper.connect_site(DEFAULT_SP_SITE)
@@ -113,7 +156,7 @@ def test_sp_connect_site(edp_helper):
 @allure.testcase("IEASG-T525")
 def test_sp_connect_nonexistent_site(edp_helper):
     """Verify that connecting a nonexistent SharePoint site returns 404"""
-    response = edp_helper.connect_site("this-site-does-not-exist-at-all")
+    response = edp_helper.connect_site("https://intel.sharepoint.com/sites/this-site-does-not-exist-at-all")
     assert response.status_code == 404, \
         f"Expected 404 for nonexistent site, but got {response.status_code}: {response.text}"
 
@@ -132,7 +175,7 @@ def test_sp_disconnect_site(edp_helper):
 
     assert response.status_code == 200, f"Failed to disconnect site. Response: {response.text}"
     sites = edp_helper.list_sites()
-    assert not any(site.get("name") == DEFAULT_SP_SITE for site in sites.json().get("sites", [])), "Disconnected site still found in the list of sites"
+    assert not any(site.get("name") == _site_short_name(DEFAULT_SP_SITE) for site in sites.json().get("sites", [])), "Disconnected site still found in the list of sites"
 
     # Disconnect the same site again - should return 404 as it's already disconnected
     response = edp_helper.disconnect_site(DEFAULT_SP_SITE, site_id)
@@ -411,3 +454,144 @@ def test_sp_get_file_url_negative(edp_helper):
     logger.info(f"Both empty response: {response.status_code} - {response.text}")
     assert response.status_code == 400, \
         f"Expected error for both empty params, but got {response.status_code}: {response.text}"
+
+
+@allure.testcase("IEASG-T552")
+@pytest.mark.skipif(not _rbac_enabled, reason="EDP RBAC is not enabled. Skipping RBAC SharePoint test")
+@pytest.mark.skipif(_sso_credentials_missing, reason=_sso_skip_reason)
+def test_sp_rbac_sso_admin_site_not_visible_to_user(edp_helper, sharepoint_helper, chatqa_api_helper, bootstrap_sso_user):
+    """Verify that an SSO admin user can upload a file to the admin-only SP site via EDP API,
+    query its content, and that SSO user (who has no access to that site) cannot see it."""
+    site_name = SP_SITE_ADMIN
+
+    # Ensure site is connected (as admin)
+    edp_helper.connect_site(site_name)
+
+    # Upload file as SSO admin
+    file = "test_sp_rbac_admin_site.txt"
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
+    response = edp_helper.upload_to_sharepoint(site_name, file_path, as_user="sso_admin")
+    assert response.status_code in (200, 201), f"SSO admin failed to upload file via EDP SharePoint API. Response: {response.text}"
+
+    # Sync changes (as admin)
+    sync_response = edp_helper.sync_sharepoint()
+    assert sync_response.status_code == 200, f"Failed to sync SharePoint. Response: {sync_response.text}"
+
+    # Wait for the file to be ingested into EDP
+    file_info = edp_helper.wait_for_file_upload(file, "ingested", timeout=120)
+
+    # Verify the file is present in SharePoint using Microsoft Graph API
+    file_basename = os.path.basename(file_info["object_name"])
+    files = sharepoint_helper.list_site_files(site_name=site_name)
+    assert any(f.get("name") == file_basename for f in files), \
+        f"Uploaded file not found in the list of site files. List: {files}"
+
+    # Ask a related question as SSO admin — should get the answer
+    question = "How many vintage vinyl records does Fernandoooo own?"
+    response = chatqa_api_helper.call_chatqa(question, as_user="sso_admin")
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (as sso_admin): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "1847" in response_text, f"SSO admin should see file content but got: {response_text}"
+
+    # Ask the same question as SSO user — should NOT get the answer (user has no access to admin site)
+    response = chatqa_api_helper.call_chatqa(question, as_user="sso_user")
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (as sso_user): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "1847" not in response_text, \
+        f"SSO user should NOT see content from admin-only site but got: {response_text}"
+
+
+@allure.testcase("IEASG-T553")
+@pytest.mark.skipif(not _rbac_enabled, reason="EDP RBAC is not enabled. Skipping RBAC SharePoint test")
+@pytest.mark.skipif(_sso_credentials_missing, reason=_sso_skip_reason)
+def test_sp_rbac_sso_user_site_not_visible_to_admin(edp_helper, sharepoint_helper, chatqa_api_helper, bootstrap_sso_user):
+    """Verify RBAC: SSO user uploads a file to the user-only SP site via SharePoint API,
+    can query its content, but SSO admin cannot see the content because admin has no access to that site."""
+    site_name = SP_SITE_USER
+
+    # Ensure site is connected (as admin)
+    edp_helper.connect_site(site_name)
+
+    # Upload file as SSO user to the user-only site via SharePoint API
+    # (SSO user cannot upload via EDP API — only via SharePoint directly)
+    file = "test_sp_rbac_user_site.txt"
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
+    result = sharepoint_helper.upload_file_to_site(site_name=site_name, file_path=file_path)
+    logger.info(f"File uploaded to SharePoint by SSO user: {result}")
+
+    # Sync and wait for ingestion
+    sync_response = edp_helper.sync_sharepoint()
+    assert sync_response.status_code == 200, f"Failed to sync SharePoint. Response: {sync_response.text}"
+    file_info = edp_helper.wait_for_file_upload(file, "ingested", timeout=120)
+    assert file_info, f"File '{file}' was not ingested into EDP"
+
+    # Verify file is present in SharePoint
+    file_basename = os.path.basename(file_info["object_name"])
+    files = sharepoint_helper.list_site_files(site_name=site_name)
+    assert any(f.get("name") == file_basename for f in files), \
+        f"Uploaded file not found in the list of site files. List: {files}"
+
+    # Ask a question as SSO user — should get the answer from the file
+    question = "How many porcelain teacups does Isabellaaa have?"
+    response = chatqa_api_helper.call_chatqa(question, as_user="sso_user")
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (as sso_user): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "2953" in response_text, f"SSO user should see file content but got: {response_text}"
+
+    # Ask the same question as SSO admin — should NOT get the answer (admin has no access to user site)
+    response = chatqa_api_helper.call_chatqa(question, as_user="sso_admin")
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (as sso_admin): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "2953" not in response_text, \
+        f"SSO admin should NOT see content from user-only site but got: {response_text}"
+
+
+@allure.testcase("IEASG-T554")
+@pytest.mark.skipif(not _rbac_enabled, reason="EDP RBAC is not enabled. Skipping RBAC SharePoint test")
+@pytest.mark.skipif(_sso_credentials_missing, reason=_sso_skip_reason)
+def test_sp_rbac_shared_site_visible_to_both_users(edp_helper, sharepoint_helper, chatqa_api_helper, bootstrap_sso_user):
+    """Verify RBAC: SSO admin uploads a file to the shared SP site,
+    can query its content, and SSO user can also see the content (both have access)."""
+    site_name = SP_SITE_ALL
+
+    # Ensure site is connected (as admin)
+    edp_helper.connect_site(site_name)
+
+    # Upload file as SSO admin to the shared site
+    file = "test_sp_rbac_shared_site.txt"
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
+    response = edp_helper.upload_to_sharepoint(site_name, file_path, as_user="sso_admin")
+    assert response.status_code in (200, 201), \
+        f"SSO admin failed to upload file via EDP SharePoint API. Response: {response.text}"
+
+    # Sync and wait for ingestion
+    sync_response = edp_helper.sync_sharepoint()
+    assert sync_response.status_code == 200, f"Failed to sync SharePoint. Response: {sync_response.text}"
+    file_info = edp_helper.wait_for_file_upload(file, "ingested", timeout=120)
+    assert file_info, f"File '{file}' was not ingested into EDP"
+
+    # Verify file is present in SharePoint
+    file_basename = os.path.basename(file_info["object_name"])
+    files = sharepoint_helper.list_site_files(site_name=site_name)
+    assert any(f.get("name") == file_basename for f in files), \
+        f"Uploaded file not found in the list of site files. List: {files}"
+
+    # Ask a question as SSO admin — should get the answer from the file
+    question = "How many miniature ship models does Aleksanderrr have?"
+    response = chatqa_api_helper.call_chatqa(question, as_user="sso_admin")
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (as sso_admin): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "4281" in response_text, f"SSO admin should see file content but got: {response_text}"
+
+    # Ask the same question as SSO user — should also get the answer (both have access to shared site)
+    response = chatqa_api_helper.call_chatqa(question, as_user="sso_user")
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (as sso_user): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "4281" in response_text, \
+        f"SSO user should see content from shared site but got: {response_text}"

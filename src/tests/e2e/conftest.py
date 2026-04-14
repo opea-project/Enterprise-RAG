@@ -307,6 +307,50 @@ def temporarily_remove_user_required_actions(keycloak_helper, suppress_logging):
 
 
 @pytest.fixture(scope="session")
+def bootstrap_sso_user(keycloak_helper, suppress_logging, temporarily_remove_user_required_actions):
+    """
+    Bootstrap SSO users by performing the initial federated login flow for each.
+    This handles the Keycloak first-broker-login pages (profile update, account linking)
+    that appear on the first SSO login. Subsequent SSO logins within the session
+    will skip these pages because Keycloak remembers the linked identity.
+
+    Note: The first-broker-login "review profile" page is NOT a Keycloak required action —
+    it is part of Keycloak's identity provider first-login flow and only appears once
+    per federated user. No required-action manipulation is needed.
+    """
+    _oidc = cfg.get("keycloak", {}).get("oidc", {})
+    if not all(_oidc.get(k) for k in ("endpoint", "alias", "client_id", "tenant_id", "client_secret")):
+        logger.info("OIDC not configured — skipping SSO user bootstrap")
+        yield
+        return
+
+    # Bootstrap SSO admin user
+    if keycloak_helper.erag_sso_admin_password:
+        logger.info("Bootstrapping SSO admin user (initial federated login)")
+        try:
+            keycloak_helper.bootstrap_sso_user("sso_admin")
+        except Exception as e:
+            logger.error(f"Failed to bootstrap SSO admin user: {e}")
+            raise
+    else:
+        logger.info("SSO admin password not set — skipping SSO admin bootstrap")
+
+    # Bootstrap SSO regular user
+    if keycloak_helper.erag_sso_user_password:
+        logger.info("Bootstrapping SSO regular user (initial federated login)")
+        try:
+            keycloak_helper.bootstrap_sso_user("sso_user")
+        except Exception as e:
+            logger.error(f"Failed to bootstrap SSO regular user: {e}")
+            raise
+    else:
+        logger.info("SSO user password not set — skipping SSO user bootstrap")
+
+    yield
+
+
+
+@pytest.fixture(scope="session")
 def temporarily_remove_regular_user_required_actions(keycloak_helper):
     """
     Temporarily remove required actions for the regular user to allow obtaining an access token.
@@ -321,6 +365,7 @@ def temporarily_remove_regular_user_required_actions(keycloak_helper):
     if required_actions:
         keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
                                                 keycloak_helper.erag_user_username)
+
 
 
 @pytest.fixture(scope="session", autouse=True)

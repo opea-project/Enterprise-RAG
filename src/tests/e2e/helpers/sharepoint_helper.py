@@ -7,6 +7,7 @@ import logging
 import os
 import requests
 import time
+from urllib.parse import urlparse
 
 from tests.e2e.validation.buildcfg import cfg
 
@@ -57,17 +58,21 @@ class SharepointHelper():
         """Return default authorization headers using the current Graph API token."""
         return {"Authorization": f"Bearer {self.get_graph_client_token()}"}
 
-    def _get_site_id(self, site_name: str) -> str:
+    def _get_site_id(self, site_url: str) -> str:
         """
-        Resolve a SharePoint site name to its Graph API site ID.
-        :param site_name: The name of the site (e.g., 'erag-test-site-all')
+        Resolve a SharePoint site URL to its Graph API site ID.
+        :param site_url: The full URL of the site (e.g., 'https://intel.sharepoint.com/sites/my-site')
         :return: The site ID string from Microsoft Graph
         """
-        site_url = f"{GRAPH_API_BASE}/sites/intel.sharepoint.com:/sites/{site_name}"
-        site_resp = requests.get(site_url, headers=self._default_headers, timeout=30)
+        # Extract hostname and site path from the full URL
+        parsed = urlparse(site_url)
+        hostname = parsed.hostname
+        site_path = parsed.path  # e.g. /sites/my-site
+        site_graph_url = f"{GRAPH_API_BASE}/sites/{hostname}:{site_path}"
+        site_resp = requests.get(site_graph_url, headers=self._default_headers, timeout=30)
 
         if site_resp.status_code != 200:
-            logger.error(f"Failed to resolve site {site_name}: {site_resp.text}")
+            logger.error(f"Failed to resolve site {site_url}: {site_resp.text}")
             site_resp.raise_for_status()
 
         return site_resp.json().get('id')
@@ -75,7 +80,7 @@ class SharepointHelper():
     def list_site_files(self, site_name: str) -> list:
         """
         List all items in the root drive of a given SharePoint site.
-        :param site_name: The name of the site (e.g., 'erag-test-site-all')
+        :param site_name: The full URL of the site (e.g., 'https://intel.sharepoint.com/sites/my-site')
         :return: List of items (dictionaries) from Microsoft Graph
         """
         site_id = self._get_site_id(site_name)
@@ -93,7 +98,7 @@ class SharepointHelper():
     def upload_file_to_site(self, site_name: str, file_path: str) -> dict:
         """
         Upload a file to the root drive of a given SharePoint site.
-        :param site_name: The name of the site (e.g., 'erag-test-site-all')
+        :param site_name: The full URL of the site (e.g., 'https://intel.sharepoint.com/sites/my-site')
         :param file_path: The local path of the file to upload
         :return: The created/updated item metadata (dictionary) from Microsoft Graph
         """
@@ -117,7 +122,7 @@ class SharepointHelper():
     def delete_file_from_site(self, site_name: str, file_name: str) -> None:
         """
         Delete a file from the root drive of a given SharePoint site.
-        :param site_name: The name of the site (e.g., 'erag-test-site-all')
+        :param site_name: The full URL of the site (e.g., 'https://intel.sharepoint.com/sites/my-site')
         :param file_name: The name of the file to delete (e.g., 'test.txt')
         """
         site_id = self._get_site_id(site_name)

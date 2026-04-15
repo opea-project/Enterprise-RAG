@@ -33,6 +33,15 @@ spec:
         - path:
             type: {{ .pathType | default "PathPrefix" }}
             value: {{ .path }}
+      {{- if .timeouts }}
+      timeouts:
+        {{- if .timeouts.request }}
+        request: {{ .timeouts.request }}
+        {{- end }}
+        {{- if .timeouts.backendRequest }}
+        backendRequest: {{ .timeouts.backendRequest }}
+        {{- end }}
+      {{- end }}
       {{- if .urlRewrite }}
       filters:
         - type: URLRewrite

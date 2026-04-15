@@ -1,0 +1,55 @@
+{{- /*
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+
+ConfigMap referenced by the Gateway's infrastructure.parametersRef.
+Istio reads this at deployment creation time and applies it as a strategic merge
+patch — no post-install Job, no RBAC, no race conditions.
+
+Supported keys: deployment, service, serviceAccount,
+                horizontalPodAutoscaler, podDisruptionBudget.
+See: https://istio.io/latest/docs/tasks/traffic-management/ingress/gateway-api/#automated-deployment
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.gateway.name }}-config
+  namespace: {{ .Values.gateway.namespace }}
+  labels:
+    {{- include "erag-gateway.labels" . | nindent 4 }}
+data:
+  deployment: |
+    spec:
+      {{- if .Values.gateway.hostPort.enabled }}
+      strategy:
+        type: Recreate
+      {{- end }}
+      template:
+        spec:
+          containers:
+          - name: istio-proxy
+            {{- if .Values.gateway.hostPort.enabled }}
+            ports:
+            - name: http
+              containerPort: {{ .Values.gateway.hostPort.httpPort }}
+              hostPort: {{ .Values.gateway.hostPort.httpPort }}
+              protocol: TCP
+            - name: https
+              containerPort: {{ .Values.gateway.hostPort.httpsPort }}
+              hostPort: {{ .Values.gateway.hostPort.httpsPort }}
+              protocol: TCP
+            {{- end }}
+            resources:
+              requests:
+                cpu: {{ .Values.gateway.resources.requests.cpu | quote }}
+                memory: {{ .Values.gateway.resources.requests.memory | quote }}
+              limits:
+                cpu: {{ .Values.gateway.resources.limits.cpu | quote }}
+                memory: {{ .Values.gateway.resources.limits.memory | quote }}
+            env:
+            - name: ISTIO_META_CONCURRENCY
+              value: {{ .Values.gateway.concurrency | quote }}
+            {{- range $key, $val := .Values.gateway.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}

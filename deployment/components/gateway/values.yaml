@@ -35,20 +35,30 @@ gateway:
   #   LoadBalancer — use MetalLB / kube-vip / cloud LB
   serviceType: ClusterIP            # ClusterIP when using hostPort
   hostPort:
-    enabled: true                   # patch the Istio-provisioned deployment with hostPort
+    enabled: true                   # bind :80/:443 directly on the node (no LB needed)
     httpPort: 80
     httpsPort: 443
+  # NOTE: when hostPort is enabled, the generated gateway Deployment uses
+  # strategy.type=Recreate (set in gateway-config.yaml) to avoid Pending pods
+  # during upgrades. This can cause brief downtime while the old pod stops and
+  # the new pod starts. Future improvement: switch to NodePort/LoadBalancer or
+  # multi-node hostPort with anti-affinity for zero/near-zero downtime rollouts.
+  # Resources for the auto-provisioned Istio gateway proxy container.
+  # Increase these when you observe 503s / throttling under load.
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "512Mi"
+    limits:
+      cpu: "4"
+      memory: "2Gi"
+  # Number of worker threads for Envoy proxy (0 = one per CPU core).
+  concurrency: 0
 
 # HTTP → HTTPS redirect (301)
 # A catch-all HTTPRoute on the HTTP listener that redirects all traffic to HTTPS.
 httpToHttpsRedirect:
   enabled: true
-
-image:
-  repository: "docker.io/opea"
-  name: "erag-init-container"
-  tag: "latest"
-  pullPolicy: IfNotPresent
 
 # HTTPRoutes managed by the gateway chart.
 # Only services WITHOUT their own component chart are listed here.
@@ -74,6 +84,9 @@ routes:
     rules:
       - path: /
         pathType: PathPrefix
+        timeouts:
+          request: 3600s
+          backendRequest: 3600s
         backendRef:
           name: seaweedfs-s3
           port: 8333

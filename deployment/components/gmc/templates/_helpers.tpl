@@ -175,6 +175,22 @@ Helper for adding environment variables and env files
 {{- end -}}
 
 {{/*
+Exec probe command for TorchServe reranking readiness/startup checks.
+Performs a real inference request to confirm the model is loaded and serving.
+Usage: command: {{- include "manifest.torchserve.probeInferenceCmd" . | nindent <depth> }}
+*/}}
+{{- define "manifest.torchserve.probeInferenceCmd" -}}
+- /bin/sh
+- -c
+- |
+  MODEL_NAME=$(basename "${TORCHSERVE_MODEL_NAME}")
+  curl -sf http://localhost:8090/predictions/${MODEL_NAME} \
+    -H "Content-Type: application/json" \
+    -d '{"query": "readiness check", "texts": ["test document"]}' \
+    | grep -q '\['
+{{- end -}}
+
+{{/*
 Init container that waits for balloons DaemonSet to be ready
 Usage: {{ include "manifest.balloons.initContainer" . }}
 */}}

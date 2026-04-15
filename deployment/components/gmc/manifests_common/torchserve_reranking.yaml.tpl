@@ -179,18 +179,19 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           readinessProbe:
-            httpGet:
-              path: ping
-              port: http
+            exec:
+              command: {{- include "manifest.torchserve.probeInferenceCmd" . | nindent 14 }}
             initialDelaySeconds: 5
-            periodSeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 60
+            failureThreshold: 20
           startupProbe:
+            exec:
+              command: {{- include "manifest.torchserve.probeInferenceCmd" . | nindent 14 }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 60
             failureThreshold: 120
-            httpGet:
-              path: ping
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 60
       volumes:
         - name: model-volume
           persistentVolumeClaim:
@@ -310,26 +311,18 @@ spec:
             periodSeconds: 60
           readinessProbe:
             exec:
-              command:
-              - /bin/sh
-              - -c
-              - |
-                MODEL_NAME=$(basename "${TORCHSERVE_MODEL_NAME}")
-                curl -sf http://localhost:8090/predictions/${MODEL_NAME} \
-                  -H "Content-Type: application/json" \
-                  -d '{"query": "readiness check", "texts": ["test document"]}' \
-                  | grep -q '\['
-            initialDelaySeconds: 5 # adjust this value if the model is large or internet is slow
-            periodSeconds: 30
-            timeoutSeconds: 10
-            failureThreshold: 3
-          startupProbe:
-            failureThreshold: 120
-            httpGet:
-              path: ping
-              port: http
+              command: {{- include "manifest.torchserve.probeInferenceCmd" . | nindent 14 }}
             initialDelaySeconds: 5
-            periodSeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 60
+            failureThreshold: 20
+          startupProbe:
+            exec:
+              command: {{- include "manifest.torchserve.probeInferenceCmd" . | nindent 14 }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 60
+            failureThreshold: 120
       volumes:
         - name: model-volume
           persistentVolumeClaim:

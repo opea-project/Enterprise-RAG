@@ -24,7 +24,18 @@ spec:
         name: edp-backend
       target:
         type: Value
-        value: {{ (((.Values).textExtractor).hpa).targetValue | default 2 }}
+        value: {{ (((.Values).textExtractor).hpa).scaleUpTargetValue | default 2 }}
+  - type: Object
+    object:
+      metric:
+        name: edp_backend_files_active
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: edp-backend
+      target:
+        type: Value
+        value: {{ (((.Values).textExtractor).hpa).scaleDownTargetValue | default "500m" }}
   {{- $hpaBehavior := (((.Values).textExtractor).hpa).behavior }}
   {{- if $hpaBehavior }}
   behavior:

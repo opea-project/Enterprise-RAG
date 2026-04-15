@@ -89,7 +89,19 @@ rules:
       name:
         matches: ^edp_files_uploaded_total$
         as: "edp_backend_files_to_upload"
-      metricsQuery: 'edp_files_uploaded_total{namespace="edp",service="edp-backend"}'
+      metricsQuery: '(edp_files_uploaded_total{namespace="edp",service="edp-backend"} + edp_links_uploaded_total{namespace="edp",service="edp-backend"})'
+    - seriesQuery: '{__name__="edp_files_text_extracting_total",service="edp-backend"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^edp_files_text_extracting_total$
+        as: "edp_backend_files_active"
+      metricsQuery: '(edp_files_uploaded_total{namespace="edp",service="edp-backend"} + edp_files_text_extracting_total{namespace="edp",service="edp-backend"} + edp_links_uploaded_total{namespace="edp",service="edp-backend"} + edp_links_text_extracting_total{namespace="edp",service="edp-backend"})'
     - seriesQuery: '{__name__="http_request_duration_seconds_sum", service="input-scan-svc"}'
       seriesFilters: []
       resources:

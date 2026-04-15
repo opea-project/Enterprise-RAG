@@ -181,7 +181,7 @@ def response_err(response):
     except Exception:
         return response.text
 
-@shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
+@shared_task(base=WithEDPTask, bind=True)
 def process_file_task(self, file_id: Any, *args, **kwargs):
 
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
@@ -723,7 +723,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     return True
 
 
-@shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
+@shared_task(base=WithEDPTask, bind=True)
 def delete_file_task(self, file_id: Any, *args, **kwargs):
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
     if file_db is None:
@@ -768,7 +768,7 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
     return True
 
 
-@shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
+@shared_task(base=WithEDPTask, bind=True)
 def process_link_task(self, link_id: Any, *args, **kwargs):
     link_db = self.db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
     if link_db is None:
@@ -1070,7 +1070,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     return True
 
 
-@shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
+@shared_task(base=WithEDPTask, bind=True)
 def delete_link_task(self, link_id: Any, *args, **kwargs):
     link_db = self.db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
     if link_db is None:

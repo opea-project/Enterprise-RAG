@@ -880,7 +880,8 @@ textExtractor:
   hpa:
     minReplicas: 1
     maxReplicas: 2
-    targetValue: 4
+    scaleUpTargetValue: 2
+    scaleDownTargetValue: "500m"
     behavior:
       scaleDown:
         stabilizationWindowSeconds: 600

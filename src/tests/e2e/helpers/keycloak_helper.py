@@ -78,6 +78,8 @@ class KeycloakHelper:
             return self.get_sso_access_token("sso_admin")
         if as_user == "sso_user":
             return self.get_sso_access_token("sso_user")
+        if as_user == "maintainer":
+            return self.get_user_access_token(self.erag_maintainer_username, self.erag_maintainer_password)
         if as_user:
             # For user tokens, don't cache to avoid complexity
             return self.get_user_access_token(self.erag_user_username, self.erag_user_password)

@@ -179,3 +179,20 @@ def test_fingerprint_regular_user_can_access_fingerprint_api(fingerprint_api_hel
     ]
     response = fingerprint_api_helper.change_arguments(body, as_user=True)
     assert response.status_code == 403
+
+
+@allure.testcase("IEASG-T594")
+def test_fingerprint_maintainer_cannot_call_change_arguments(fingerprint_api_helper, temporarily_remove_maintainer_required_actions):
+    """Verify that the maintainer user is not able to call the change_arguments API"""
+    current_arguments = fingerprint_api_helper.append_arguments("")
+    current_max_new_tokens = current_arguments.json()["parameters"]["max_new_tokens"]
+    body = [
+        {
+            "name": "llm",
+            "data": {
+                "max_new_tokens": current_max_new_tokens + 1
+            }
+        }
+    ]
+    response = fingerprint_api_helper.change_arguments(body, as_user="maintainer")
+    assert response.status_code == 403, "Maintainer should not be able to call change_arguments"

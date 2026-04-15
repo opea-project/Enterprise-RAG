@@ -31,6 +31,13 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 AVAILABLE_LANGUAGES = ["eng", "pol"]  # expects 3-letter ISO 639-2 code
+
+# Pre-resolve the pymupdf4llm OCR function once to avoid repeated
+# prints that the selection outputs.
+_PYMUPDF_OCR_FUNCTION = pymupdf4llm_dl.select_ocr_function()
+pymupdf4llm_dl.INFO_MESSAGES.truncate(0)
+pymupdf4llm_dl.INFO_MESSAGES.seek(0)
+
 # Markers added by pymupdf4llm for OCR text
 PICTURE_TEXT_START_MARKER = "---- Start of picture text ----"
 PICTURE_TEXT_END_MARKER = "---- End of picture text -----"
@@ -49,12 +56,12 @@ def _remove_pymupdf4llm_markers(text):
 def _process_single_page_from_file(file_path, page_num):
     """
     Process a single PDF page. This function is designed to be run in parallel.
-    
+
     Opens the PDF file, extracts text. Each call opens and closes its own document instance, making it safe for parallel execution.
     Args:
         file_path: Path to the PDF file
         page_num: Page number to process (0-indexed)
-        
+
     Returns:
         dict: Dictionary containing extracted text and metadata
     """
@@ -141,8 +148,16 @@ def _extract_table_with_docling(doc: Any, page_num: int, clip=None, mode: InputF
         raise ValueError(f"Docling found no tables in the clipped region (mode: {mode_label})")
 
     for tbl in conv_result.document.tables:
-        table_df = tbl.export_to_dataframe(doc=conv_result.document)
-        result += table_df.to_markdown(index=False) + "\n\n"
+        # Direct grid export: first row → header, remaining rows → data.
+        # Stub/row-header cells appear as regular values in the first column.
+        grid = tbl.data.grid
+        if not grid or not grid[0]:
+            continue
+        num_cols = len(grid[0])
+        lines = ["| " + " | ".join(cell.text.replace("\n", " ") for cell in row) + " |"
+                 for row in grid]
+        lines.insert(1, "| " + " | ".join(["---"] * num_cols) + " |")
+        result += "\n".join(lines) + "\n\n"
 
     result = result.strip()
     if not result:
@@ -233,13 +248,12 @@ def _parse_to_text(
                 if table_text is None:
                     # fallback options if docling extraction fails (can still produce something, just less structured and accurate)
                     try:
-                        # fallback 1: use pymupdf4llm's built-in table extraction
                         wrapped_table = pymupdf4llm_dl.wrap_table_for_tabulate(
                             box.table["extract"],
                             max_width=100,
                             min_col_width=10,
                         )
-                        table_text = tabulate.tabulate(wrapped_table, tablefmt="grid")
+                        table_text = tabulate.tabulate(wrapped_table, tablefmt="github")
                         logger.info("Fallback table extraction successful.")
 
                     except Exception as e:
@@ -283,8 +297,8 @@ def _extract_page(doc, page_num, log_identifier=""):
 
     page = doc.load_page(page_num)
     result = ""
-      
-    result = _parse_to_text(doc, page_num, header=False, footer=False, use_ocr=True, force_text=True, ocr_language="+".join(AVAILABLE_LANGUAGES))
+
+    result = _parse_to_text(doc, page_num, header=False, footer=False, use_ocr=True, force_text=True, ocr_language="+".join(AVAILABLE_LANGUAGES), ocr_function=_PYMUPDF_OCR_FUNCTION)
 
     # https://pymupdf.readthedocs.io/en/latest/page.html#description-of-get-links-entries
     for link in page.links():
@@ -299,7 +313,8 @@ def _extract_page(doc, page_num, log_identifier=""):
         img_data = doc.extract_image(img[0])
         img_path = ""
 
-        logger.info(f"Extracting image {debug_cnt + 1}/{len(images)}")
+        debug_cnt += 1
+        logger.info(f"Extracting image {debug_cnt}/{len(images)}")
         try:
             img_path = _save_image(img_data)
             logger.debug(f"[{log_identifier}] Extracted {img_path} for processing")

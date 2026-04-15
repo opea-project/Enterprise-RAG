@@ -21,7 +21,8 @@ from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, Link
 from app.sharepoint import (
     sharepoint_enabled, GraphApiError, SpSyncLockError,
     site_display_name, get_graph_token,
-    resolve_single_sharepoint_site, get_tracked_sp_site_names,
+    resolve_single_sharepoint_site, clean_sharepoint_site_url,
+    get_tracked_sp_site_names,
     upload_sharepoint_file, get_sharepoint_file_url,
     build_sharepoint_sync_plan, delete_sp_file,
     sp_sync_lock, filter_sp_sites_for_user,
@@ -377,7 +378,7 @@ def add_new_file(object_name, etag, content_type, size, bucket_name=None, site_n
         try:
             old_files = db.query(FileStatus).filter(*identity_filter).all()
             for old_file in old_files:
-                delete_existing_file(old_file.object_name, bucket_name=old_file.bucket_name, site_name=old_file.site_name)
+                delete_existing_file(old_file.object_name, bucket_name=old_file.bucket_name, site_name=old_file.site_name, delete_from_sp=False)
         except Exception as e:
             logger.error(f"Error deleting existing file: {e}")
             db.rollback()
@@ -417,7 +418,7 @@ def add_new_file(object_name, etag, content_type, size, bucket_name=None, site_n
     return file_status
 
 
-def delete_existing_file(object_name, bucket_name=None, site_name=None):
+def delete_existing_file(object_name, bucket_name=None, site_name=None, delete_from_sp=True):
     """
     Marks an existing file for deletion and schedules a task to delete the file.
 
@@ -425,6 +426,8 @@ def delete_existing_file(object_name, bucket_name=None, site_name=None):
         object_name (str): The name of the file to be deleted.
         bucket_name (str, optional): The name of the bucket (for S3 files).
         site_name (str, optional): The name of the site (for SharePoint files).
+        delete_from_sp (bool): When False, skip deleting the file from SharePoint
+            (used during re-ingestion/update to preserve the source file).
 
     Returns:
         None
@@ -443,7 +446,7 @@ def delete_existing_file(object_name, bucket_name=None, site_name=None):
                     file_status.marked_for_deletion = True
                     file_status.status = 'deleting'
                     db.flush()
-                    task = delete_file_task.delay(file_id=file_status.id, countdown=3) # delay by 3 seconds
+                    task = delete_file_task.apply_async(kwargs={'file_id': file_status.id, 'delete_from_sp': delete_from_sp}, countdown=3)
                     file_status.job_name = 'file_deleting_job'
                     file_status.job_message = ''
                     file_status.task_id = task.id
@@ -1341,7 +1344,7 @@ async def sharepoint_add_site(body: SharePointSiteAddRequest, request: Request):
     _extract_bearer_token(request)
     _require_sharepoint()
 
-    site_url = body.site_url.strip()
+    site_url = clean_sharepoint_site_url(body.site_url.strip())
     if not site_url:
         raise HTTPException(status_code=400, detail="site_url must not be empty.")
 

@@ -724,7 +724,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
 
 
 @shared_task(base=WithEDPTask, bind=True)
-def delete_file_task(self, file_id: Any, *args, **kwargs):
+def delete_file_task(self, file_id: Any, *args, delete_from_sp: bool = True, **kwargs):
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
     if file_db is None:
         raise Exception(f"File with id {file_id} not found")
@@ -740,8 +740,9 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
         self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
 
-    # Step 1.5 - If the file came from SharePoint, delete it from the SP site too
-    if file_db.site_name:
+    # Step 1.5 - If the file came from SharePoint and this is a real deletion
+    # (not a re-ingestion/update), delete it from the SP site too.
+    if file_db.site_name and delete_from_sp:
         from app.sharepoint import delete_sp_file_by_path
         from app.models import SharePointSiteRecord
         from sqlalchemy import or_

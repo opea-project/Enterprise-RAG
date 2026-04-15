@@ -232,6 +232,18 @@ class TableAwareSplitter(Splitter):
             search_from = row_offsets[-1] + len(row)
 
         header_len = self._estimate_table_size(header) + self._NEWLINE_TOKEN_EXTRA_WEIGHT + 1
+
+        # Sanity check: if the header row itself exceeds chunk_size the table
+        # structure cannot be preserved Fall back to RecursiveCharacterTextSplitter on
+        # the whole table so chunks are guaranteed to fit the token budget.
+        if header_len > self.chunk_size:
+            logger.warning(
+                f"Table header size ({header_len}) exceeds chunk_size ({self.chunk_size}); "
+                "falling back to RecursiveCharacterTextSplitter for whole table."
+            )
+            sub_docs = self.text_splitter.split_documents([Document(page_content=table_text)])
+            return [(doc.page_content, doc.metadata.get("start_index", 0)) for doc in sub_docs]
+
         chunks: List[tuple] = []
         current_rows: List[str] = []
         current_len = header_len

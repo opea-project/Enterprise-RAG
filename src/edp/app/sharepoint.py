@@ -5,7 +5,7 @@ import asyncio
 import os
 import time
 from contextlib import contextmanager
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urlparse, urlunparse
 
 import httpx
 from redis import Redis
@@ -277,6 +277,23 @@ async def user_can_access_site(ms_user_token: str, site_id: str) -> bool:
     except Exception as e:
         logger.warning(f"Error checking site {site_id} access: {e}")
         return False
+
+
+def clean_sharepoint_site_url(site_url: str) -> str:
+    """Return the canonical site URL, stripping library paths and query strings.
+    """
+    parsed = urlparse(site_url)
+    parts = [p for p in parsed.path.split('/') if p]
+    if not parts:
+        clean_path = ''  # root site
+    elif len(parts) >= 2 and parts[0] in ('sites', 'teams'):
+        clean_path = f'/{parts[0]}/{parts[1]}'
+    else:
+        raise ValueError(
+            f"URL does not point to a SharePoint site or Teams channel: {site_url!r}. "
+            "Expected format: https://<tenant>.sharepoint.com/sites/<site-name>"
+        )
+    return urlunparse((parsed.scheme, parsed.netloc, clean_path, '', '', ''))
 
 
 async def resolve_single_sharepoint_site(ms_access_token: str, site_url: str) -> dict:

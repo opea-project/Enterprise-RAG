@@ -356,3 +356,44 @@ def test_table_aware_splitter_oversized_row_split():
     all_content = " ".join(c.page_content for c in chunks)
     for cell in data_cells:
         assert cell in all_content, f"Data cell '{cell}' missing from chunks"
+
+
+def test_table_aware_splitter_oversized_header_fallback():
+    """Test that when the header row itself exceeds chunk_size, the whole table
+    falls back to RecursiveCharacterTextSplitter and all chunks respect chunk_size.
+
+    This guards against the case where a table with row-headers (e.g. Intel
+    opcode maps) produces an enormous first-row / column-name string that blows
+    past the embedding model's token limit.
+    """
+    # Build a table whose HEADER alone exceeds chunk_size.
+    # Simulates a table where row-header values were concatenated into the
+    # first column name: "8...9.A.B...C...DE....F"
+    num_cols = 5
+    # Make the header cells very long so the header row itself exceeds chunk_size
+    long_header_cells = ["8.8.8.9.9.9.A.A.A.B.B.B.C.C.C.D.D.D.E.E.E.F.F.F.extra"] + [f"col{i}" for i in range(num_cols - 1)]
+    data_cells = [f"val{i}" for i in range(num_cols)]
+
+    header = "| " + " | ".join(long_header_cells) + " |"
+    row = "| " + " | ".join(data_cells) + " |"
+    table = header + "\n" + row
+
+    chunk_size = 100  # small enough that the header alone exceeds it
+    splitter = TableAwareSplitter(chunk_size=chunk_size, chunk_overlap=10)
+
+    # Verify precondition: header estimated size exceeds chunk_size
+    header_estimated = TableAwareSplitter._estimate_table_size(header)
+    assert header_estimated > chunk_size, (
+        f"Test precondition: header estimated size {header_estimated} must exceed chunk_size {chunk_size}"
+    )
+
+    chunks = splitter.split_text(table)
+
+    assert len(chunks) >= 1, "Expected at least one chunk"
+
+    # Every chunk must respect chunk_size
+    for i, chunk in enumerate(chunks):
+        assert len(chunk.page_content) <= chunk_size, (
+            f"Chunk {i} exceeds chunk_size: {len(chunk.page_content)} > {chunk_size}\n"
+            f"Content: {chunk.page_content!r}"
+        )

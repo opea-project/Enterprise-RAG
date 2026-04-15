@@ -122,7 +122,7 @@ def test_add_new_file(mock_delete_existing_file, mock_process_file_task, mock_ge
 def test_delete_existing_file(mock_delete_file_task, mock_get_db):
     mock_db = MagicMock()
     mock_get_db.return_value.__enter__.return_value = mock_db
-    mock_delete_file_task.delay.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
+    mock_delete_file_task.apply_async.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
 
     bucket_name = "test-bucket"
     object_name = "test-object"
@@ -139,7 +139,7 @@ def test_delete_existing_file(mock_delete_file_task, mock_get_db):
     mock_db.commit.assert_called()
 
     # Check if the file deletion task was enqueued
-    mock_delete_file_task.delay.assert_called_once_with(file_id=mock_file_status.id, countdown=3)
+    mock_delete_file_task.apply_async.assert_called_once_with(kwargs={'file_id': mock_file_status.id, 'delete_from_sp': True}, countdown=3)
 
     assert mock_file_status.job_name == 'file_deleting_job'
     assert mock_file_status.task_id == "123e4567-e89b-12d3-a456-426614174000"

@@ -3,6 +3,7 @@
 
 import os
 from redis import exceptions
+from redisvl.exceptions import RedisSearchError
 from typing import Iterable, List, Optional, Union
 from comps.cores.proto.docarray import SearchedDoc, TextDoc
 from comps.cores.utils.utils import sanitize_env
@@ -125,7 +126,13 @@ class ConnectorRedis(VectorStoreConnector):
     async def _create_index(self, schema: IndexSchema, overwrite: bool=False) -> AsyncSearchIndex:
         logger.info(f"Creating index: {schema.index.name}")
         index = AsyncSearchIndex(schema=schema, redis_url=ConnectorRedis.format_url_from_env())
-        await index.create(overwrite=overwrite)
+        try:
+            await index.create(overwrite=overwrite)
+        except RedisSearchError as e:
+            if "Index already exists" in str(e):
+                logger.info(f"Index {schema.index.name} already exists, reusing it.")
+            else:
+                raise
         return index
 
     async def vector_index(self) -> AsyncSearchIndex:

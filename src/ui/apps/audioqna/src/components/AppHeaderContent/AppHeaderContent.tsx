@@ -47,7 +47,7 @@ export const AppHeaderLeftSideContent = () => {
           onPress={handleToggleSideMenu}
         />
       )}
-      <AppNameText appName="Intel AI&reg; for Enterprise RAG" />
+      <AppNameText appName={APP_NAME} />
     </>
   );
 };

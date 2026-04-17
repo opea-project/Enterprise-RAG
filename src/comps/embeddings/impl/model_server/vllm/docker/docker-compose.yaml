@@ -8,6 +8,7 @@ services:
     ports:
       - "${EMBEDDING_VLLM_PORT}:80"
     volumes:
+      - "../entrypoint.sh:/entrypoint.sh:ro"
       - "./data:/data"
     environment:
       HF_TOKEN: ${HF_TOKEN}
@@ -17,6 +18,7 @@ services:
       VLLM_CPU_KVCACHE_SPACE: ${VLLM_CPU_KVCACHE_SPACE}
       VLLM_TARGET_DEVICE: "cpu"
     ipc: host
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     command:  "--model ${EMBEDDING_VLLM_MODEL_NAME} \
               --dtype ${VLLM_DTYPE} \
               --enforce_eager \

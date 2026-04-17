@@ -42,7 +42,6 @@ endpoints:
     rate_limit_count: 30
     permissions:
       - "admin#admin-access"
-      - "maintainer#maintainer-access"
   - name: chat-history
     enabled: true
     namespace: chat-history

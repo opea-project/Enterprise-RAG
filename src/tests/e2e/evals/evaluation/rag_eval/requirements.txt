@@ -33,5 +33,8 @@ tokenizers==0.22.2
 langchain-huggingface==1.2.1
 
 
-kr8s==0.20.15 # BSD 3-Clause License
+# NOTE: This kr8s version file must be compatible with validation requirements
+# src/tests/e2e/evals/validation/requirements.txt
+
+kr8s==0.17.4 # BSD 3-Clause License
 

@@ -596,26 +596,33 @@ def run_standard_validation(edp_helper, chatqa_api_helper, test_data):
         pytest.skip("No available stages for this language in the test data. Look at the dataset file.")
 
     for stage in test_data.stages:
+        stage_files = stage.get("files", [])
         # 1. File ingestion
-        for file_name in stage.get("files", []):
+        for file_name in stage_files:
             path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
             logger.info(f"Ingesting file: {file_name}")
             edp_helper.upload_file_and_wait_for_ingestion(path)
 
-        # 2. Question validation
-        for item in stage.get("questions", []):
-            question = item.get("question")
-            response = ask_question(chatqa_api_helper, question)
+        try:
+            # 2. Question validation
+            for item in stage.get("questions", []):
+                question = item.get("question")
+                response = ask_question(chatqa_api_helper, question)
 
-            # expected_any: success if at least one string is found
-            if "expected_any" in item:
-                expected_list = item["expected_any"]
-                assert chatqa_api_helper.words_in_response(expected_list, response), \
-                    f"Assertion failed! None of {expected_list} found in response: {response}"
+                # expected_any: success if at least one string is found
+                if "expected_any" in item:
+                    expected_list = item["expected_any"]
+                    assert chatqa_api_helper.words_in_response(expected_list, response), \
+                        f"Assertion failed! None of {expected_list} found in response: {response}"
 
-            # expected_all: success only if all strings are found
-            if "expected_all" in item:
-                expected_list = item["expected_all"]
-                missing_words = [word for word in expected_list if word.lower() not in response.lower()]
-                assert not missing_words, \
-                    f"Assertion failed! Missing words: {missing_words} in response: {response}"
+                # expected_all: success only if all strings are found
+                if "expected_all" in item:
+                    expected_list = item["expected_all"]
+                    missing_words = [word for word in expected_list if word.lower() not in response.lower()]
+                    assert not missing_words, \
+                        f"Assertion failed! Missing words: {missing_words} in response: {response}"
+        finally:
+            # 3. Cleanup — delete files uploaded in this stage
+            for file_name in stage_files:
+                logger.info(f"Deleting file after test: {file_name}")
+                delete_file(edp_helper, file_name)

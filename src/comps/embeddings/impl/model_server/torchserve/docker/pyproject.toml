@@ -27,6 +27,7 @@ dependencies = [
     "setuptools == 80.10.2",     # security update
     "requests == 2.33.1",
     "urllib3 == 2.6.3",
+    "einops == 0.8.2",
 ]
 
 [dependency-groups]

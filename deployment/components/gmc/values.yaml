@@ -29,7 +29,6 @@ llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 query_rewrite_model: &query_rewrite_model "AMead10/Llama-3.2-3B-Instruct-AWQ"
 
 embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
-# embedding_model_name: &embedding_model_name "BAAI/bge-large-en-v1.5"
 
 reranking_model_name: &reranking_model_name "BAAI/bge-reranker-base"
 

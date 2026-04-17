@@ -918,7 +918,9 @@ def api_files(request: Request) -> List[FileResponse]:
     """
 
     with get_db() as db:
-        files = db.query(FileStatus).order_by(FileStatus.created_at).filter(FileStatus.marked_for_deletion == False).all() # noqa: E712
+        files = db.query(FileStatus).order_by(FileStatus.created_at).filter(
+            (FileStatus.marked_for_deletion == False) | (FileStatus.status == 'deleting')  # noqa: E712
+        ).all()
         return [file.to_response() for file in files]
 
 

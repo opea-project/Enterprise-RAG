@@ -41,7 +41,7 @@ export const AppHeaderLeftSideContent = () => {
   };
 
   if (MAINTENANCE_MODE === "true") {
-    return <AppNameText appName="Intel AI&reg; for Enterprise RAG" />;
+    return <AppNameText appName={APP_NAME} />;
   }
 
   return (
@@ -52,7 +52,7 @@ export const AppHeaderLeftSideContent = () => {
           onPress={handleToggleSideMenu}
         />
       )}
-      <AppNameText appName="Intel AI&reg; for Enterprise RAG" />
+      <AppNameText appName={APP_NAME} />
     </>
   );
 };

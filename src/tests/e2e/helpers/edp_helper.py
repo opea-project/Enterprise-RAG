@@ -423,7 +423,9 @@ class EdpHelper(ApiRequestHelper):
             files = self.list_files().json()
             file_found = False
             for file in files:
-                if filename in file.get("object_name"):
+                if filename == file.get("object_name"):
+                    if file.get("status") == "deleting":
+                        continue
                     file_found = True
                     if file.get("status") == "error" and desired_status != "error":
                         last_status_message = "no previous status known."

@@ -7,6 +7,9 @@ scenarios:
   install:
     markers: "smoke"
 
+  upgrade:
+    markers: "smoke"
+
   update-llm-model:
     lifecycle:
       - test_update_llm_model.py

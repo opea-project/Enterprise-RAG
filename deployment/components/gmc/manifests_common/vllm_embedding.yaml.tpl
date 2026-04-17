@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 {{- $modelName := required "Please specify a valid embedding_model_name name in your Helm chart values" .Values.embedding_model_name }}
 {{- $port := "8108" }}
+{{- $trustedModels := list "jinaai/jina-embeddings-v3" "nomic-ai/nomic-embed-text-v1" }}
+{{- $trustRemoteCode := has $modelName $trustedModels }}
 
 apiVersion: v1
 kind: ConfigMap
@@ -151,7 +153,7 @@ spec:
                 {{- if $.Values.balloons.enabled }}
                 export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
                 {{- end }}
-                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager --download-dir /data --host 0.0.0.0 --port {{ $port }}
+                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager {{ if $trustRemoteCode }}--trust-remote-code {{ end }}--download-dir /data --host 0.0.0.0 --port {{ $port }}
           resources:
             {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
             {{- include "manifest.getResource" (list $.filename $defaultValues $.Values) | nindent 12 }}
@@ -279,7 +281,7 @@ spec:
                 {{- if .Values.balloons.enabled }}
                 export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
                 {{- end }}
-                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager --download-dir /data --host 0.0.0.0 --port {{ $port }}
+                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager {{ if $trustRemoteCode }}--trust-remote-code {{ end }}--download-dir /data --host 0.0.0.0 --port {{ $port }}
           resources:
             {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

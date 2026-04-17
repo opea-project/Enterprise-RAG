@@ -10,15 +10,6 @@
     - pre-upgrade
     - update-configuration
 
-- name: Ensure Helm repositories
-  kubernetes.core.helm_repository:
-    name: "{{ edp.helm.repo_name }}"
-    repo_url: "{{ edp.helm.repo_url }}"
-    state: present
-  tags:
-    - install
-    - pre-upgrade
-
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build

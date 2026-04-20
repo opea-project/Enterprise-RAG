@@ -283,7 +283,7 @@ class PackedParams(Document):
     llm: LLMParams = None
     retriever: RetrieverParams = None
     reranker: RerankerParams = None
-    query_rewrite: QueryRewriteParams = None
+    query_rewrite: Optional[QueryRewriteParams] = None
     input_guard: LLMGuardInputGuardrailParams = None
     output_guard: LLMGuardOutputGuardrailParams = None
     dataprep_guard: LLMGuardDataprepGuardrailParams = None

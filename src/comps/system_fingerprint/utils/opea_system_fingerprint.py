@@ -605,10 +605,11 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         packed_parameters.update(
             remove_id(
                 self.current_arguments.parameters.reranker.model_dump()))
+        query_rewrite = self.current_arguments.parameters.query_rewrite or QueryRewriteParams()
         packed_parameters.update(
             {"query_rewrite_params":
                 remove_id(
-                    self.current_arguments.parameters.query_rewrite.model_dump())
+                    query_rewrite.model_dump())
              })
         packed_parameters.update(
             remove_id(

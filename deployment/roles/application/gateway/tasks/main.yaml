@@ -187,6 +187,9 @@
       spec:
         host: external-backend.default.svc.cluster.local
         trafficPolicy:
+          connectionPool:
+            http:
+              h2UpgradePolicy: DO_NOT_UPGRADE
           tls:
             mode: SIMPLE
             insecureSkipVerify: true
@@ -276,13 +279,13 @@
       kind: "{{ item.kind }}"
       metadata:
         name: "{{ item.name }}"
-        namespace: default
+        namespace: "{{ item.namespace }}"
   loop:
-    - { apiVersion: "gateway.networking.k8s.io/v1", kind: HTTPRoute, name: external-backend-route }
-    - { apiVersion: "gateway.networking.k8s.io/v1beta1", kind: ReferenceGrant, name: allow-gateway-refs }
-    - { apiVersion: "networking.istio.io/v1", kind: DestinationRule, name: external-backend-tls }
-    - { apiVersion: v1, kind: Service, name: external-backend }
-    - { apiVersion: v1, kind: Endpoints, name: external-backend }
+    - { apiVersion: "gateway.networking.k8s.io/v1", kind: HTTPRoute, name: external-backend-route, namespace: default }
+    - { apiVersion: "gateway.networking.k8s.io/v1beta1", kind: ReferenceGrant, name: allow-gateway-refs, namespace: default }
+    - { apiVersion: "networking.istio.io/v1", kind: DestinationRule, name: external-backend-tls, namespace: default }
+    - { apiVersion: v1, kind: Service, name: external-backend, namespace: default }
+    - { apiVersion: v1, kind: Endpoints, name: external-backend, namespace: default }
   when: reverse_proxy_storage | default(false) | bool
   tags:
     - uninstall

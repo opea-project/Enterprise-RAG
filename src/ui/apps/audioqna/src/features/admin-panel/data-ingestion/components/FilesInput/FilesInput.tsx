@@ -13,7 +13,6 @@ import {
   useState,
 } from "react";
 
-import { CLIENT_MAX_BODY_SIZE } from "@/config/api";
 import { SUPPORTED_FILE_EXTENSIONS } from "@/features/admin-panel/data-ingestion/utils/constants";
 import { validateFileInput } from "@/features/admin-panel/data-ingestion/validators/filesInput";
 
@@ -64,7 +63,6 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
     <FileInput
       data-testid="files-input"
       errorMessage={errorMessage}
-      totalSizeLimit={CLIENT_MAX_BODY_SIZE}
       supportedFileExtensions={SUPPORTED_FILE_EXTENSIONS}
       onDrop={handleFileInputDrop}
       onChange={handleFileInputChange}

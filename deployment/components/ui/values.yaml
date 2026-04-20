@@ -21,7 +21,7 @@ extraNginxVars:
   systemFingerprintEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   chatHistoryEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   edpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
-  dataprepClientMaxBodySize: "64m"
+  dataprepClientMaxBodySize: "0"
   # Docsum endpoints
   docsumEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   # AudioQnA endpoints

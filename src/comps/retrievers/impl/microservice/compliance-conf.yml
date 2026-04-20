@@ -16,6 +16,10 @@ manual:
     - name: astral-sh/uv
       origin: github
       license: MIT
+# Manual install via uv in Dockerfile
+    - name: explosion/spacy-models/pl_core_news_sm
+      origin: github
+      license: GNU GPL-3.0
     - name: curl
       origin: apt
       license: MIT

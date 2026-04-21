@@ -20,7 +20,9 @@ metadata:
 data:
   service: |
     spec:
+      {{- if ne .Values.gateway.serviceType "ClusterIP" }}
       externalTrafficPolicy: {{ .Values.gateway.externalTrafficPolicy }}
+      {{- end }}
       ipFamilyPolicy: SingleStack
       ipFamilies:
         - IPv4

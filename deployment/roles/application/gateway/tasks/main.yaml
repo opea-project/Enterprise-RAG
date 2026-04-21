@@ -223,10 +223,10 @@
   tags:
     - install
 
-- name: Create HTTPRoute for external storage backend
+- name: Create HTTPRoute for external storage backend (subdomain mode)
   kubernetes.core.k8s:
     state: present
-    definition:
+    definition: |
       apiVersion: gateway.networking.k8s.io/v1
       kind: HTTPRoute
       metadata:
@@ -234,21 +234,58 @@
         namespace: default
       spec:
         parentRefs:
-          - name: "{{ gateway.helm.release_name }}"
-            namespace: "{{ gateway.namespace }}"
+          - name: {{ gateway.helm.release_name }}
+            namespace: {{ gateway.namespace }}
             sectionName: https
         hostnames:
-          - "{{ FQDN if (routing_mode | default('subdomain')) == 'path' else 's3.' ~ FQDN }}"
+          - s3.{{ FQDN }}
         rules:
           - matches:
               - path:
                   type: PathPrefix
-                  value: "{{ (edp.s3PathPrefix | default('/s3')) if (routing_mode | default('subdomain')) == 'path' else '/' }}"
-            filters: "{{ [{'type': 'URLRewrite', 'urlRewrite': {'path': {'type': 'ReplacePrefixMatch', 'replacePrefixMatch': '/'}}}] if (routing_mode | default('subdomain')) == 'path' else omit }}"
+                  value: /
             backendRefs:
               - name: external-backend
-                port: "{{ _rps_port }}"
-  when: reverse_proxy_storage | default(false) | bool
+                port: {{ _rps_port | int }}
+  when:
+    - reverse_proxy_storage | default(false) | bool
+    - routing_mode | default('subdomain') != 'path'
+  tags:
+    - install
+
+- name: Create HTTPRoute for external storage backend (path mode)
+  kubernetes.core.k8s:
+    state: present
+    definition: |
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: external-backend-route
+        namespace: default
+      spec:
+        parentRefs:
+          - name: {{ gateway.helm.release_name }}
+            namespace: {{ gateway.namespace }}
+            sectionName: https
+        hostnames:
+          - {{ FQDN }}
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: {{ edp.s3PathPrefix | default('/s3') }}
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /
+            backendRefs:
+              - name: external-backend
+                port: {{ _rps_port | int }}
+  when:
+    - reverse_proxy_storage | default(false) | bool
+    - routing_mode | default('subdomain') == 'path'
   tags:
     - install
 

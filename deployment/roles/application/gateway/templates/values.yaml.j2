@@ -3,11 +3,12 @@ Copyright (C) 2024-2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 gateway:
-  serviceType: {{ gateway.service_type }}
+  serviceType: {{ gateway.serviceType }}
+  externalTrafficPolicy: {{ gateway.externalTrafficPolicy }}
   hostPort:
-    enabled: {{ gateway.hostport.enabled | lower }}
-    httpPort: {{ gateway.hostport.http_port }}
-    httpsPort: {{ gateway.hostport.https_port }}
+    enabled: {{ gateway.hostPort.enabled | lower }}
+    httpPort: {{ gateway.hostPort.httpPort }}
+    httpsPort: {{ gateway.hostPort.httpsPort }}
 
 image:
   repository: {{ registry }}

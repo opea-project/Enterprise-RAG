@@ -18,6 +18,12 @@ metadata:
   labels:
     {{- include "erag-gateway.labels" . | nindent 4 }}
 data:
+  service: |
+    spec:
+      externalTrafficPolicy: {{ .Values.gateway.externalTrafficPolicy }}
+      ipFamilyPolicy: SingleStack
+      ipFamilies:
+        - IPv4
   deployment: |
     spec:
       {{- if .Values.gateway.hostPort.enabled }}

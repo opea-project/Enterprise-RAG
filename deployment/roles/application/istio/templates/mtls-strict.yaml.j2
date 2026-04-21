@@ -34,4 +34,13 @@ spec:
   portLevelMtls:
     16379:
       mode: DISABLE
+{% elif item == gateway.namespace | default("erag-gateway") %}
+  selector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: erag-gateway
+  portLevelMtls:
+    80:
+      mode: PERMISSIVE
+    443:
+      mode: PERMISSIVE
 {% endif %}

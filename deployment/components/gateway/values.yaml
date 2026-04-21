@@ -34,6 +34,11 @@ gateway:
   #   NodePort  — use high-port NodePort (30080/30443)
   #   LoadBalancer — use MetalLB / kube-vip / cloud LB
   serviceType: ClusterIP            # ClusterIP when using hostPort
+  # externalTrafficPolicy:
+  #   Local  — preserves source IP; MetalLB only announces from nodes running the gateway pod.
+  #            Required when the upstream router (e.g. pfSense) uses stateful connection tracking.
+  #   Cluster — default Kubernetes behaviour; IPVS masquerades source IP.
+  externalTrafficPolicy: Cluster
   hostPort:
     enabled: true                   # bind :80/:443 directly on the node (no LB needed)
     httpPort: 80

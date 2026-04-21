@@ -970,8 +970,8 @@ textSplitter:
       cpu: "100m"
       memory: "512Mi"
     limits:
-      cpu: "1"
-      memory: "2Gi"
+      cpu: "2"
+      memory: "4Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 1

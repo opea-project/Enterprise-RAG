@@ -200,11 +200,13 @@ Change pipeline file in inventory's `config.yaml` to use file, that you have rec
 ```yaml
 pipelines:
   - namespace: chatqa
-     samplePath: chatqa/reference-external-endpoint.yaml
-     resourcesPath: chatqa/resources-reference-external-endpoint.yaml
-     modelConfigPath: chatqa/resources-model-cpu.yaml
-     type: chatqa
+    samplePath: chatqa/reference-external-endpoint.yaml
+    resourcesPath: chatqa/resources-reference-external-endpoint.yaml
+    modelConfigPath: chatqa/resources-model-cpu.yaml
+    type: chatqa
  ```
+> [!NOTE] 
+> If application will be deployed behind the proxy user should adjust additionalNoProxy value in `config.yaml` accordingly.
 
  Additionally, if eRAG and NAI are on the same cluster, balloons needs to be configured:
 ```yaml

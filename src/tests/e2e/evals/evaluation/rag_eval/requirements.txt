@@ -36,5 +36,5 @@ langchain-huggingface==1.2.1
 # NOTE: This kr8s version file must be compatible with validation requirements
 # src/tests/e2e/evals/validation/requirements.txt
 
-kr8s==0.17.4 # BSD 3-Clause License
+kr8s==0.20.15 # BSD 3-Clause License
 

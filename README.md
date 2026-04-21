@@ -65,7 +65,8 @@ Document Summarization's pipeline architecture is available [here](./docs/images
      - [Install infrastructure components (storage, operators, backup tools)](#install-infrastructure-components-storage-operators-backup-tools)
      - [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
 4. [Intel AI Enterprise RAG Deployment - Partner Solutions](#intel-ai-enterprise-rag-deployment---partner-solutions)
-   - [Nutanix AI & Intel® AI for Enterprise RAG](#nutanix-ai--intel-ai-for-enterprise-rag)
+   - [Nutanix Enterprise AI & Intel® AI for Enterprise RAG](#nutanix-enterprise-ai--intel-ai-for-enterprise-rag)
+   - [VMware & Intel® AI for Enterprise RAG](#vmware--intel-ai-for-enterprise-rag)
 5. [Documentation](#documentation)
 6. [Support](#support)
 7. [Publications](#publications)
@@ -170,9 +171,13 @@ Once you have a K8s cluster with all infrastructure components installed, you ca
 
 # Intel AI Enterprise RAG Deployment - Partner Solutions
 
-## Nutanix AI & Intel® AI for Enterprise RAG
+## Nutanix Enterprise AI & Intel® AI for Enterprise RAG
 
-Follow documentation to deploy Nutanix AI with Intel® AI for Enterprise RAG using the [Nutanix AI Deployment Guide](docs/nutanix/README.md).
+[Nutanix Enterprise AI Deployment Guide](docs/nutanix/README.md).
+
+## VMware & Intel® AI for Enterprise RAG
+
+[VMware Deployment Guide](docs/VMware/README.md).
 
 # Documentation
 

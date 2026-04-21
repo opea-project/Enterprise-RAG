@@ -27,10 +27,10 @@
 | EVC Mode | Must be set to Sapphire Rapids or higher or Disabled | If set to older generations (Ice Lake, Cascade Lake), AMX will be masked |
 
 **Pre-deployment Checklist:**
-- [ ] Is Intel AMX enabled in the host BIOS?
-- [ ] Are hosts running ESXi 7.0 U3 or later?
-- [ ] Is VM hardware version set to v20?
-- [ ] Is cluster EVC baseline set to Sapphire Rapids or disabled?
+- Is Intel AMX enabled in the host BIOS?
+- Are hosts running ESXi 7.0 U3 or later?
+- Is VM hardware version set to v20?
+- Is cluster EVC baseline set to Sapphire Rapids or disabled?
 
 ## Node Reference
 

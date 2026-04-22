@@ -17,6 +17,8 @@ import { keycloakService } from "@/utils/auth";
 const APP_NAME = "Intel® AI for Enterprise RAG";
 const APP_VERSION =
   getDocSumAppEnv("ERAG_VERSION") || import.meta.env.VITE_APP_VERSION;
+const USER_GUIDE_URL =
+  "https://github.com/opea-project/Enterprise-RAG/blob/main/docs/Intel_AI_for_Enterprise_RAG_DocSum_User_Guide_2.2.0.pdf";
 
 export const AppHeaderLeftSideContent = () => {
   return <AppNameText appName="Document Summarization" />;
@@ -27,7 +29,11 @@ export const AppHeaderRightSideContent = () => {
     <>
       <ViewSwitchButton />
       <ColorSchemeSwitch />
-      <AboutDialog appName={APP_NAME} appVersion={APP_VERSION} />
+      <AboutDialog
+        appName={APP_NAME}
+        appVersion={APP_VERSION}
+        userGuideUrl={USER_GUIDE_URL}
+      />
       <UsernameText username={keycloakService.getUsername()} />
       <LogoutButton
         onPress={() => {

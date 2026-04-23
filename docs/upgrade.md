@@ -12,21 +12,18 @@ This document provides instructions for upgrading Intel&reg; AI for Enterprise R
 
 ## Introduction
 
-The upgrade workflow uses a two-phase approach:
+The upgrade workflow is supported by standard install flow, which auto-detects upgrades by comparing the deployed version (stored in a Kubernetes ConfigMap) against the target version. When an upgrade is detected, the install automatically performs version constraint validation, health checks, data consistency verification, and generates reports.
 
-- **Phase 1**: Pre-upgrade assessment from your current deployment
-- **Phase 2**: Upgrade execution from the target deployment
-
-This ensures validation checks are performed before making changes to your running system.
+Running a pre-upgrade assessment beforehand is recommended but not required — it lets you review compatibility and system health before making changes.
 
 ## Prerequisites
 
 ### Backup Configuration
 
 > [!IMPORTANT]
-> A recent backup is required before upgrading. The upgrade workflow verifies backup availability.
+> Creating a backup before upgrading is strongly recommended. By default, the upgrade workflow verifies that a recent backup exists and will block if none is found.
 
-Velero must be installed and configured. See the [Backup and Restore Guide](backup.md) for setup instructions.
+If you use Velero for backups, ensure it is installed and configured. See the [Backup and Restore Guide](backup.md) for setup instructions.
 
 Ensure your `config.yaml` has Velero enabled:
 ```yaml
@@ -36,6 +33,8 @@ velero:
   install_server: true
   install_client: true
 ```
+
+If you manage backups through a different mechanism or want to skip the backup check, pass `-e allow_upgrade_without_backup=true` when running the pre-upgrade assessment and/or install. This bypasses backup verification in both playbooks.
 
 ### Target Deployment
 
@@ -83,7 +82,14 @@ cp deployment/inventory/test-cluster/config.yaml \
   ../erag-2.1.0/deployment/inventory/test-cluster/config.yaml
 ```
 
-### Step 3: Run Pre-upgrade Assessment (Phase 1)
+> [!IMPORTANT]
+> After copying, update the `tag` field in the target `config.yaml` to match the version of ERAG solution indicated in `deployment/version.yaml`:
+> ```yaml
+> tag: <deployment_target_version>
+> ```
+> This controls which container images are deployed. If the image registry has also changed, update the `registry` field as well.
+
+### Step 3: Run Pre-upgrade Assessment (Recommended)
 
 From your **current deployment**, run the pre-upgrade assessment:
 
@@ -106,25 +112,11 @@ Review the output. The assessment indicates:
 - **READY**: All checks passed, proceed with upgrade
 - **WARNINGS**: Issues detected, review before proceeding
 
-#### Optional: Detailed Pre-upgrade Checks
+For a more comprehensive check that also includes data consistency verification and metadata comparison between current and target versions, run `ansible-playbook playbooks/application.yaml --tags pre-upgrade` from the **target deployment** instead.
 
-For comprehensive pre-upgrade validation including data consistency checks and metadata comparison, run from your **target deployment**:
+### Step 4: Execute Upgrade
 
-```bash
-cd deployment
-
-ansible-playbook playbooks/application.yaml --tags pre-upgrade \
-  -e @inventory/test-cluster/config.yaml
-```
-
-This performs:
-- All Phase 1 checks (health, backup, version)
-- Data consistency verification (EDP, VDB, SeaweedFS)
-- Metadata comparison between current and target versions
-
-### Step 4: Execute Upgrade (Phase 2)
-
-If Phase 1 completed successfully, run the upgrade from the **target deployment**:
+Run the install from the **target deployment**:
 
 ```bash
 cd /path/to/erag-2.1.0/deployment
@@ -133,16 +125,28 @@ ansible-playbook playbooks/application.yaml --tags install \
   -e @inventory/test-cluster/config.yaml
 ```
 
+The install flow auto-detects that this is an upgrade and automatically performs:
+- Version constraint validation (blocks unsupported upgrade paths)
+- Pre and post health checks with comparison
+- Data consistency verification (EDP, VDB, SeaweedFS)
+- Report generation under `deployment/upgrade/reports/`
+
 ## Verification
 
-After upgrade completion, verify the deployment:
+After upgrade completion, review the auto-generated upgrade summary:
+
+```bash
+cat deployment/upgrade/reports/upgrade-summary.md
+```
+
+This report covers upgrade mode, health check results, and data consistency status.
+
+Verify the deployed version:
 
 ```bash
 cd deployment
 ./scripts/query_deployment_manifest.sh
 ```
-
-The output shows the deployed version and component status.
 
 Test application functionality:
 1. Access the UI and verify login

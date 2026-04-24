@@ -1,4 +1,0 @@
-| Pipeline                                      | Platform | Description                                                                                       |
-|----------------------------------------------|----------|---------------------------------------------------------------------------------------------------|
-| `reference-hpu.yaml`                         | Gaudi    | A translation pipeline powered by the Gaudi backend that auto-detects the source language and translates to the target language. |
-| `reference-cpu.yaml`                         | Xeon     | A translation pipeline powered by the Xeon backend that auto-detects the source language and translates to the target language. |

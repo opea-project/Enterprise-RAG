@@ -52,7 +52,7 @@ class K8sHelper:
     def get_pod_by_label(self, namespace, label_selector):
         """Returns first pod matching a label selector in a namespace"""
         logger.debug(f"Getting pods with label selector '{label_selector}' in namespace '{namespace}'")
-        pods = kr8s.get("pods", namespace=namespace, label_selector=label_selector)
+        pods = list(kr8s.get("pods", namespace=namespace, label_selector=label_selector))
         if len(pods) == 0:
             raise ResourceNotFound(f"No running pods found with label '{label_selector}' in namespace '{namespace}'.")
         return pods[0]

@@ -321,12 +321,12 @@ test_docx_with_hyperlink:
       files: [test_docx_with_hyperlink.docx]
       questions:
         - question: "Give me a link to a website called AAAFFFGGGKKK"
-          expected_any: ["aaafffgggkkk-top-secret.com"]
+          expected_any: ["aaafffgggkkk-daily-recipes.com"]
     pl:
       files: [test_docx_with_hyperlink.docx]
       questions:
         - question: "Podaj link do strony internetowej o nazwie AAAFFFGGGKKK"
-          expected_any: ["aaafffgggkkk-top-secret.com"]
+          expected_any: ["aaafffgggkkk-daily-recipes.com"]
 test_content_is_forgotten_after_file_deletion:
   - en:
       files: [story_to_be_deleted.txt]

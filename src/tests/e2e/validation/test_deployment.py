@@ -103,7 +103,7 @@ def test_hpa(edp_helper, chatqa_api_helper, guard_helper):
     PROMETHEUS_POD = "prometheus-adapter"
 
     def get_hpas():
-        return kr8s.get("horizontalpodautoscalers", namespace=kr8s.ALL)
+        return list(kr8s.get("horizontalpodautoscalers", namespace=kr8s.ALL))
 
     logger.info("Initial check to verify HPA objects creation...")
     try:

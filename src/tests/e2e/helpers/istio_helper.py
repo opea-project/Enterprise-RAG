@@ -387,7 +387,7 @@ class LogWatcher(threading.Thread):
         initialize_retries = 0
         pods = []
         while time.time() < initialize_stop and initialize_retries < LogWatcher.INITIALIZE_RETRIES:
-            pods = kr8s.get("pods", namespace=ztunnel_namespace, label_selector=ztunnel_label_selector)
+            pods = list(kr8s.get("pods", namespace=ztunnel_namespace, label_selector=ztunnel_label_selector))
             if len(pods) >= 1:
                 break
             initialize_retries += 1
@@ -436,7 +436,7 @@ class QueryWorkloadLookup:
             self.workload_cache.pop(endpoint)
         if (m := self.endpoint_ptrn.match(endpoint)) is not None:
             service, namespace = m.group("service"), m.group("namespace")
-            services = kr8s.get("services", service, namespace=namespace)
+            services = list(kr8s.get("services", service, namespace=namespace))
             if len(services) == 0:
                 workloads = []
             else:
@@ -485,7 +485,7 @@ def count_pods_on_node(node_name: Optional[str] = None) -> int:
 def _query_node_capacity(default: int = MAX_RUNNING_QUERIES) -> NodeCapacity:
     # Find the node with the most free pod slots; fall back to defaults on error.
     try:
-        nodes = kr8s.get("nodes")
+        nodes = list(kr8s.get("nodes"))
         if not nodes:
             logger.warning("[capacity] No nodes returned, using default max_running_queries=%d", default)
             return NodeCapacity(

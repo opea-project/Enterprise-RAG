@@ -17,7 +17,7 @@ _oidc = cfg.get("keycloak", {}).get("oidc", {})
 if not all(_oidc.get(k) for k in ("endpoint", "alias", "client_id", "tenant_id", "client_secret")):
     _msg = ("SharePoint OIDC configuration is not fully set (keycloak.oidc.*). "
             "Ensure endpoint, alias, client_id, tenant_id, and client_secret are configured.")
-    logger.warning(_msg)
+    logger.debug(_msg)
     pytest.skip(_msg, allow_module_level=True)
 
 _SP_ENV_VARS = ("SP_SITE_URL_ALL", "SP_SITE_URL_ADMIN", "SP_SITE_URL_USER")
@@ -28,7 +28,7 @@ if _missing_sp_vars:
             f"  export SP_SITE_URL_ALL='https://intel.sharepoint.com/sites/my-site'\n"
             f"  export SP_SITE_URL_ADMIN='https://intel.sharepoint.com/sites/my-admin-site'\n"
             f"  export SP_SITE_URL_USER='https://intel.sharepoint.com/sites/my-user-site'")
-    logger.warning(_msg)
+    logger.debug(_msg)
     pytest.skip(_msg, allow_module_level=True)
 
 SP_SITE_ALL = os.environ.get("SP_SITE_URL_ALL", "")

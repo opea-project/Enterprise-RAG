@@ -162,7 +162,7 @@ def get_vector_db_endpoints():
 
     # Check for redis-cluster implementation first
     try:
-        services = kr8s.get("services", "vdb-redis-cluster-headless", namespace="vdb")
+        services = list(kr8s.get("services", "vdb-redis-cluster-headless", namespace="vdb"))
         if len(services) == 1:
             service = services[0]
             logger.info("Found redis-cluster vector DB service: %s", service.name)
@@ -172,7 +172,7 @@ def get_vector_db_endpoints():
 
     # Check for redis implementation
     try:
-        services = kr8s.get("services", "vdb-redis-headless", namespace="vdb")
+        services = list(kr8s.get("services", "vdb-redis-headless", namespace="vdb"))
         if len(services) == 1:
             service = services[0]
             logger.info("Found redis vector DB service: %s", service.name)

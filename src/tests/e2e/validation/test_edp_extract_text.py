@@ -17,30 +17,6 @@ if not cfg.get("edp", {}).get("enabled"):
 logger = logging.getLogger(__name__)
 FILES_DIR = "e2e/files/extract_text"
 FILES_PREFIX = "extract_text_test_"
-IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "late_chunking", "embedding"]
-
-
-@pytest.fixture(autouse=True)
-def cleanup(edp_helper):
-    yield
-    logger.info("\nAttempting to clean up all items created during the test")
-    files = edp_helper.list_files()
-    for file in files.json():
-        file_name = file["object_name"]
-        if FILES_PREFIX in file_name:
-            if file["status"] in IN_PROGRESS_STATUSES:
-                logger.info(f"Canceling in progress task: {file_name}")
-                edp_helper.cancel_processing_task(file["id"])
-            elif file["status"] in ["ingested", "error"]:
-                logger.info(f"Removing file: {file_name}")
-                response = edp_helper.generate_presigned_url(file["object_name"], "DELETE", file["bucket_name"])
-                edp_helper.delete_file(response.json().get("url"))
-
-    links = edp_helper.list_links()
-    for link in links.json():
-        if FILES_PREFIX in link["uri"]:
-            logger.info(f"Removing link: {link['uri']}")
-            edp_helper.delete_link(link["id"])
 
 
 @allure.testcase("IEASG-T218")

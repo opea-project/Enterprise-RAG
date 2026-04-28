@@ -51,9 +51,9 @@ class CustomPortForward(object):
                     return port
 
     def _get_pod(self, namespace, label_selector):
-        pods = kr8s.get("pods",
-                        namespace=namespace,
-                        label_selector=label_selector)
+        pods = list(kr8s.get("pods",
+                             namespace=namespace,
+                             label_selector=label_selector))
         return pods[0]
 
 

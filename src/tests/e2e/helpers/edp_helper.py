@@ -423,7 +423,8 @@ class EdpHelper(ApiRequestHelper):
             files = self.list_files().json()
             file_found = False
             for file in files:
-                if filename == file.get("object_name"):
+                obj_name = file.get("object_name", "")
+                if filename == obj_name or obj_name.endswith("/" + filename):
                     if file.get("status") == "deleting":
                         continue
                     file_found = True
@@ -455,7 +456,10 @@ class EdpHelper(ApiRequestHelper):
         start_time = time.time()
         while time.time() < start_time + timeout:
             files = self.list_files().json()
-            file_found = any(file.get("object_name") == filename for file in files)
+            file_found = any(
+                file.get("object_name") == filename or file.get("object_name", "").endswith("/" + filename)
+                for file in files
+            )
 
             if not file_found:
                 logger.info(f"File {filename} has been deleted. "
@@ -592,6 +596,36 @@ class EdpHelper(ApiRequestHelper):
             for presigned_url in presigned_urls:
                 async with session.delete(presigned_url, ssl=False, headers=headers) as response:
                     response.raise_for_status()
+
+    def cleanup_all_files_and_links(self, file_ids_to_keep=None):
+        """Cancel in-progress tasks and delete all files and links not in file_ids_to_keep."""
+        in_progress = {"uploaded", "processing", "text_extracting", "text_compression",
+                       "text_splitting", "late_chunking", "embedding"}
+        file_ids_to_keep = file_ids_to_keep or set()
+
+        files = self.list_files()
+        if files.status_code != 200:
+            logger.warning(f"EDP cleanup: failed to list files (status {files.status_code})")
+            return
+        for file in files.json():
+            if file["id"] in file_ids_to_keep:
+                continue
+            file_name = file["object_name"]
+            if file["status"] in in_progress:
+                logger.info(f"EDP cleanup: canceling in-progress task: {file_name}")
+                self.cancel_processing_task(file["id"])
+            elif file["status"] in ("ingested", "error", "canceled"):
+                logger.info(f"EDP cleanup: removing file: {file_name}")
+                response = self.generate_presigned_url(file["object_name"], "DELETE", file.get("bucket_name"))
+                self.delete_file(response.json().get("url"))
+
+        links = self.list_links()
+        if links.status_code != 200:
+            logger.warning(f"EDP cleanup: failed to list links (status {links.status_code})")
+            return
+        for link in links.json():
+            logger.info(f"EDP cleanup: removing link: {link['uri']}")
+            self.delete_link(link["id"])
 
     def _status_reached(self, status, desired_status):
         """

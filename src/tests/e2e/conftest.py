@@ -421,15 +421,19 @@ def collect_k8s_logs(request):
 
         for pod in pods:
             pod_name = pod.metadata.name
-            log_file = os.path.join(log_dir, f"{namespace}_{pod_name}.log")
-            try:
-                logs = "\n".join(pod.logs(since_time=test_start_time))
-            except Exception as e:
-                logger.warning(f"Failed to read logs for pod {pod_name} in namespace {namespace}. "
-                               f"Pod might have already been deleted. Exception: {e}")
-                continue
-            with open(log_file, "w") as f:
-                f.write(logs)
+            containers = [c.name for c in pod.spec.containers]
+            for container_name in containers:
+                suffix = f"_{container_name}" if len(containers) > 1 else ""
+                log_file = os.path.join(log_dir, f"{namespace}_{pod_name}{suffix}.log")
+                try:
+                    logs = "\n".join(pod.logs(container=container_name, since_time=test_start_time))
+                except Exception as e:
+                    logger.warning(f"Failed to read logs for pod {pod_name} container {container_name} "
+                                   f"in namespace {namespace}. "
+                                   f"Pod might have already been deleted. Exception: {e}")
+                    continue
+                with open(log_file, "w") as f:
+                    f.write(logs)
     logger.info(f"Logs collected in {log_dir}")
 
     # Archive all logs into a tar.gz file
@@ -445,6 +449,36 @@ def collect_k8s_logs(request):
 @pytest.fixture(scope="session")
 def edp_helper(keycloak_helper, validation_user_persistent):
     return EdpHelper(keycloak_helper=keycloak_helper)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def edp_cleanup_after_test(edp_helper):
+    """Snapshot EDP file IDs before the test, delete any new files/links after it."""
+    edp_enabled = cfg.get("edp", {}).get("enabled")
+    if not edp_enabled:
+        yield
+        return
+
+    files_before = edp_helper.list_files()
+    ids_before = {f["id"] for f in files_before.json()} if files_before.status_code == 200 else set()
+    yield
+    edp_helper.cleanup_all_files_and_links(file_ids_to_keep=ids_before)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def edp_cleanup_after_session(edp_helper):
+    """Safety net: snapshot files before the session, delete only new ones at the end."""
+    edp_enabled = cfg.get("edp", {}).get("enabled")
+    if not edp_enabled:
+        yield
+        return
+
+    files_before = edp_helper.list_files()
+    ids_before = {f["id"] for f in files_before.json()} if files_before.status_code == 200 else set()
+    yield
+    logger.info("Session-level EDP cleanup: removing files and links added during the test session")
+    edp_helper.cleanup_all_files_and_links(file_ids_to_keep=ids_before)
+
 
 @pytest.fixture(scope="session")
 def sharepoint_helper(keycloak_helper):

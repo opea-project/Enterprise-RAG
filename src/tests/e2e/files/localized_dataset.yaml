@@ -541,3 +541,134 @@ test_docx_comprehensive_pl:
           expected_any: ["intel.pl"]
         - question: "Jakie zdanie testowe zawierające polskie znaki znajduje się w dokumencie 'Analiza sprzedaży regionów'?"
           expected_any: ["gęślą", "jaźń", "Zażółć"]
+test_metadata_pdf:
+  - en:
+      files: [story.pdf]
+      consolidated_question: "For the document about Krystianooo and Intel's headquarters in Gdansk, provide ALL of the following metadata: 1) the author, 2) the document title, 3) the exact creation date, 4) the exact last modification date, 5) the exact ingestion/upload date."
+      questions:
+        - question: "Who is the author of the document about Intel's headquarters in Gdansk and a curious intern named Krystianooo?"
+          expected_any: ["Quintharion", "Zelbraxo"]
+        - question: "What is the title of the document about Krystianooo who found a secret portal at Intel's headquarters in Gdansk?"
+          expected_any: ["Secret Portal Discovery Report"]
+        - question: "When was the document about Krystianooo and Intel's headquarters in Gdansk created? Provide the exact date."
+          expected_any: ["2025-05-18", "May 18, 2025", "18 May 2025", "May 2025"]
+        - question: "When was the document about Intel's headquarters in Gdansk and a curious intern named Krystianooo who found a secret portal last modified or updated? Provide the exact date."
+          expected_any: ["2025-09-01", "September 1, 2025", "1 September 2025", "September 2025"]
+        - question: "When was the document about Krystianooo and Intel's headquarters in Gdansk ingested or uploaded? Provide the exact date."
+          check_ingestion_date: true
+    pl:
+      files: [story.pdf]
+      consolidated_question: "Dla dokumentu o Krystianooo i siedzibie Intela w Gdańsku podaj WSZYSTKIE następujące metadane: 1) autora, 2) tytuł dokumentu, 3) dokładną datę utworzenia, 4) dokładną datę ostatniej modyfikacji, 5) dokładną datę importu/przesłania."
+      questions:
+        - question: "Kto jest autorem dokumentu o siedzibie Intela w Gdańsku i stażyście o imieniu Krystianooo?"
+          expected_any: ["Quintharion", "Zelbraxo"]
+        - question: "Jaki jest tytuł dokumentu o Krystianooo, który znalazł tajny portal w siedzibie Intela w Gdańsku?"
+          expected_any: ["Secret Portal Discovery Report"]
+        - question: "Kiedy został utworzony dokument o Krystianooo i siedzibie Intela w Gdańsku? Podaj dokładną datę."
+          expected_any: ["2025-05-18", "18 maja 2025", "maj 2025"]
+        - question: "Kiedy dokument o siedzibie Intela w Gdańsku i stażyście Krystianooo, który znalazł tajny portal, został ostatnio zmodyfikowany? Podaj dokładną datę."
+          expected_any: ["2025-09-01", "1 września 2025", "wrzesień 2025"]
+        - question: "Kiedy dokument o Krystianooo i siedzibie Intela w Gdańsku został zaimportowany lub przesłany? Podaj dokładną datę."
+          check_ingestion_date: true
+test_metadata_docx:
+  - en:
+      files: [story.docx]
+      consolidated_question: "For the document about a girl named Asfehehehe who found a tiny world inside an old tree, provide ALL of the following metadata: 1) the author, 2) the document title, 3) the exact creation date, 4) the exact last modification date, 5) the exact ingestion/upload date."
+      questions:
+        - question: "Who is the author of the document about a girl named Asfehehehe who found a tiny world inside an old tree?"
+          expected_any: ["Veldranix", "Torquaeh"]
+        - question: "What is the title of the document about a girl named Asfehehehe and an old tree?"
+          expected_any: ["Enchanted Tree", "Asfehehehe"]
+        - question: "When was the document about Asfehehehe and the enchanted tree created? Provide the exact date."
+          expected_any: ["2025-03-15", "March 15, 2025", "15 March 2025", "March 2025"]
+        - question: "When was the document about a girl named Asfehehehe who found a tiny world inside an old tree last modified or updated? Provide the exact date."
+          expected_any: ["2025-06-20", "June 20, 2025", "20 June 2025", "June 2025"]
+        - question: "When was the document about a girl named Asfehehehe and an old tree ingested or uploaded? Provide the exact date."
+          check_ingestion_date: true
+    pl:
+      files: [story.docx]
+      consolidated_question: "Dla dokumentu o dziewczynie Asfehehehe, która znalazła mały świat wewnątrz starego drzewa, podaj WSZYSTKIE następujące metadane: 1) autora, 2) tytuł dokumentu, 3) dokładną datę utworzenia, 4) dokładną datę ostatniej modyfikacji, 5) dokładną datę importu/przesłania."
+      questions:
+        - question: "Kto jest autorem dokumentu o dziewczynie Asfehehehe, która znalazła mały świat wewnątrz starego drzewa?"
+          expected_any: ["Veldranix", "Torquaeh"]
+        - question: "Jaki jest tytuł dokumentu o dziewczynie Asfehehehe i starym drzewie?"
+          expected_any: ["Enchanted Tree", "Asfehehehe"]
+        - question: "Kiedy został utworzony dokument o Asfehehehe i zaczarowanym drzewie? Podaj dokładną datę."
+          expected_any: ["2025-03-15", "15 marca 2025", "marzec 2025"]
+        - question: "Kiedy dokument o dziewczynie Asfehehehe, która znalazła mały świat wewnątrz starego drzewa, został ostatnio zmodyfikowany? Podaj dokładną datę."
+          expected_any: ["2025-06-20", "20 czerwca 2025", "czerwiec 2025"]
+        - question: "Kiedy dokument o dziewczynie Asfehehehe i starym drzewie został zaimportowany lub przesłany? Podaj dokładną datę."
+          check_ingestion_date: true
+test_metadata_pptx:
+  - en:
+      files: [story.pptx]
+      consolidated_question: "For the presentation about the AI validation team at Impelooo that started writing poetry, provide ALL of the following metadata: 1) the author, 2) the presentation title, 3) the exact creation date, 4) the exact last modification date, 5) the exact ingestion/upload date."
+      questions:
+        - question: "Who is the author of the presentation about the AI validation team at Impelooo that started writing poetry?"
+          expected_any: ["Myratheen", "Obiquel"]
+        - question: "What is the title of the presentation about the AI validation team at Impelooo?"
+          expected_any: ["Impelooo AI Validation Chronicles"]
+        - question: "When was the presentation about the AI validation team at Impelooo created? Provide the exact date."
+          expected_any: ["2025-01-10", "January 10, 2025", "10 January 2025", "January 2025"]
+        - question: "When was the presentation about the AI validation team at Impelooo that started writing poetry last modified or updated? Provide the exact date."
+          expected_any: ["2025-04-05", "April 5, 2025", "5 April 2025", "April 2025"]
+        - question: "When was the presentation about the AI validation team at Impelooo ingested or uploaded? Provide the exact date."
+          check_ingestion_date: true
+    pl:
+      files: [story.pptx]
+      consolidated_question: "Dla prezentacji o zespole walidacji AI w Impelooo, który zaczął pisać poezję, podaj WSZYSTKIE następujące metadane: 1) autora, 2) tytuł prezentacji, 3) dokładną datę utworzenia, 4) dokładną datę ostatniej modyfikacji, 5) dokładną datę importu/przesłania."
+      questions:
+        - question: "Kto jest autorem prezentacji o zespole walidacji AI w Impelooo, który zaczął pisać poezję?"
+          expected_any: ["Myratheen", "Obiquel"]
+        - question: "Jaki jest tytuł prezentacji o zespole walidacji AI w Impelooo?"
+          expected_any: ["Impelooo AI Validation Chronicles"]
+        - question: "Kiedy została utworzona prezentacja o zespole walidacji AI w Impelooo? Podaj dokładną datę."
+          expected_any: ["2025-01-10", "10 stycznia 2025", "styczeń 2025"]
+        - question: "Kiedy prezentacja o zespole walidacji AI w Impelooo, który zaczął pisać poezję, została ostatnio zmodyfikowana? Podaj dokładną datę."
+          expected_any: ["2025-04-05", "5 kwietnia 2025", "kwiecień 2025"]
+        - question: "Kiedy prezentacja o zespole walidacji AI w Impelooo została zaimportowana lub przesłana? Podaj dokładną datę."
+          check_ingestion_date: true
+test_metadata_distinguishes_authors_across_documents:
+  - en:
+      files: [story.pdf, story.pptx]
+      questions:
+        - question: "Who is the author of the document about Krystianooo and Intel's headquarters in Gdansk?"
+          expected_any: ["Quintharion", "Zelbraxo"]
+        - question: "Who is the author of the document about the AI validation team at Impelooo?"
+          expected_any: ["Myratheen", "Obiquel"]
+    pl:
+      files: [story.pdf, story.pptx]
+      questions:
+        - question: "Kto jest autorem dokumentu o Krystianooo i siedzibie Intela w Gdańsku?"
+          expected_any: ["Quintharion", "Zelbraxo"]
+        - question: "Kto jest autorem dokumentu o zespole walidacji AI w Impelooo?"
+          expected_any: ["Myratheen", "Obiquel"]
+test_metadata_xlsx:
+  - en:
+      files: [story.xlsx]
+      consolidated_question: "For the spreadsheet about Zerlith Quarble and the glowing crystal in the caves of Luminaris, provide ALL of the following metadata: 1) the author, 2) the spreadsheet title, 3) the exact creation date, 4) the exact last modification date, 5) the exact ingestion/upload date."
+      questions:
+        - question: "Who is the author of the spreadsheet about Zerlith Quarble and the glowing crystal in the caves of Luminaris?"
+          expected_any: ["Fentharion", "Gluspex"]
+        - question: "What is the title of the spreadsheet about Zerlith Quarble and the glowing crystal?"
+          expected_any: ["Luminaris Crystal Research Notes"]
+        - question: "When was the spreadsheet about Zerlith Quarble and the crystal created? Provide the exact date."
+          expected_any: ["2024-07-22", "July 22, 2024", "22 July 2024", "July 2024"]
+        - question: "When was the spreadsheet about Zerlith Quarble last modified or updated? Provide the exact date."
+          expected_any: ["2025-02-11", "February 11, 2025", "11 February 2025", "February 2025"]
+        - question: "When was the spreadsheet about Zerlith Quarble and the crystal ingested or uploaded? Provide the exact date."
+          check_ingestion_date: true
+    pl:
+      files: [story.xlsx]
+      consolidated_question: "Dla arkusza o Zerlith Quarble i świecącym krysztale w jaskiniach Luminaris podaj WSZYSTKIE następujące metadane: 1) autora, 2) tytuł arkusza, 3) dokładną datę utworzenia, 4) dokładną datę ostatniej modyfikacji, 5) dokładną datę importu/przesłania."
+      questions:
+        - question: "Kto jest autorem arkusza o Zerlith Quarble i świecącym krysztale w jaskiniach Luminaris?"
+          expected_any: ["Fentharion", "Gluspex"]
+        - question: "Jaki jest tytuł arkusza o Zerlith Quarble i świecącym krysztale?"
+          expected_any: ["Luminaris Crystal Research Notes"]
+        - question: "Kiedy został utworzony arkusz o Zerlith Quarble i krysztale? Podaj dokładną datę."
+          expected_any: ["2024-07-22", "22 lipca 2024", "lipiec 2024"]
+        - question: "Kiedy arkusz o Zerlith Quarble został ostatnio zmodyfikowany? Podaj dokładną datę."
+          expected_any: ["2025-02-11", "11 lutego 2025", "luty 2025"]
+        - question: "Kiedy arkusz o Zerlith Quarble i krysztale został zaimportowany lub przesłany? Podaj dokładną datę."
+          check_ingestion_date: true

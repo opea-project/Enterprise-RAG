@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+from datetime import date, timedelta
 import logging
 import os
 import pytest
@@ -291,6 +292,93 @@ def test_logs_parsing_capability(edp_helper, chatqa_api_helper, test_data):
 def test_docx_comprehensive_pl(edp_helper, chatqa_api_helper, test_data):
     """*.docx file with tables, lists, hyperlinks, and Polish character encoding"""
     run_standard_validation(edp_helper, chatqa_api_helper, test_data)
+
+
+def _ingestion_date_candidates():
+    """Return date strings for today ± 1 day to account for timezone differences between host and test runner."""
+    candidates = []
+    for delta in (-1, 0, 1):
+        d = date.today() + timedelta(days=delta)
+        candidates.append(d.strftime("%Y-%m-%d"))
+        candidates.append(d.strftime("%B %-d, %Y"))
+        candidates.append(d.strftime("%-d %B %Y"))
+        candidates.append(d.strftime("%B %Y"))
+    return candidates
+
+
+def run_metadata_validation(edp_helper, chatqa_api_helper, test_data):
+    if not test_data.stages:
+        pytest.skip("No available stages for this language in the test data.")
+
+    failures = []
+    for stage in test_data.stages:
+        stage_files = stage.get("files", [])
+        for file_name in stage_files:
+            path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
+            logger.info(f"Ingesting file: {file_name}")
+            edp_helper.upload_file_and_wait_for_ingestion(path)
+
+        try:
+            questions = stage.get("questions", [])
+            consolidated_q = stage.get("consolidated_question")
+            pending_indices = list(range(len(questions)))
+
+            if consolidated_q:
+                response = ask_question(chatqa_api_helper, consolidated_q)
+                still_pending = []
+                for idx in pending_indices:
+                    item = questions[idx]
+                    expected = _ingestion_date_candidates() if item.get("check_ingestion_date") else item.get("expected_any", [])
+                    if expected and chatqa_api_helper.words_in_response(expected, response):
+                        logger.info(f"Consolidated response matched: {item['question'][:80]}...")
+                    else:
+                        still_pending.append(idx)
+                pending_indices = still_pending
+                if not pending_indices:
+                    logger.info("All metadata found in consolidated response")
+
+            for idx in pending_indices:
+                item = questions[idx]
+                response = ask_question(chatqa_api_helper, item["question"])
+                expected = _ingestion_date_candidates() if item.get("check_ingestion_date") else item.get("expected_any", [])
+                if expected and not chatqa_api_helper.words_in_response(expected, response):
+                    failures.append(f"None of {expected[:5]} found in response to: '{item['question']}'\n  Response: {response}")
+        finally:
+            for file_name in stage_files:
+                logger.info(f"Deleting file after test: {file_name}")
+                delete_file(edp_helper, file_name)
+
+    assert not failures, f"Metadata failures ({len(failures)}):\n" + "\n".join(f"  [{i+1}] {f}" for i, f in enumerate(failures))
+
+
+@allure.testcase("IEASG-T595")
+def test_metadata_pdf(edp_helper, chatqa_api_helper, test_data):
+    """Verify that all metadata (author, title, creation/modification/ingestion dates) is extracted from PDF"""
+    run_metadata_validation(edp_helper, chatqa_api_helper, test_data)
+
+
+@allure.testcase("IEASG-T596")
+def test_metadata_docx(edp_helper, chatqa_api_helper, test_data):
+    """Verify that all metadata (author, title, creation/modification/ingestion dates) is extracted from DOCX"""
+    run_metadata_validation(edp_helper, chatqa_api_helper, test_data)
+
+
+@allure.testcase("IEASG-T597")
+def test_metadata_pptx(edp_helper, chatqa_api_helper, test_data):
+    """Verify that all metadata (author, title, creation/modification/ingestion dates) is extracted from PPTX"""
+    run_metadata_validation(edp_helper, chatqa_api_helper, test_data)
+
+
+@allure.testcase("IEASG-T599")
+def test_metadata_distinguishes_authors_across_documents(edp_helper, chatqa_api_helper, test_data):
+    """Verify that the LLM correctly attributes authors when multiple documents are ingested"""
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
+
+
+@allure.testcase("IEASG-T601")
+def test_metadata_xlsx(edp_helper, chatqa_api_helper, test_data):
+    """Verify that all metadata (author, title, creation/modification/ingestion dates) is extracted from XLSX"""
+    run_metadata_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T264")

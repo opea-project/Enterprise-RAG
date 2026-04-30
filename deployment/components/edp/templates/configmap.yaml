@@ -18,6 +18,7 @@ data:
   RETRIEVER_ENDPOINT: http://retriever-svc.chatqa.svc:6620/v1/retrieval
   RERANKER_ENDPOINT: http://reranking-svc.chatqa.svc:8000/v1/reranking
   BUCKET_NAME_REGEX_FILTER: {{ .Values.bucketNameRegexFilter | quote }}
+  SEAWEEDFS_IGNORE_BUCKETS: "{{ range $i, $b := .Values.seaweedfs.ignoreBuckets }}{{ if $i }},{{ end }}{{ $b.name }}{{ end }}"
   DPGUARD_ENDPOINT: {{ if .Values.dpguard.enabled }}{{ print "http://" .Values.dpguard.nameOverride ":8070/v1/llmguarddataprep" | quote }}{{ else }}""{{ end }}
   DPGUARD_ENABLED: {{ .Values.dpguard.enabled | quote }}
   FINGERPRINT_ENDPOINT: "http://fingerprint-svc.fingerprint.svc:6012/v1/system_fingerprint/append_arguments"

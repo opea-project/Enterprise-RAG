@@ -51,7 +51,7 @@ hfToken: ""
 
 seaweedfs:
   namespace: "seaweedfs"
-  version: "4.0.407"
+  version: "4.22.0"
   repo: "https://seaweedfs.github.io/seaweedfs/helm"
   persistence:
     enabled: true
@@ -65,6 +65,9 @@ seaweedfs:
   s3:
     port: 8333
   webhook_endpoint: "http://edp-backend.edp.svc:5000/seaweedfs_event"
+  # ignoreBuckets:
+  # - name: bucketToIgnore
+  # - name: anotherOne
   createBuckets:
   - name: default
     anonymousRead: true
@@ -662,6 +665,11 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: BUCKET_NAME_REGEX_FILTER
+    - name: SEAWEEDFS_IGNORE_BUCKETS
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: SEAWEEDFS_IGNORE_BUCKETS
     - name: HIERARCHICAL_DATAPREP_ENDPOINT
       valueFrom:
         configMapKeyRef:

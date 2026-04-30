@@ -29,8 +29,6 @@ routes:
 {% if routing_mode | default('subdomain') == 'path' %}
       - path: {{ edp.seaweedfsPathPrefix | default('/seaweedfs') }}
         pathType: PathPrefix
-        urlRewrite:
-          replacePrefixMatch: /
         backendRef:
           name: seaweedfs-admin
           port: 23646

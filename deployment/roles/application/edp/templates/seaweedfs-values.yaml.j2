@@ -97,5 +97,8 @@ admin:
     existingSecret: "seaweedfs-admin-secret"
     userKey: "adminUser"
     pwKey: "adminPassword"
+{% if edp.seaweedfsPathPrefix is defined and edp.seaweedfsPathPrefix != "" %}
+  urlPrefix: "{{ edp.seaweedfsPathPrefix }}"
+{% endif %}
   ingress:
     enabled: false

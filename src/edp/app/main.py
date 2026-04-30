@@ -692,13 +692,24 @@ def process_seaweedfs_event(event: SeaweedFSEventData):
 
     key_parts = event.key.strip('/').split('/', 2)
 
+    # Ignore internal paths (like /etc/iam) that SeaweedFS emits during upgrades
+    if key_parts[0] != 'buckets':
+        logger.info(f"Ignoring non-bucket event path: {event.key}")
+        return JSONResponse(content={'message': 'Non-bucket event ignored'})
+
     if len(key_parts) < 3:
         # Bucket-level event (e.g. bucket create/delete) — no file to process
-        logger.debug(f"Bucket-level SeaweedFS event (no object): {event.key}")
+        logger.info(f"Bucket-level SeaweedFS event (no object): {event.key}")
         return JSONResponse(content={'message': 'Bucket-level event ignored'})
 
     bucket_name = unquote_plus(key_parts[1])
     object_name = unquote_plus(key_parts[2])
+
+    # Skip events from explicitly ignored buckets (configurable via SEAWEEDFS_IGNORE_BUCKETS)
+    ignore_buckets = [b.strip() for b in os.getenv('SEAWEEDFS_IGNORE_BUCKETS', '').split(',') if b.strip()]
+    if bucket_name in ignore_buckets:
+        logger.info(f"Ignoring event for excluded bucket '{bucket_name}': {event.key}")
+        return JSONResponse(content={'message': f'Event for excluded bucket {bucket_name} ignored'})
 
     if event.event_type in ['create', 'update', 'rename']:
         if not event.message or not event.message.new_entry:

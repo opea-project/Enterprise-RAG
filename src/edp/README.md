@@ -274,6 +274,7 @@ If you want to utilize all functionality, depending on the application server yo
 |         | MINIO_ACCESS_KEY           | Access key for S3-compatible storage (Legacy variable name) |
 |         | MINIO_SECRET_KEY           | Secret key for S3-compatible storage (Legacy variable name) |
 |         | BUCKET_NAME_REGEX_FILTER   | Regex filter for filtering out available buckets by name |
+|         | SEAWEEDFS_IGNORE_BUCKETS   | Comma-separated list of bucket names to exclude from SeaweedFS webhook event processing. Configurable via `seaweedfs.ignoreBuckets` in the EDP Helm values |
 |         | VECTOR_DB_RBAC                  | Set the type of RBAC bucket filtering |
 |         | VECTOR_DB_RBAC_STATIC_CONFIG    | Configuration of STATIC rbac settings |
 |         | VECTOR_DB_RBAC_CACHE_EXPIRATION | Configuration of entry TTL for CACHED rbac settings |

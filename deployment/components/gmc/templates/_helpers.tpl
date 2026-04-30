@@ -191,6 +191,77 @@ Usage: command: {{- include "manifest.torchserve.probeInferenceCmd" . | nindent 
 {{- end -}}
 
 {{/*
+Fields shared by the cache-warmer initContainer and the main torchserve-reranking container.
+Renders everything except `name:`, `ports:`, and probes — callers supply those.
+Args: list of two values — [root_context, extra_env_list]
+  root_context: the template root (. or $) providing .Values and .filename
+  extra_env_list: additional env vars as "NAME=VALUE" strings (may be empty list)
+Usage (shared fields only, caller provides `- name:`):
+  - name: cache-warmer
+    {{- include "manifest.torchserve.reranking.containerFields" (list $ (list "TORCHSERVE_PRELOAD_MODE=1")) | nindent 4 }}
+  - name: torchserve-reranking
+    {{- include "manifest.torchserve.reranking.containerFields" (list . (list)) | nindent 4 }}
+*/}}
+{{- define "manifest.torchserve.reranking.containerFields" -}}
+{{- $root := index . 0 -}}
+{{- $extraEnv := index . 1 -}}
+envFrom:
+  - configMapRef:
+      name: torchserve-reranking-config
+  - configMapRef:
+      name: extra-env-config
+      optional: true
+env:
+{{- if $root.Values.tokens.hugToken }}
+  - name: HF_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: hf-token-secret
+        key: HF_TOKEN
+{{- end }}
+  - name: HF_HOME
+    value: /data/hf_cache
+  - name: TORCHSERVE_JIT_CACHE_DIR
+    value: /data/jit_cache
+  - name: KMP_SETTINGS
+    value: "1"
+  - name: KMP_AFFINITY
+    value: "granularity=fine,compact,1,0"
+  - name: KMP_BLOCKTIME
+    value: "1"
+  - name: TS_ENABLE_METRICS_API
+    value: "true"
+  - name: TS_METRICS_MODE
+    value: prometheus
+  - name: OMP_NUM_THREADS
+    valueFrom:
+      resourceFieldRef:
+        resource: limits.cpu
+{{- range $extraEnv }}
+  - name: {{ . | splitList "=" | first }}
+    value: {{ . | splitList "=" | rest | join "=" | quote }}
+{{- end }}
+securityContext:
+  {{- toYaml $root.Values.securityContext | nindent 2 }}
+image: {{ include "manifest.image" (list $root.filename $root.Values) }}
+imagePullPolicy: {{ toYaml (index $root.Values "images" $root.filename "pullPolicy" | default "Always") }}
+resources:
+  {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
+  {{- include "manifest.getResource" (list $root.filename $defaultValues $root.Values) | nindent 2 }}
+volumeMounts:
+  - mountPath: /data
+    name: model-volume
+  - mountPath: /opt/ml/model
+    name: model-store
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /home/user/tmp
+    name: torchserve-tmp
+  - mountPath: /home/user/logs
+    name: torchserve-logs
+{{- end -}}
+
+{{/*
 Init container that waits for balloons DaemonSet to be ready
 Usage: {{ include "manifest.balloons.initContainer" . }}
 */}}

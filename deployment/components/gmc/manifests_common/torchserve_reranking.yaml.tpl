@@ -118,49 +118,14 @@ spec:
           effect: "PreferNoSchedule"
       initContainers:
         {{- include "manifest.balloons.initContainer" $ | nindent 8 }}
+        - name: cache-warmer
+          {{- include "manifest.torchserve.reranking.containerFields" (list $ (list "TORCHSERVE_PRELOAD_MODE=1")) | nindent 10 }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" $ }}
       containers:
         - name: torchserve-reranking
-          envFrom:
-            - configMapRef:
-                name: torchserve-reranking-config
-            - configMapRef:
-                name: extra-env-config
-                optional: true
-          env:
-          {{- if $.Values.tokens.hugToken }}
-            - name: HF_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: hf-token-secret
-                  key: HF_TOKEN
-          {{- end }}
-            - name: TS_ENABLE_METRICS_API
-              value: "true"
-            - name: TS_METRICS_MODE
-              value: prometheus
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-          securityContext:
-            {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: {{ include "manifest.image" (list $.filename $.Values) }}
-          imagePullPolicy: {{ toYaml (index $.Values "images" $.filename "pullPolicy" | default "Always") }}
-          resources:
-            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
-            {{- include "manifest.getResource" (list $.filename $defaultValues $.Values) | nindent 12 }}
-          volumeMounts:
-            - mountPath: /opt/ml/model
-              name: model-volume
-            - mountPath: /tmp
-              name: tmp
-            - mountPath: /home/user/tmp
-              name: torchserve-tmp
-            - mountPath: /home/user/logs
-              name: torchserve-logs
+          {{- include "manifest.torchserve.reranking.containerFields" (list $ (list)) | nindent 10 }}
           ports:
             - name: http
               containerPort: 8090
@@ -196,6 +161,8 @@ spec:
         - name: model-volume
           persistentVolumeClaim:
             claimName: {{ $.Values.pvc.modelReranker.name }}-{{ .name }}
+        - name: model-store
+          emptyDir: {}
         - name: shm
           emptyDir:
             medium: Memory
@@ -243,55 +210,15 @@ spec:
           operator: "Equal"
           value: "true"
           effect: "PreferNoSchedule"
+      initContainers:
+        - name: cache-warmer
+          {{- include "manifest.torchserve.reranking.containerFields" (list . (list "TORCHSERVE_PRELOAD_MODE=1")) | nindent 10 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: torchserve-reranking
-          envFrom:
-            - configMapRef:
-                name: torchserve-reranking-config
-            - configMapRef:
-                name: extra-env-config
-                optional: true
-          env:
-          {{- if .Values.tokens.hugToken }}
-            - name: HF_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: hf-token-secret
-                  key: HF_TOKEN
-          {{- end }}
-            - name: KMP_SETTINGS
-              value: "1"
-            - name: KMP_AFFINITY
-              value: "granularity=fine,compact,1,0"
-            - name: KMP_BLOCKTIME
-              value: "1"
-            - name: TS_ENABLE_METRICS_API
-              value: "true"
-            - name: TS_METRICS_MODE
-              value: prometheus
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: {{ include "manifest.image" (list .filename .Values) }}
-          imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
-          resources:
-            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
-            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
-          volumeMounts:
-            - mountPath: /opt/ml/model
-              name: model-volume
-            - mountPath: /tmp
-              name: tmp
-            - mountPath: /home/user/tmp
-              name: torchserve-tmp
-            - mountPath: /home/user/logs
-              name: torchserve-logs
+          {{- include "manifest.torchserve.reranking.containerFields" (list . (list)) | nindent 10 }}
           ports:
             - name: http
               containerPort: 8090
@@ -327,6 +254,8 @@ spec:
         - name: model-volume
           persistentVolumeClaim:
             claimName: {{ .Values.pvc.modelReranker.name }}
+        - name: model-store
+          emptyDir: {}
         - name: shm
           emptyDir:
             medium: Memory
@@ -393,4 +322,3 @@ spec:
   {{- end }}
 {{- end }}
 {{- end }}
-

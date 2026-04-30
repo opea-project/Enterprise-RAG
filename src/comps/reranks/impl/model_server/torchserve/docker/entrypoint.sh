@@ -11,6 +11,14 @@ else
     ARCHIVE_NAME="default"
 fi
 
+# Ensure persistent data directories exist on the PVC
+mkdir -p /data/hf_cache /data/jit_cache 2>/dev/null || true
+
+# In preload mode: leader election and cache warming are handled in Python.
+if [ -n "$TORCHSERVE_PRELOAD_MODE" ]; then
+    exec /home/user/.venv/bin/python /home/user/utils/reranks_handler.py
+fi
+
 torch-model-archiver --force \
     --model-name "$ARCHIVE_NAME" \
     --export-path /opt/ml/model \

@@ -28,8 +28,13 @@ Methods:
         Postprocesses the inference output to return the final result.
 """
 
+import glob
+import hashlib
 import logging
 import os
+import sys
+import tempfile
+import time
 from abc import ABC
 import numpy as np
 
@@ -43,13 +48,36 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
-# The handler is responsible for defining how a model processes incoming requests during inference
+JIT_CACHE_DIR = os.getenv("TORCHSERVE_JIT_CACHE_DIR", "/data/jit_cache")
+WARMUP_ROUNDS = 10
+DEFAULT_PRELOAD_TIMEOUT_SEC = "1800"
+DEFAULT_PRELOAD_POLL_SEC = "30"
+
 
 class ReranksHandler(BaseHandler, ABC):
     def __init__(self):
         super(ReranksHandler, self).__init__()
         self.initialized = False
 
+    @staticmethod
+    def _cache_key(model_name, amp_dtype):
+        tag = f"{model_name}|{amp_dtype}"
+        return hashlib.sha256(tag.encode()).hexdigest()[:16]
+
+    @staticmethod
+    def runtime_tag():
+        return f"pt{torch.__version__}_ipex{ipex.__version__}"
+
+    @staticmethod
+    def _purge_stale_caches(prefix, current_tag):
+        """Remove cached JIT files for the same model but a different runtime version."""
+        for path in glob.glob(os.path.join(JIT_CACHE_DIR, f"{prefix}_*.pt")):
+            if current_tag not in os.path.basename(path):
+                try:
+                    os.remove(path)
+                    logger.info(f"Removed stale JIT cache: {path}")
+                except OSError:
+                    pass
 
     def initialize(self, ctx : Context):
         model_name = str(os.getenv('TORCHSERVE_MODEL_NAME'))
@@ -85,8 +113,11 @@ class ReranksHandler(BaseHandler, ABC):
             pass
 
         try:
+            t0 = time.monotonic()
+            logger.info("Loading model weights from HuggingFace ...")
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+            logger.info(f"Model weights loaded in {time.monotonic() - t0:.1f}s")
             self.model = self.model.to(memory_format=torch.channels_last)
             self.model.eval()
 
@@ -100,17 +131,61 @@ class ReranksHandler(BaseHandler, ABC):
                      ['what is panda?', 'The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.']]
             inputs = self.tokenizer(pairs, padding=True, truncation=True, return_tensors='pt')
 
-            with torch.inference_mode(), torch.no_grad(), self.additional_context:
-                model = torch.jit.trace(self.model, (inputs["input_ids"], inputs["attention_mask"]), check_trace=False, strict=False)
-                model = torch.jit.freeze(model)
-                model(**inputs)
+            cache_key = self._cache_key(model_name, str(self.amp_dtype))
+            runtime_tag = self.runtime_tag()
+            jit_prefix = f"reranker_{cache_key}"
+            jit_path = os.path.join(JIT_CACHE_DIR, f"{jit_prefix}_{runtime_tag}.pt")
 
-            for _ in range(10):
+            self._purge_stale_caches(jit_prefix, runtime_tag)
+
+            cache_hit = False
+            if os.path.isfile(jit_path):
+                logger.info(f"Loading JIT-traced model from cache: {jit_path}")
+                t1 = time.monotonic()
+                try:
+                    with torch.inference_mode(), torch.no_grad(), self.additional_context:
+                        model = torch.jit.load(jit_path)
+                        model(**inputs)
+                    logger.info(f"JIT model loaded from cache in {time.monotonic() - t1:.1f}s")
+                    cache_hit = True
+                except Exception as e:
+                    logger.warning(f"JIT cache load failed ({e}), will re-trace")
+                    try:
+                        os.remove(jit_path)
+                    except OSError:
+                        pass
+
+            if not cache_hit:
+                logger.info("Starting JIT trace + freeze (this may take several minutes) ...")
+                t1 = time.monotonic()
                 with torch.inference_mode(), torch.no_grad(), self.additional_context:
-                    _ = model(**inputs)["logits"].view(-1, ).float()
+                    model = torch.jit.trace(self.model, (inputs["input_ids"], inputs["attention_mask"]), check_trace=False, strict=False)
+                    model = torch.jit.freeze(model)
+                    model(**inputs)
+
+                for _ in range(WARMUP_ROUNDS):
+                    with torch.inference_mode(), torch.no_grad(), self.additional_context:
+                        _ = model(**inputs)["logits"].view(-1, ).float()
+                logger.info(f"JIT trace + freeze + warmup completed in {time.monotonic() - t1:.1f}s")
+
+                tmp_path = None
+                try:
+                    os.makedirs(JIT_CACHE_DIR, exist_ok=True)
+                    fd, tmp_path = tempfile.mkstemp(dir=JIT_CACHE_DIR, suffix=".pt.tmp")
+                    os.close(fd)
+                    torch.jit.save(model, tmp_path)
+                    os.replace(tmp_path, jit_path)
+                    logger.info(f"JIT-traced model saved to cache: {jit_path}")
+                except Exception as e:
+                    logger.warning(f"Could not save JIT cache to {jit_path}: {e}")
+                    if tmp_path:
+                        try:
+                            os.remove(tmp_path)
+                        except OSError:
+                            pass
 
             self.initialized = True
-            logger.info(f"Model '{model_name}' loaded successfully")
+            logger.info(f"Model '{model_name}' loaded successfully (total: {time.monotonic() - t0:.1f}s)")
         except Exception as e:
             logger.error(f"Error loading model '{model_name}': {str(e)}")
             raise
@@ -170,3 +245,79 @@ class ReranksHandler(BaseHandler, ABC):
     def postprocess(self, inference_output):
         logger.debug(f"Received inference_output: {inference_output}")
         return inference_output
+
+
+def _preload_main():
+    """Entry point for cache-warmer initContainer (TORCHSERVE_PRELOAD_MODE=1)."""
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+
+    cache_dir = os.getenv("TORCHSERVE_JIT_CACHE_DIR", "/data/jit_cache")
+    timeout = int(os.getenv("TORCHSERVE_PRELOAD_TIMEOUT_SEC", DEFAULT_PRELOAD_TIMEOUT_SEC))
+    poll_interval = int(os.getenv("TORCHSERVE_PRELOAD_POLL_SEC", DEFAULT_PRELOAD_POLL_SEC))
+    hostname = os.getenv("HOSTNAME", "localhost")
+
+    os.makedirs(cache_dir, exist_ok=True)
+
+    logger.info("Preload starting on %s", hostname)
+
+    runtime_tag = ReranksHandler.runtime_tag()
+    done_file = os.path.join(cache_dir, f".preload-done-{runtime_tag}")
+    lock_dir = os.path.join(cache_dir, f".preload-lock-{runtime_tag}")
+
+    if os.path.isfile(done_file):
+        logger.info("Cache already warm for %s, exiting.", runtime_tag)
+        sys.exit(0)
+
+    try:
+        os.mkdir(lock_dir)
+    except FileExistsError:
+        logger.info("Follower (%s): waiting for cache (%s) ...", hostname, runtime_tag)
+        elapsed = 0
+        while elapsed < timeout:
+            if os.path.isfile(done_file):
+                logger.info("Follower (%s): cache ready after %ds.", hostname, elapsed)
+                sys.exit(0)
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+        logger.info("Follower (%s): timeout after %ds; removing stale lock.", hostname, timeout)
+        try:
+            os.rmdir(lock_dir)
+        except OSError:
+            pass
+        sys.exit(1)
+
+    logger.info("Leader (%s): warming cache for %s ...", hostname, runtime_tag)
+    try:
+        reranks_handler = ReranksHandler()
+        reranks_handler.initialize(None)
+        logger.info("Leader (%s): preload complete.", hostname)
+    except Exception as exc:
+        logger.info("Leader (%s): handler failed: %s", hostname, exc)
+        try:
+            os.rmdir(lock_dir)
+        except OSError:
+            pass
+        sys.exit(1)
+
+    try:
+        os.rmdir(lock_dir)
+    except OSError:
+        pass
+
+    try:
+        with open(done_file, "w", encoding="utf-8") as f:
+            f.write(f"completed by {hostname} at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    except OSError as exc:
+        logger.warning("Could not create marker file %s: %s", done_file, exc)
+
+    logger.info("Leader (%s): done, marker file created.", hostname)
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    _preload_main()

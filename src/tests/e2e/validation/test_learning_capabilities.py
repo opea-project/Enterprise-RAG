@@ -181,13 +181,32 @@ def test_docx_with_images(edp_helper, chatqa_api_helper, test_data):
     run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
-@pytest.mark.xfail(reason="Feature not implemented yet")
 @allure.testcase("IEASG-T164")
 def test_get_context_from_filename(edp_helper, chatqa_api_helper):
-    """Upload a file with a unique name. Ask a question related to the file name to verify if it has been ingested"""
-    question = "Which company does Zerilwyn Nactroske currently work for?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "Zerilwyn Nactroske - CV.docx", question)
-    assert chatqa_api_helper.words_in_response(["deepmind"], response), UNRELATED_RESPONSE_MSG
+    """Upload a file whose name contains unique info not present in the file body.
+    Verify that the system can answer questions using context from the filename alone."""
+    file = "Veldrix Tormanheim - Project Nexus.txt"
+    person_question = "Who is associated with Project Nexus?"
+    project_question = "What project is Veldrix Tormanheim working on?"
+
+    baseline = ask_question(chatqa_api_helper, person_question)
+    assert not chatqa_api_helper.words_in_response(
+        ["veldrix", "tormanheim"], baseline
+    ), "System should not know about Veldrix Tormanheim before file upload"
+
+    edp_helper.upload_file_and_wait_for_ingestion(
+        os.path.join(DATAPREP_UPLOAD_DIR, file)
+    )
+
+    response = ask_question(chatqa_api_helper, person_question)
+    assert chatqa_api_helper.words_in_response(
+        ["veldrix", "tormanheim"], response
+    ), "System should associate Veldrix Tormanheim with Project Nexus from the filename"
+
+    response = ask_question(chatqa_api_helper, project_question)
+    assert chatqa_api_helper.words_in_response(
+        ["nexus"], response
+    ), "System should know Veldrix Tormanheim is associated with Project Nexus from the filename"
 
 @allure.testcase("IEASG-T534")
 def test_pdf_table(edp_helper, chatqa_api_helper, test_data):

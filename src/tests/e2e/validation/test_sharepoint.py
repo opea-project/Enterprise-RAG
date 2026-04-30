@@ -6,6 +6,9 @@
 import allure
 import logging
 import os
+import shutil
+import tempfile
+
 import pytest
 
 from tests.e2e.validation.buildcfg import cfg
@@ -454,6 +457,62 @@ def test_sp_get_file_url_negative(edp_helper):
     logger.info(f"Both empty response: {response.status_code} - {response.text}")
     assert response.status_code == 400, \
         f"Expected error for both empty params, but got {response.status_code}: {response.text}"
+
+
+@allure.testcase("IEASG-T612")
+@pytest.mark.skipif(_rbac_enabled, reason="EDP RBAC is enabled. Skipping non-RBAC SharePoint test")
+def test_sp_reupload_file_content_changes(edp_helper, chatqa_api_helper):
+    """Verify that re-uploading a file with the same name but different content updates the chatbot's knowledge"""
+    file_name = "test_sp_reupload_file.txt"
+    file_path_v1 = os.path.join(DATAPREP_UPLOAD_DIR, file_name)
+    file_path_v2 = os.path.join(DATAPREP_UPLOAD_DIR, "test_sp_reupload_file_v2.txt")
+
+    # Ensure site is connected
+    edp_helper.connect_site(DEFAULT_SP_SITE)
+
+    # Upload v1 of the file
+    response = edp_helper.upload_to_sharepoint(DEFAULT_SP_SITE, file_path_v1)
+    assert response.status_code in (200, 201), f"Failed to upload v1 file. Response: {response.text}"
+
+    # Sync and wait for ingestion
+    sync_response = edp_helper.sync_sharepoint()
+    assert sync_response.status_code == 200, f"Failed to sync SharePoint. Response: {sync_response.text}"
+    file_info = edp_helper.wait_for_file_upload(file_name, "ingested", timeout=120)
+    assert file_info, f"File '{file_name}' was not ingested into EDP"
+
+    # Verify chatbot knows v1 content ("4817 vintage postcards")
+    question = "How many vintage postcards does Rodrigoooo have?"
+    response = chatqa_api_helper.call_chatqa(question)
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (v1): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "4817" in response_text, f"Chatbot should mention '4817' for v1 content but got: {response_text}"
+
+    # Re-upload with different content using the same file name
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        reupload_path = os.path.join(tmp_dir, file_name)
+        shutil.copy2(file_path_v2, reupload_path)
+
+        response = edp_helper.upload_to_sharepoint(DEFAULT_SP_SITE, reupload_path)
+        assert response.status_code in (200, 201), f"Failed to re-upload file. Response: {response.text}"
+    finally:
+        shutil.rmtree(tmp_dir)
+
+    # Sync and wait for re-ingestion
+    sync_response = edp_helper.sync_sharepoint()
+    assert sync_response.status_code == 200, f"Failed to sync SharePoint. Response: {sync_response.text}"
+    file_info = edp_helper.wait_for_file_upload(file_name, "ingested", timeout=120)
+    assert file_info, f"File '{file_name}' was not re-ingested into EDP"
+
+    # Verify chatbot now knows v2 content ("2163 antique chess sets") and no longer returns v1 content
+    question = "What does Rodrigoooo own?"
+    response = chatqa_api_helper.call_chatqa(question)
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response (v2): {response_text}; status code: {response.status_code}")
+    assert response.status_code == 200, f"ChatQA API call failed with status code {response.status_code}"
+    assert "2163" in response_text, f"Chatbot should mention '2163' for v2 content but got: {response_text}"
+    assert "4817" not in response_text, f"Chatbot still mentions '4817' from v1 after re-upload: {response_text}"
 
 
 @allure.testcase("IEASG-T552")

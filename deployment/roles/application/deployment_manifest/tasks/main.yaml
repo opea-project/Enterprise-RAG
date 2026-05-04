@@ -57,6 +57,8 @@
               deployment:
                 version: "{{ existing_manifest.deployment.version | default(solution_version) }}"
                 targetVersion: null
+                imageTag: "{{ existing_manifest.deployment.imageTag | default('') }}"
+                targetImageTag: null
                 status: "{{ manifest_status_deleting }}"
                 startedAt: "{{ existing_manifest.deployment.startedAt | default(ansible_date_time.iso8601) }}"
                 installedBy: "ansible"
@@ -117,6 +119,8 @@
           deployment:
             version: "{{ stub_version if stub_version != '' else None }}"
             targetVersion: "{{ stub_target_version }}"
+            imageTag: "{{ existing_deployment.deployment.imageTag | default('') if manifest_exists else '' }}"
+            targetImageTag: "{{ tag | default(default_image_tag) }}"
             status: "{{ manifest_status_in_progress }}"
             startedAt: "{{ ansible_date_time.iso8601 }}"
             installedBy: "ansible"

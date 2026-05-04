@@ -1,2 +1,6 @@
 solution_version: 2.2.0
-upgrade_base_version: ">=2.1.0"
+upgrade_base_version: ">=2.1.1"
+
+# Default tag for container images when not specified in config.yaml.
+# Matches solution_version; users may override in config.yaml.
+default_image_tag: "2.2.0"

@@ -95,6 +95,8 @@
           deployment:
             version: "{{ solution_version }}"
             targetVersion: null
+            imageTag: "{{ tag | default(default_image_tag) }}"
+            targetImageTag: null
             status: "{{ manifest_status_complete }}"
             startedAt: "{{ existing_started_at }}"
             completedAt: "{{ current_timestamp.stdout }}"

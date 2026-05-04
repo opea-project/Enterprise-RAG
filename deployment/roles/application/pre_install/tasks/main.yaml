@@ -37,6 +37,7 @@
     name: common/validate_config
   tags:
     - install
+    - pre-upgrade
 
 - name: Create log directory if it does not exist
   ansible.builtin.file:

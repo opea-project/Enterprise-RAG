@@ -3,7 +3,7 @@
 
 ---
 edp:
-  enabled: false
+  enabled: true
   namespace: "edp"
   # Path prefixes: set dynamically by solution_config.yaml when routing_mode == "path"
   # Default values used in path mode:

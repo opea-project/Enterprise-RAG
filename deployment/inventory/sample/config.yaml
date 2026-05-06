@@ -170,18 +170,6 @@ gmc:
         name: model-volume-ner
         storage: 1Gi
 
-gateway:
-  enabled: true
-
-keycloak:
-  enabled: true
-
-apisix:
-  enabled: true
-
-istio:
-  enabled: true
-
 velero:
   enabled: false
 
@@ -208,9 +196,6 @@ telemetry:
     enabled: false
   logging:
     enabled: true
-
-ui:
-  enabled: true
 
 edp:
   enabled: true
@@ -246,14 +231,6 @@ edp:
 rag_utils:
   enabled: true
   namespace: default
-
-fingerprint:
-  enabled: true
-  namespace: fingerprint
-
-chat_history:
-  enabled: true
-  namespace: chat-history
 
 # It is recommented to change the default resources for vector database nodes
 # For examples, check deployment/components/vector_databases/values.yaml

@@ -3,7 +3,7 @@
 
 ---
 chat_history:
-  enabled: false
+  enabled: true
   namespace: "chat-history"
   helm:
     version: "{{ helm_version }}"

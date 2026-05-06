@@ -3,7 +3,7 @@
 
 ---
 fingerprint:
-  enabled: false
+  enabled: true
   namespace: "fingerprint"
   helm:
     version: "{{ helm_version }}"

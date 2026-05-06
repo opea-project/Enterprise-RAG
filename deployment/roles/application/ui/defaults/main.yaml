@@ -3,7 +3,7 @@
 
 ---
 ui:
-  enabled: false
+  enabled: true
   namespace: "rag-ui"
   domainName: erag.com
   helm:

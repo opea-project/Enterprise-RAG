@@ -3,7 +3,7 @@
 
 ---
 apisix:
-  enabled: false
+  enabled: true
   namespace: "auth-apisix"
   helm:
     repo_name: "apisix"

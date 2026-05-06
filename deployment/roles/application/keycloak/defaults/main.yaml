@@ -3,7 +3,7 @@
 
 ---
 keycloak:
-  enabled: false
+  enabled: true
   namespace: "auth"
   domainName: auth.erag.com
   # pathPrefix: set dynamically by solution_config.yaml when routing_mode == "path"

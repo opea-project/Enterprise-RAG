@@ -3,7 +3,7 @@
 
 ---
 istio:
-  enabled: false
+  enabled: true
   namespace: "istio-system"
   gateway_api:
     # Gateway API CRDs must be installed before istiod starts (required since Istio 1.22).

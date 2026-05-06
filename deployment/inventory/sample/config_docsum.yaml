@@ -103,6 +103,9 @@ ner:
 audio:
   enabled: false
 
+edp:
+  enabled: false
+
 # Topology-aware resource scheduling and CPU pinning for vLLM
 # For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:
@@ -130,18 +133,6 @@ gmc:
         name: model-volume-llm
         storage: 100Gi
 
-gateway:
-  enabled: true
-
-keycloak:
-  enabled: true
-
-apisix:
-  enabled: true
-
-istio:
-  enabled: true
-
 velero:
   enabled: false
 
@@ -168,12 +159,6 @@ telemetry:
     enabled: false
   logging:
     enabled: true
-
-ui:
-  enabled: true
-
-edp:
-  enabled: false
 
 rag_utils:
   enabled: true

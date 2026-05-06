@@ -14,3 +14,4 @@ VITE_KEYCLOAK_CLIENT_ID = "EnterpriseRAG-oidc"
 INGRESS_NGINX_CONTROLLER_NS = "ingress-nginx"
 INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR = {"app.kubernetes.io/name": "ingress-nginx"}
 CHATQA_NAMESPACE = "chatqa"
+EDP_NAMESPACE = "edp"

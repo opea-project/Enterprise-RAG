@@ -12,7 +12,7 @@ import os
 import time
 import uuid
 
-from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR, TEST_FILES_DIR
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR, TEST_FILES_DIR, EDP_NAMESPACE
 from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if edp is not deployed
@@ -445,6 +445,33 @@ def test_edp_rbac(edp_helper, chatqa_api_helper, temporarily_remove_regular_user
     response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?")
     assert "944" in chatqa_api_helper.get_text(response)
 
+
+TEXT_EXTRACTOR_POD_LABEL_SELECTOR = "app.kubernetes.io/name=edp-ingestion"
+
+
+@allure.testcase("IEASG-T613")
+def test_edp_extractor_pod_restart_during_extraction(edp_helper, k8s_helper):
+    """
+    Delete the text extractor pod to simulate a crash/restart,
+    Then verify the file transitions to error rather that being stuck in-progress.
+    """
+    file = edp_helper.upload_test_file(size=10, prefix=method_name(), status="text_extracting", timeout=300)
+    file_basename = file["object_name"]
+
+    logger.info("Deleting text extractor pod(s)...")
+    k8s_helper.delete_pods_by_label(namespace=EDP_NAMESPACE, label_selector=TEXT_EXTRACTOR_POD_LABEL_SELECTOR)
+
+    logger.info(f"Waiting for file '{file_basename}' to reach error state...")
+    result = edp_helper.wait_for_file_upload(file_basename, "error", timeout=180)
+    assert result["status"] == "error", (
+        f"Expected file to be in error state after extractor pod restart, "
+        f"but got: {result['status']}. job_message: {result.get('job_message')}"
+    )
+    logger.info(f"File correctly transitioned to error state. job_message: {result.get('job_message')}")
+
+    logger.info("Waiting for new ingestion pod to become ready...")
+    k8s_helper.wait_for_pod_ready(namespace=EDP_NAMESPACE, label_selector=TEXT_EXTRACTOR_POD_LABEL_SELECTOR, timeout=300)
+    logger.info("Ingestion pod is ready.")
 
 def method_name():
     return f"{inspect.stack()[1].function}_"

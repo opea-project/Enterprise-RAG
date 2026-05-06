@@ -250,8 +250,21 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     dataprep_docs = []
     if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
         logger.info(f"[{file_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
-        with self.db_keepalive():
-            response = http.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        try:
+            with self.db_keepalive():
+                response = http.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        except requests.exceptions.ConnectionError as e:
+            file_db.status = 'error'
+            file_db.job_message = f"Connection error while calling hierarchical dataprep service (service may have restarted). {e}"
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise Exception(f"Connection error while calling hierarchical dataprep service. {e}")
+        except Exception as e:
+            file_db.status = 'error'
+            file_db.job_message = f"Unexpected error while calling hierarchical dataprep service. {e}"
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
@@ -278,8 +291,21 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
         logger.info(f"[{file_db.id}] Calling text extractor (file={file_name}, timeout={TEXT_EXTRACTOR_TIMEOUT_SECONDS}s).")
-        with self.db_keepalive():
-            response = http.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        try:
+            with self.db_keepalive():
+                response = http.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        except requests.exceptions.ConnectionError as e:
+            file_db.status = 'error'
+            file_db.job_message = f"Connection error while calling text extractor service (service may have restarted). {e}"
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise Exception(f"Connection error while calling text extractor service. {e}")
+        except Exception as e:
+            file_db.status = 'error'
+            file_db.job_message = f"Unexpected error while calling text extractor service. {e}"
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data loading. {response_err(response)}"
@@ -732,13 +758,29 @@ def delete_file_task(self, file_id: Any, *args, delete_from_sp: bool = True, **k
     logger.debug(f"[{file_db.id}] Started processing file deletion.")
 
     # Step 1 - Delete everything related to the file in the vector database
-    response = requests.post(f"{INGESTION_ENDPOINT}/delete", json={ 'file_id': str(file_db.id).replace('-', '') })
-    logger.debug(f"[{file_db.id}] Deleted existing data related to file.")
-    if response.status_code != 200:
-        file_db.job_status = 'error'
+    try:
+        response = requests.post(f"{INGESTION_ENDPOINT}/delete", json={ 'file_id': str(file_db.id).replace('-', '') })
+    except requests.exceptions.ConnectionError as e:
+        file_db.status = 'error'
+        file_db.marked_for_deletion = False
+        file_db.job_message = f"Connection error while calling ingestion service during deletion (service may have restarted). {e}"
+        self.safe_commit()
+        raise Exception(f"Connection error while calling ingestion service during deletion. {e}")
+    except Exception as e:
+        file_db.status = 'error'
+        file_db.marked_for_deletion = False
+        file_db.job_message = f"Unexpected error while calling ingestion service during deletion. {e}"
+        self.safe_commit()
+        raise
+    # 404 means no vector DB data found for this file, which  can happen when the file
+    # errored during ingestion. Proceed with DB cleanup.
+    if response.status_code not in (200, 404):
+        file_db.status = 'error'
+        file_db.marked_for_deletion = False
         file_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
         self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
+    logger.debug(f"[{file_db.id}] Deleted existing data related to file (ingestion status: {response.status_code}).")
 
     # Step 1.5 - If the file came from SharePoint and this is a real deletion
     # (not a re-ingestion/update), delete it from the SP site too.
@@ -801,8 +843,21 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     dataprep_docs = []
     if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
         logger.info(f"[{link_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
-        with self.db_keepalive():
-            response = http.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'links': [link_db.uri] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        try:
+            with self.db_keepalive():
+                response = http.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'links': [link_db.uri] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        except requests.exceptions.ConnectionError as e:
+            link_db.status = 'error'
+            link_db.job_message = f"Connection error while calling hierarchical dataprep service (service may have restarted). {e}"
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise Exception(f"Connection error while calling hierarchical dataprep service. {e}")
+        except Exception as e:
+            link_db.status = 'error'
+            link_db.job_message = f"Unexpected error while calling hierarchical dataprep service. {e}"
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise
         if response.status_code != 200:
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
@@ -828,8 +883,21 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             self.safe_commit()
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
-        with self.db_keepalive():
-            response = http.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'links': [link_db.uri] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        try:
+            with self.db_keepalive():
+                response = http.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'links': [link_db.uri] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+        except requests.exceptions.ConnectionError as e:
+            link_db.status = 'error'
+            link_db.job_message = f"Connection error while calling text extractor service (service may have restarted). {e}"
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise Exception(f"Connection error while calling text extractor service. {e}")
+        except Exception as e:
+            link_db.status = 'error'
+            link_db.job_message = f"Unexpected error while calling text extractor service. {e}"
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            raise
         if response.status_code != 200:
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while data loading. {response_err(response)}"

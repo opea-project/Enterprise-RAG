@@ -6,7 +6,7 @@ FROM node:20-alpine AS build
 RUN apk add --no-cache bash
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
 
 WORKDIR /rag-ui
 

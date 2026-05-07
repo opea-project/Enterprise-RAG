@@ -30,6 +30,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[switching_pipelines.md](switching_pipelines.md)**
   Guide for switching between the ChatQA and upload-optimized pipeline configurations.
 
+- **[multilingual_support.md](multilingual_support.md)**
+  Guide for enabling multilingual embedding, reranking, and LLM support in Intel® AI for Enterprise RAG, including remote model endpoint configuration.
+
 - **[building_images.md](building_images.md)**
   Guide for building Docker images locally for Intel® AI for Enterprise RAG components and pushing them to registries.
 

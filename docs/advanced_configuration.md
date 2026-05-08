@@ -265,17 +265,12 @@ llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
 ### Embedding Model
 
-**Default**: `BAAI/bge-base-en-v1.5`
+**Default**: `nomic-ai/nomic-embed-text-v1`
 
 ```yaml
 # Default
-embedding_model_name: "BAAI/bge-base-en-v1.5"
+embedding_model_name: "nomic-ai/nomic-embed-text-v1"
 ```
-
-**Important**: 
-- Different embedding models have different vector dimensions
-- **Check the vector dimensions length** in the embedding model description on Hugging Face
-- **Update the `vector_dims` setting** in the `vector_databases` section of your inventory configuration to match the embedding model's output dimensions. Value of `vector_dims` must match `hidden_size` in config.json of the model e.g. https://huggingface.co/BAAI/bge-base-en-v1.5/blob/main/config.json#L11
 
 Example configuration update:
 ```yaml

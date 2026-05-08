@@ -136,7 +136,7 @@
               "key": "embedding_model_name",
               "type": "string",
               "description": "Embedding model for vector representations",
-              "default_value": "BAAI/bge-base-en-v1.5"
+              "default_value": "nomic-ai/nomic-embed-text-v1"
             },
             {
               "key": "reranking_model_name",
@@ -344,7 +344,7 @@
               "key": "embedding_model_name",
               "type": "string",
               "description": "Embedding model for vector representations",
-              "default_value": "BAAI/bge-base-en-v1.5"
+              "default_value": "nomic-ai/nomic-embed-text-v1"
             },
             {
               "key": "reranking_model_name",

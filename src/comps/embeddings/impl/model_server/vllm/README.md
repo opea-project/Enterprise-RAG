@@ -82,12 +82,12 @@ docker compose down
 
 - Test the `embedding-vllm-model-server` using the following command:
     ```bash
-    # Replace BAAI/bge-base-en with the desired model identifier. Please note that the full model name, including the organization/namespace is expected.
+    # Replace nomic-ai/nomic-embed-text-v1 with the desired model identifier. Please note that the full model name, including the organization/namespace is expected.
  
     curl http://localhost:8108/v1/embeddings \
         -H "Content-Type: application/json" \
         -d '{
-            "model": "BAAI/bge-base-en",
+            "model": "nomic-ai/nomic-embed-text-v1",
             "input": "What is Deep Learning?"
         }'
     ```

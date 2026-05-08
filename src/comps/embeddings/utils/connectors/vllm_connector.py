@@ -51,7 +51,7 @@ class VLLMConnector(EmbeddingConnector):
         Initialize vLLM Embeddings connector.
 
         Args:
-            model_name: Full model identifier, including the organization/namespace (e.g., 'BAAI/bge-base-en')
+            model_name: Full model identifier, including the organization/namespace (e.g., 'nomic-ai/nomic-embed-text-v1')
             endpoint: Base URL of the vLLM server (e.g., 'http://localhost:8108')
             timeout: Timeout for API requests in seconds
             api_config: Additional configuration for the API

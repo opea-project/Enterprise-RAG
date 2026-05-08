@@ -86,7 +86,7 @@ def parse_args():
     parser.add_argument("-c", type=int, default=32, help="Concurrency Number")
     parser.add_argument("-d", type=str, default="30m", help="Execute Duration, when to stop the test")
     parser.add_argument("-u", type=str, default="0s", help="Worker startup delay time")
-    parser.add_argument("-m", type=str, default="BAAI/bge-base-en-v1.5", help="tokenizer model")
+    parser.add_argument("-m", type=str, default="nomic-ai/nomic-embed-text-v1", help="tokenizer model")
     parser.add_argument("-e", type=int, default=200, help="Failures allowed before quitting")
     parser.add_argument("-b", type=str, default="uat.txt", help="Path to file with UAT")
     parser.add_argument("-x", type=int, default=0, help="Fix length of input query to X tokens (0 means no fixing)")

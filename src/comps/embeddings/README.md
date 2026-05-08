@@ -51,7 +51,7 @@ The configuration for the Embedding Microservice is specified in the [impl/micro
 | Environment Variable                | Description                                                        |
 |-------------------------------------|--------------------------------------------------------------------|
 | `EMBEDDING_USVC_PORT`               | The port of the microservice, by default 6000.                     |
-| `EMBEDDING_MODEL_NAME`              | The name of language model to be used (e.g., "bge-base-en-v1.5")   |
+| `EMBEDDING_MODEL_NAME`              | The name of language model to be used (e.g., "nomic-ai/nomic-embed-text-v1")   |
 | `EMBEDDING_MODEL_SERVER`            | Specifies the type of model server (e.g. "tei", "vllm", "ovms")    |
 | `EMBEDDING_MODEL_SERVER_ENDPOINT`   | URL of the model server endpoint, e.g., "http://localhost:8090"    |
 
@@ -126,8 +126,8 @@ If the model server is running at a different endpoint than the default, update 
 ```bash
 docker run -d --name="embedding-microservice" \
   -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://localhost:8090" \
-  -e EMBEDDING_MODEL_NAME="bge-base-en-v1.5" \
-  -e EMBEDDING_MODEL_SERVER="tei" \
+  -e EMBEDDING_MODEL_NAME="nomic-ai/nomic-embed-text-v1" \
+  -e EMBEDDING_MODEL_SERVER="vllm" \
   --net=host \
   --ipc=host \
   opea/embedding

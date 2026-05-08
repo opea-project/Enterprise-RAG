@@ -2848,8 +2848,8 @@
       {
         "allowCustomValue": false,
         "current": {
-          "text": "BAAI/bge-base-en-v1.5",
-          "value": "BAAI/bge-base-en-v1.5"
+          "text": "nomic-ai/nomic-embed-text-v1",
+          "value": "nomic-ai/nomic-embed-text-v1"
         },
         "definition": "label_values(vllm:e2e_request_latency_seconds_count{namespace=\"$namespace\", service=\"$service\"},model_name)",
         "label": "model_name",
@@ -2873,7 +2873,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "EnterpriseRAG / ModelServing / vLLM",
-  "uid": "b281712d-8bff-41ef-9f3f-71ad43c05e9c",
-  "version": 13,
+  "uid": "b281712d-8bff-41ef-9f3f-71ad43c05e9d",
+  "version": 14,
   "weekStart": ""
 }

@@ -22,6 +22,8 @@ import urllib.error
 # Built-in lookup table for well-known embedding models and their hidden sizes.
 # Add entries here when deploying a known model in an air-gapped environment.
 KNOWN_MODEL_DIMS = {
+    # Nomic-AI
+    "nomic-ai/nomic-embed-text-v1": 768,
     # BAAI BGE series
     "BAAI/bge-base-en-v1.5": 768,
     "BAAI/bge-large-en-v1.5": 1024,
@@ -90,7 +92,7 @@ def main():
     parser.add_argument(
         "--embedding-model-name",
         required=True,
-        help="HuggingFace model identifier (e.g. BAAI/bge-base-en-v1.5)",
+        help="HuggingFace model identifier (e.g. nomic-ai/nomic-embed-text-v1)",
     )
     parser.add_argument(
         "--hf-token",

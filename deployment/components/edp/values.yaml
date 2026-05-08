@@ -887,12 +887,12 @@ textExtractor:
       memory: "30Gi"
   hpa:
     minReplicas: 1
-    maxReplicas: 2
+    maxReplicas: 3
     scaleUpTargetValue: 2
-    scaleDownTargetValue: "500m"
+    scaleDownTargetValue: "1"
     behavior:
       scaleDown:
-        stabilizationWindowSeconds: 600
+        stabilizationWindowSeconds: 60
         policies:
         - type: Percent
           value: 25
@@ -902,11 +902,11 @@ textExtractor:
           periodSeconds: 15
       scaleUp:
         selectPolicy: Max
-        stabilizationWindowSeconds: 0
+        stabilizationWindowSeconds: 60
         policies:
         - type: Pods
           value: 1
-          periodSeconds: 15
+          periodSeconds: 60
 
 textCompression:
   nameOverride: "edp-text-compression"

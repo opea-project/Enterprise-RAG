@@ -4,13 +4,18 @@
 import os
 import asyncio
 import socket
+import time
 import threading
+import concurrent.futures
 from contextlib import contextmanager
+from threading import Lock
 from typing import Any
 import requests
 from requests.adapters import HTTPAdapter
 import base64
 import datetime
+import subprocess  # nosec B404 — used only for qpdf (trusted local binary), calls are individually reviewed
+import tempfile
 from dotenv import load_dotenv
 from minio.error import S3Error
 from sqlalchemy import create_engine, text
@@ -55,7 +60,10 @@ LATE_CHUNKING_ENDPOINT = os.environ.get('LATE_CHUNKING_ENDPOINT')
 INGESTION_ENDPOINT = os.environ.get('INGESTION_ENDPOINT')
 EMBEDDING_TIMEOUT = int(os.getenv('EMBEDDING_TIMEOUT_SECONDS', '120'))
 TEXT_PROCESSING_TIMEOUT_SECONDS = int(os.getenv('TEXT_PROCESSING_TIMEOUT_SECONDS', '300'))  # timeout for compression and splitter requests
-TEXT_EXTRACTOR_TIMEOUT_SECONDS = int(os.getenv('TEXT_EXTRACTOR_TIMEOUT_SECONDS', '7200'))  # timeout for extractor requests (default 2h — SPR can take 40+ min)
+TEXT_EXTRACTOR_TIMEOUT_SECONDS = int(os.getenv('TEXT_EXTRACTOR_TIMEOUT_SECONDS', '900'))  # timeout per extractor request (default 15 min — applies to both single files and per-part in pipelined extraction; small files are fast, large ones are split into ≤100-page chunks)
+MAX_PAGES_PER_SPLIT = int(os.getenv('MAX_PAGES_PER_SPLIT', '100'))  # max pages per PDF part for parallel extraction across replicas
+MIN_PAGES_TO_SPLIT = int(os.getenv('MIN_PAGES_TO_SPLIT', '100'))  # don't split PDFs smaller than this — overhead isn't worth it
+MAX_EXTRACTOR_WORKERS = int(os.getenv('MAX_EXTRACTOR_WORKERS', '8'))  # max concurrent extractor threads; also used as target part count for pod distribution
 
 # ---------------------------------------------------------------------------
 # TCP keep-alive adapter --  kube-proxy (IPVS mode) drops idle connections
@@ -181,12 +189,332 @@ def response_err(response):
     except Exception:
         return response.text
 
+
+def _prepare_pdf_temp(file_data):
+    """Write PDF bytes to a temp file and count pages via qpdf.
+
+    Returns ``(tmp_path, total_pages)``.  The caller owns ``tmp_path`` and
+    must delete it when done.  Raises an Exception on qpdf failure (e.g.
+    malformed or password-protected PDF), including qpdf's stderr output.
+    """
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.pdf')
+    success = False
+    try:
+        os.write(tmp_fd, file_data)
+        os.close(tmp_fd)
+        result = subprocess.run(  # nosec
+            ['qpdf', '--show-npages', tmp_path],
+            capture_output=True, text=True, check=True,
+        )
+        success = True
+    except subprocess.CalledProcessError as e:
+        raise Exception(e.stderr.strip() or str(e))
+    finally:
+        if not success:
+            try:
+                os.unlink(tmp_path)
+            except OSError as e:
+                logger.warning(f"Failed to clean up temp PDF {tmp_path}: {e}")
+    return tmp_path, int(result.stdout.strip())
+
+
+def _split_pdf(file_data, max_pages):
+    """Check if a PDF needs splitting and return page count info.
+
+    Returns ``(needs_split: bool, total_pages: int)``.
+    Uses qpdf --show-npages for fast page counting.
+    """
+    tmp_path, total_pages = _prepare_pdf_temp(file_data)
+    try:
+        return total_pages > max_pages, total_pages
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError as e:
+            logger.warning(f"Failed to clean up temp PDF {tmp_path}: {e}")
+
+
+def _resolve_extractor_pods(endpoint):
+    """Resolve extractor pod IPs by doing a DNS lookup on the endpoint's hostname.
+
+    When TEXT_EXTRACTOR_ENDPOINT points to a headless service, Kubernetes DNS
+    returns one A record per pod, enabling direct per-pod routing.  Falls back
+    to [endpoint] if DNS resolution fails.
+    Returns a list of full URLs (e.g. ['http://10.0.0.1:9398/v1/text_extractor', ...]).
+    """
+    from urllib.parse import urlparse, urlunparse
+
+    parsed = urlparse(endpoint)
+    host = parsed.hostname
+    port = parsed.port or 9398
+
+    try:
+        addrs = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        pod_ips = sorted(set(addr[4][0] for addr in addrs))
+
+        if not pod_ips:
+            logger.warning(f"DNS returned 0 IPs for {host}, using original endpoint")
+            return [endpoint]
+
+        pod_endpoints = [
+            urlunparse(parsed._replace(netloc=f"{ip}:{port}"))
+            for ip in pod_ips
+        ]
+        logger.info(f"Resolved {len(pod_endpoints)} extractor pods via {host}: {pod_ips}")
+        return pod_endpoints
+    except Exception as e:
+        logger.warning(f"Failed to resolve {host}: {e}. Using original endpoint.")
+        return [endpoint]
+
+
+def _split_pdf_part(src_path, file_name, file_id, part_index, max_pages, total_pages, total_parts):
+    """Split one page range from a PDF using qpdf and return its base64 content."""
+    t_part = time.monotonic()
+    start_page = part_index * max_pages + 1  # qpdf uses 1-based pages
+    end_page = min(part_index * max_pages + max_pages, total_pages)
+
+    tmp_out_fd, tmp_out_path = tempfile.mkstemp(suffix='.pdf')
+    os.close(tmp_out_fd)
+    try:
+        try:
+            subprocess.run(  # nosec
+                ['qpdf', src_path, '--pages', src_path,
+                 f'{start_page}-{end_page}', '--', tmp_out_path],
+                check=True, capture_output=True, text=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise Exception(
+                f"qpdf failed splitting '{file_name}' part {part_index + 1}/{total_parts} "
+                f"(pages {start_page}-{end_page}): {e.stderr.strip() or str(e)}"
+            )
+        with open(tmp_out_path, 'rb') as f:
+            part_bytes = f.read()
+    finally:
+        try:
+            os.unlink(tmp_out_path)
+        except OSError as e:
+            logger.warning(f"Failed to clean up temp PDF part {tmp_out_path}: {e}")
+
+    part_b64 = base64.b64encode(part_bytes).decode('ascii')
+    logger.info(
+        f"[{file_id}] Split part {part_index + 1}/{total_parts} "
+        f"pages {start_page}-{end_page} ({end_page - start_page + 1} pages, "
+        f"{len(part_bytes) / (1024*1024):.1f} MB, "
+        f"{time.monotonic() - t_part:.1f}s) [qpdf]"
+    )
+    return part_b64
+
+
+def _send_extraction_part(file_id, file_name, part_index, total_parts,
+                          part_b64, target_endpoint, timeout, response_key):
+    """Send a single PDF part to an extractor pod and return (part_index, docs)."""
+    stem, ext = os.path.splitext(file_name)
+    part_label = f"{stem}_part{part_index + 1}of{total_parts}{ext}"
+    http = _keepalive_session()
+    # Bypass corporate HTTP proxy for direct pod-IP requests —
+    # the proxy cannot reach cluster-internal pod IPs and returns 403.
+    http.trust_env = False
+    part_size_mb = len(part_b64) * 3 / 4 / (1024 * 1024)
+    logger.info(
+        f"[{file_id}] Sending {part_label} ({part_size_mb:.1f} MB) "
+        f"to {target_endpoint} (timeout={timeout}s)"
+    )
+    t_start = time.monotonic()
+    resp = http.post(
+        target_endpoint,
+        json={'files': [{'filename': file_name, 'data64': part_b64}]},
+        timeout=timeout,
+    )
+    elapsed = time.monotonic() - t_start
+    if resp.status_code != 200:
+        logger.error(f"[{file_id}] {part_label}: extractor returned {resp.status_code} after {elapsed:.1f}s")
+        raise Exception(f"Extraction failed for {part_label}: {response_err(resp)}")
+    docs = resp.json().get(response_key, [])
+    logger.info(f"[{file_id}] {part_label}: extracted {len(docs)} docs in {elapsed:.1f}s")
+    return part_index, docs
+
+
+def _split_and_extract_pipelined(file_id, file_name, file_data, max_pages,
+                                  endpoint, timeout, response_key,
+                                  prebuilt_parts=None):
+    """Split a large PDF and extract parts across extractor pods in parallel.
+
+    Splits are done serially in the main thread (qpdf temp-file I/O), while
+    HTTP sends happen concurrently in a thread pool.  As soon as a split
+    finishes, the part is dispatched to the next available pod.  After all
+    parts are dispatched, remaining extractions are awaited with
+    FIRST_COMPLETED semantics so no pod sits idle.
+
+    Args:
+        file_data: raw PDF bytes (unused if prebuilt_parts is set)
+        max_pages: pages per split part (unused if prebuilt_parts is set)
+        prebuilt_parts: if set, skip splitting and use these base64 parts directly
+    """
+    # ------------------------------------------------------------------
+    # Phase 1: determine total parts and prepare temp file
+    # ------------------------------------------------------------------
+    if prebuilt_parts is not None:
+        total_parts = len(prebuilt_parts)
+        total_pages = None
+        logger.info(f"[{file_id}] Pipelined extraction with {total_parts} pre-built parts")
+        _tmp_pdf_path = None
+    else:
+        t_read = time.monotonic()
+        try:
+            _tmp_pdf_path, total_pages = _prepare_pdf_temp(file_data)
+        except Exception as e:
+            raise Exception(f"qpdf could not read '{file_name}': {e}")
+        total_parts = (total_pages + max_pages - 1) // max_pages
+        logger.info(
+            f"[{file_id}] Pipelined split+extract: {total_pages} pages → "
+            f"{total_parts} parts of up to {max_pages} pages "
+            f"(read took {time.monotonic() - t_read:.1f}s)"
+        )
+
+    # ------------------------------------------------------------------
+    # Phase 2: dispatch parts to pods
+    # ------------------------------------------------------------------
+    results = {}
+    completed_count = 0
+
+    pod_endpoints = _resolve_extractor_pods(endpoint)
+    num_pods = len(pod_endpoints)
+    known_pod_ips = set(pod_endpoints)
+
+    logger.info(
+        f"[{file_id}] Dispatching {total_parts} parts across {num_pods} pods "
+        f"(serial-split, parallel-send)"
+    )
+
+    max_workers = max(num_pods, min(total_parts, MAX_EXTRACTOR_WORKERS))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        pending = set()
+        future_map = {}   # future → (part_idx, pod_idx)
+        pod_queue = list(range(num_pods))
+
+        def _submit(part_idx, pod_idx, part_b64):
+            future = executor.submit(
+                _send_extraction_part, file_id, file_name, part_idx,
+                total_parts, part_b64, pod_endpoints[pod_idx], timeout, response_key,
+            )
+            pending.add(future)
+            future_map[future] = (part_idx, pod_idx)
+
+        def _refresh_pods():
+            nonlocal num_pods
+            fresh = _resolve_extractor_pods(endpoint)
+            new_pods = [ep for ep in fresh if ep not in known_pod_ips]
+            if new_pods:
+                for ep in new_pods:
+                    pod_endpoints.append(ep)
+                    known_pod_ips.add(ep)
+                    pod_queue.append(len(pod_endpoints) - 1)
+                num_pods = len(pod_endpoints)
+                logger.info(
+                    f"[{file_id}] Discovered {len(new_pods)} new extractor pod(s) "
+                    f"via HPA, now {num_pods} pods total"
+                )
+
+        def _collect_done(futures_done):
+            nonlocal completed_count
+            for f in futures_done:
+                pending.discard(f)
+                p_idx, p_pod = future_map[f]
+                idx, docs = f.result()  # raises on error
+                results[idx] = docs
+                completed_count += 1
+                pod_queue.append(p_pod)
+                logger.info(
+                    f"[{file_id}] Parallel extraction progress: "
+                    f"{completed_count}/{total_parts} parts done"
+                )
+
+        # Split each part in main thread, dispatch send immediately
+        for part_idx in range(total_parts):
+            if prebuilt_parts is not None:
+                part_b64 = prebuilt_parts[part_idx]
+            else:
+                part_b64 = _split_pdf_part(
+                    _tmp_pdf_path, file_name, file_id,
+                    part_idx, max_pages, total_pages, total_parts,
+                )
+
+            # Collect any already-finished futures
+            _collect_done({f for f in list(pending) if f.done()})
+
+            if not pod_queue:
+                _refresh_pods()
+
+            # Wait for a free pod if all are busy
+            while not pod_queue:
+                if not pending:
+                    break
+                done_set, _ = concurrent.futures.wait(
+                    pending, return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+                _collect_done(done_set)
+                if not pod_queue:
+                    _refresh_pods()
+
+            pod_idx = pod_queue.pop(0)
+            _submit(part_idx, pod_idx, part_b64)
+
+        # Wait for remaining extractions
+        first_error = None
+        while pending:
+            done, pending = concurrent.futures.wait(
+                pending, return_when=concurrent.futures.FIRST_COMPLETED,
+            )
+            for future in done:
+                part_idx, pod_idx = future_map[future]
+                try:
+                    idx, docs = future.result()
+                    results[idx] = docs
+                    completed_count += 1
+                    logger.info(
+                        f"[{file_id}] Parallel extraction progress: "
+                        f"{completed_count}/{total_parts} parts done"
+                    )
+                except Exception as e:
+                    logger.error(f"[{file_id}] Part {part_idx + 1}/{total_parts} failed: {e}")
+                    if first_error is None:
+                        first_error = e
+                        for f in pending:
+                            f.cancel()
+                        pending.clear()
+                        break
+
+    if first_error:
+        logger.error(f"[{file_id}] Pipelined extraction failed: {first_error}")
+        raise first_error
+
+    # Clean up temp PDF file
+    if _tmp_pdf_path:
+        try:
+            os.unlink(_tmp_pdf_path)
+        except OSError as e:
+            logger.warning(f"Failed to clean up temp PDF {_tmp_pdf_path}: {e}")
+
+    # Merge results in original page order
+    merged = []
+    for i in range(total_parts):
+        merged.extend(results[i])
+
+    logger.info(f"[{file_id}] Merged {len(merged)} docs from {total_parts} parts across {num_pods} pods")
+    return merged
+
+
 @shared_task(base=WithEDPTask, bind=True)
 def process_file_task(self, file_id: Any, *args, **kwargs):
 
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
     if file_db is None:
         raise Exception(f"File with id {file_id} not found")
+
+    if file_db.marked_for_deletion is True:
+        logger.info(f"[{file_db.id}] File is marked for deletion, skipping processing.")
+        return False
 
     logger.debug(f"[{file_db.id}] Started processing file.")
 
@@ -234,6 +562,15 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_base64 = base64.b64encode(file_data).decode('ascii')
             logger.debug(f"[{file_db.id}] Retrieved file from S3 storage.")
     except S3Error as e:
+        if e.code == 'NoSuchKey':
+            # File was deleted from storage before this task ran (delete-then-reprocess race).
+            # Mark the DB record as deleted so the UI doesn't show a spurious error.
+            logger.warning(f"[{file_db.id}] File no longer exists in S3 ({file_db.object_name}), marking as deleted.")
+            file_db.status = 'deleted'
+            file_db.job_message = 'File was removed from storage before processing could start.'
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.safe_commit()
+            return False
         file_db.status = 'error'
         file_db.job_message = f"Error downloading file. {e}"
         file_db.text_extractor_end = datetime.datetime.now()
@@ -248,6 +585,44 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     file_name = os.path.basename(file_db.object_name)
     http = _keepalive_session()  # TCP keep-alive prevents IPVS from dropping the idle connection during long extractions
     dataprep_docs = []
+
+    # --- Check if PDF should be split for parallel extraction across pods ---
+    needs_split = False
+    effective_max_pages = MAX_PAGES_PER_SPLIT
+    if file_name.lower().endswith('.pdf'):
+        try:
+            needs_split, pdf_total_pages = _split_pdf(file_data, MAX_PAGES_PER_SPLIT)
+
+            # Even if the PDF is under MAX_PAGES_PER_SPLIT, split it across
+            # extractor pods so all replicas share the load.
+            # Use the *current* pod count but also ensure we always create
+            # enough parts for the HPA max — pods can scale up at any time
+            # and the dispatcher (_refresh_pods) will discover them.
+            if not needs_split and pdf_total_pages >= MIN_PAGES_TO_SPLIT:
+                current_pods = len(_resolve_extractor_pods(TEXT_EXTRACTOR_ENDPOINT))
+                # Aim for at least as many parts as the max expected pods
+                # (current count may be 1 if HPA hasn't scaled yet).
+                target_parts = max(current_pods, MAX_EXTRACTOR_WORKERS)
+                pages_per_part = max(MIN_PAGES_TO_SPLIT, (pdf_total_pages + target_parts - 1) // target_parts)
+                if pages_per_part < pdf_total_pages:
+                    effective_max_pages = pages_per_part
+                    needs_split = True
+                    actual_parts = (pdf_total_pages + pages_per_part - 1) // pages_per_part
+                    logger.info(
+                        f"[{file_db.id}] PDF {file_name}: {pdf_total_pages} pages, "
+                        f"splitting into {actual_parts} parts of ~{pages_per_part} pages "
+                        f"(current pods={current_pods}, target_parts={target_parts})"
+                    )
+
+            if needs_split:
+                if effective_max_pages == MAX_PAGES_PER_SPLIT:
+                    logger.info(f"[{file_db.id}] PDF {file_name}: {pdf_total_pages} pages > {MAX_PAGES_PER_SPLIT} limit, will split+extract in pipeline")
+            else:
+                logger.info(f"[{file_db.id}] PDF {file_name}: {pdf_total_pages} pages, no split needed")
+        except Exception as e:
+            logger.warning(f"[{file_db.id}] PDF page count check failed, falling back to single request: {e}")
+            needs_split = False
+
     if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
         logger.info(f"[{file_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
         try:
@@ -290,44 +665,81 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             self.safe_commit()
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
-        logger.info(f"[{file_db.id}] Calling text extractor (file={file_name}, timeout={TEXT_EXTRACTOR_TIMEOUT_SECONDS}s).")
-        try:
-            with self.db_keepalive():
-                response = http.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
-        except requests.exceptions.ConnectionError as e:
-            file_db.status = 'error'
-            file_db.job_message = f"Connection error while calling text extractor service (service may have restarted). {e}"
-            file_db.text_extractor_end = datetime.datetime.now()
-            self.safe_commit()
-            raise Exception(f"Connection error while calling text extractor service. {e}")
-        except Exception as e:
-            file_db.status = 'error'
-            file_db.job_message = f"Unexpected error while calling text extractor service. {e}"
-            file_db.text_extractor_end = datetime.datetime.now()
-            self.safe_commit()
-            raise
-        if response.status_code != 200:
-            file_db.status = 'error'
-            file_db.job_message = f"Error encountered while data loading. {response_err(response)}"
-            file_db.text_extractor_end = datetime.datetime.now()
-            self.safe_commit()
-            raise Exception(f"Error encountered while data loading. {response_err(response)}")
-        logger.info(f"[{file_db.id}] Data loading completed.")
-
         text_extractor_docs = []
-        try:
-            text_extractor_docs = response.json()['loaded_docs']
+
+        if needs_split:
+            logger.info(f"[{file_db.id}] Using pipelined split+extract for {file_name} ({pdf_total_pages} pages, max {effective_max_pages} per part).")
+            try:
+                with self.db_keepalive():
+                    text_extractor_docs = _split_and_extract_pipelined(
+                        file_id=str(file_db.id),
+                        file_name=file_name,
+                        file_data=file_data,
+                        max_pages=effective_max_pages,
+                        endpoint=TEXT_EXTRACTOR_ENDPOINT,
+                        timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS,
+                        response_key='loaded_docs',
+                    )
+            except requests.exceptions.ConnectionError as e:
+                file_db.status = 'error'
+                file_db.job_message = f"Connection error while calling text extractor service (service may have restarted). {e}"
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+                raise Exception(f"Connection error while calling text extractor service. {e}")
+            except Exception as e:
+                file_db.status = 'error'
+                file_db.job_message = f"Unexpected error while calling text extractor service. {e}"
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+                raise
+
             if len(text_extractor_docs) == 0:
-                logger.debug(f"[{file_db.id}] Data loading returned 0 documents.")
+                file_db.status = 'error'
+                file_db.job_message = 'No text extracted from the file.'
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
                 raise Exception('No text extracted from the file.')
             file_db.text_extractor_end = datetime.datetime.now()
             self.safe_commit()
-        except Exception as e:
-            file_db.status = 'error'
-            file_db.job_message = 'No text extracted from the file.'
-            file_db.text_extractor_end = datetime.datetime.now()
-            self.safe_commit()
-            raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
+            logger.info(f"[{file_db.id}] Pipelined extraction completed: {len(text_extractor_docs)} docs.")
+        else:
+            logger.info(f"[{file_db.id}] Calling text extractor (file={file_name}, timeout={TEXT_EXTRACTOR_TIMEOUT_SECONDS}s).")
+            try:
+                with self.db_keepalive():
+                    response = http.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] }, timeout=TEXT_EXTRACTOR_TIMEOUT_SECONDS)
+            except requests.exceptions.ConnectionError as e:
+                file_db.status = 'error'
+                file_db.job_message = f"Connection error while calling text extractor service (service may have restarted). {e}"
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+                raise Exception(f"Connection error while calling text extractor service. {e}")
+            except Exception as e:
+                file_db.status = 'error'
+                file_db.job_message = f"Unexpected error while calling text extractor service. {e}"
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+                raise
+            if response.status_code != 200:
+                file_db.status = 'error'
+                file_db.job_message = f"Error encountered while data loading. {response_err(response)}"
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+                raise Exception(f"Error encountered while data loading. {response_err(response)}")
+            logger.info(f"[{file_db.id}] Data loading completed.")
+
+            try:
+                text_extractor_docs = response.json()['loaded_docs']
+                if len(text_extractor_docs) == 0:
+                    logger.debug(f"[{file_db.id}] Data loading returned 0 documents.")
+                    raise Exception('No text extracted from the file.')
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+            except Exception as e:
+                file_db.status = 'error'
+                file_db.job_message = 'No text extracted from the file.'
+                file_db.text_extractor_end = datetime.datetime.now()
+                self.safe_commit()
+                raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
 
         # Step 3 - Call the text compression service to compress the documents
         file_db.text_compression_start = datetime.datetime.now()
@@ -509,9 +921,6 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         file_db.chunks_processed = final_chunk_number
         self.safe_commit()
     else:
-        import concurrent.futures
-        from threading import Lock
-
         batch_size = int(os.getenv('BATCH_SIZE', '32'))                    # max documents per embedding batch
         max_workers = int(os.getenv('MAX_NEW_WORKERS', '8'))               # max parallel embedding threads
         embedding_timeout_seconds = float(os.getenv('EMBEDDING_REQUEST_TIMEOUT_SECONDS', os.getenv('EMBEDDING_TIMEOUT_SECONDS', '120')))  # per-request embedding timeout (seconds)
@@ -772,7 +1181,7 @@ def delete_file_task(self, file_id: Any, *args, delete_from_sp: bool = True, **k
         file_db.job_message = f"Unexpected error while calling ingestion service during deletion. {e}"
         self.safe_commit()
         raise
-    # 404 means no vector DB data found for this file, which  can happen when the file
+    # 404 means no vector DB data found for this file, which can happen when the file
     # errored during ingestion. Proceed with DB cleanup.
     if response.status_code not in (200, 404):
         file_db.status = 'error'

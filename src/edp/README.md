@@ -239,7 +239,10 @@ If you want to utilize all functionality, depending on the application server yo
 |         | CELERY_BROKER_URL          | URL for Celery broker |
 |         | CELERY_BACKEND_URL         | URL for Celery backend |
 |         | HIERARCHICAL_DATAPREP_ENDPOINT | Endpoint for hierarchical dataprep service |
-|         | TEXT_EXTRACTOR_ENDPOINT       | Endpoint for text extractor service |
+|         | TEXT_EXTRACTOR_ENDPOINT       | Endpoint for text extractor service. Must point to the **headless** Kubernetes service (e.g. `http://edp-text-extractor-headless:9398/v1/text_extractor`) so that DNS A-record lookup resolves individual pod IPs for direct per-pod load distribution |
+|         | MAX_PAGES_PER_SPLIT           | Maximum number of pages per PDF part when splitting large PDFs for parallel extraction across replicas (default: `100`) |
+|         | MIN_PAGES_TO_SPLIT            | Minimum number of pages a PDF must have before splitting is considered; smaller PDFs are sent as a single request (default: `100`) |
+|         | MAX_EXTRACTOR_WORKERS         | Maximum number of concurrent threads used to dispatch PDF parts to extractor pods; also used as the target part count when pre-splitting PDFs to anticipate HPA scale-up (default: `8`) |
 |         | TEXT_COMPRESSION_ENDPOINT | Endpoint for text compression service |
 |         | TEXT_SPLITTER_ENDPOINT     | Endpoint for text splitter service |
 |         | EMBEDDING_ENDPOINT         | Endpoint for embedding service |

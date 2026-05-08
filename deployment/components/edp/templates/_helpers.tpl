@@ -63,7 +63,7 @@ Expand the name of the chart.
 {{- end }}
 
 {{- define "helm-edp.noProxyWithContainers" -}}
-{{- printf "%s,edp-backend,edp-celery,edp-hierarchical-dataprep,edp-text-extractor,edp-text-compression,edp-text-splitter,edp-late-chunking,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
+{{- printf "%s,edp-backend,edp-celery,edp-hierarchical-dataprep,edp-text-extractor-headless,edp-text-compression,edp-text-splitter,edp-late-chunking,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
 {{- end }}
 
 {{- define "helm-edp.awsSqs.name" -}}

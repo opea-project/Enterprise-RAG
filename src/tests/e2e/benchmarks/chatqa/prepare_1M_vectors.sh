@@ -2,6 +2,16 @@
 # Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check Python dependencies
+if ! python3 -c "import defusedxml, requests, transformers, pandas" 2>/dev/null; then
+    echo "[ERROR] Missing required Python packages."
+    echo "[ERROR] Please install them first:"
+    echo "[ERROR]   pip3 install -r ${SCRIPT_DIR}/requirements.txt"
+    exit 1
+fi
+
 refresh_uat()
 {
 	source generate_uat_to_file.sh "/dev/null" 1

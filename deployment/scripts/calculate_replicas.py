@@ -4,7 +4,7 @@ import json
 import argparse
 import sys
 
-def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size, node_memory_size, replicas, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent):
+def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size, node_memory_size, replicas, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent, vllm_memory_gib=42):
     """
     Verify if memory requirements exceed available node memory and adjust replicas if needed.
     
@@ -23,7 +23,7 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
         Tuple: (verified_replicas_count, memory_usage_percent)
     """
 
-    VLLM_MEMORY = 64 if current_vllm_size > 0 else 0   # [GiB]
+    VLLM_MEMORY = vllm_memory_gib if current_vllm_size > 0 else 0   # [GiB]
     EMBEDDING_MEMORY = 4 if embedding_size > 0 else 0  # [GiB]
     RERANKING_MEMORY = 4 if reranking_size > 0 else 0  # [GiB]
 
@@ -37,16 +37,16 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
     total_memory_needed = inference_memory_sum * replicas
 
     # Set RAG core services memory request
-    CORE_SERVICES_MEMORY = 32  # [GiB]
+    CORE_SERVICES_MEMORY = 16  # [GiB]
 
     # Calculate OPTIONAL_SERVICES_MEMORY based on enabled components
     OPTIONAL_SERVICES_MEMORY = 0
     if edp_enabled:
-        OPTIONAL_SERVICES_MEMORY += 17  # memory request for EDP [GiB]
+        OPTIONAL_SERVICES_MEMORY += 14  # memory request for EDP [GiB]
     if vector_databases_enabled:
-        OPTIONAL_SERVICES_MEMORY += 13  # memory request for redis [GiB]
+        OPTIONAL_SERVICES_MEMORY += 4  # memory request for redis [GiB]
     if telemetry_enabled:
-        OPTIONAL_SERVICES_MEMORY += 13  # memory request for telemetry [GiB]
+        OPTIONAL_SERVICES_MEMORY += 12  # memory request for telemetry [GiB]
 
     # Calculate memory buffer
     MEMORY_BUFFER_PERCENT = 0.1  # 10% buffer for system, OS, safety margin
@@ -72,7 +72,7 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
         memory_usage_percent = (verified_replicas_count * inference_memory_sum / node_memory_size) * 100
         return verified_replicas_count, memory_usage_percent
 
-def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent, max_replicas_per_node):
+def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent, max_replicas_per_node, vllm_memory_gib=42):
     """
     Calculate optimal replica distribution for VLLM, reranking, and embedding services.
 
@@ -200,7 +200,8 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
             edp_enabled,
             telemetry_enabled,
             vector_databases_enabled,
-            memory_overcommit_buffer_percent
+            memory_overcommit_buffer_percent,
+            vllm_memory_gib
         )
 
         # Set per-service replicas to 0 if service has 0 CPU size
@@ -261,6 +262,7 @@ if __name__ == "__main__":
     parser.add_argument('--vector-databases-enabled', type=lambda x: x.lower() == 'true', required=True, help='Vector databases enabled flag')
     parser.add_argument('--memory-overcommit-buffer-percent', type=float, default=0.1, help='Memory buffer percentage for pod memory overcommit/burst (default: 0.1)')
     parser.add_argument('--max-replicas-per-node', type=int, default=10, help='Maximum replicas per node to avoid exceeding pod limits (default: 10)')
+    parser.add_argument('--vllm-memory-gib', type=int, default=42, help='Memory reserved per VLLM replica in GiB, derived from model config (default: 42 = 32 base + 10 KV cache)')
 
     args = parser.parse_args()
 
@@ -276,6 +278,7 @@ if __name__ == "__main__":
         args.telemetry_enabled,
         args.vector_databases_enabled,
         args.memory_overcommit_buffer_percent,
-        args.max_replicas_per_node
+        args.max_replicas_per_node,
+        args.vllm_memory_gib
     )
     sys.stdout.write(json.dumps(results))

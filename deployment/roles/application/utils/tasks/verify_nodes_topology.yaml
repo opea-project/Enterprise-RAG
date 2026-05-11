@@ -181,6 +181,26 @@
   - topology-preview
   - update-configuration
 
+- name: Compute VLLM memory requirement from model config
+  set_fact:
+    VLLM_MEMORY_GIB: >-
+      {%- set pipeline_model_config_path = (pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | selectattr('modelConfigPath', 'defined') | map(attribute='modelConfigPath') | first | default('')) -%}
+      {%- if pipeline_model_config_path -%}
+        {%- set model_configs = (lookup('file', pipelines_dir + '/' + pipeline_model_config_path) | from_yaml).get('modelConfigs', {}) -%}
+        {%- set model_entry = model_configs.get(llm_model, {}) -%}
+        {%- set extra_args = model_entry.get('extraCmdArgs', []) -%}
+        {%- set is_awq = 'awq' in extra_args -%}
+        {%- set kv_cache_space = model_entry.get('configMapValues', {}).get('VLLM_CPU_KVCACHE_SPACE', '10') | int -%}
+        {%- set base_mem = 16 if is_awq else 32 -%}
+        {{ base_mem + kv_cache_space }}
+      {%- else -%}
+        34
+      {%- endif -%}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
 - name: Calculate optimal replicas using Python script
   ansible.builtin.shell: |
     python3 {{ playbook_dir }}/../scripts/calculate_replicas.py \
@@ -193,7 +213,8 @@
       --telemetry-enabled {{ telemetry.enabled | default(false) }} \
       --vector-databases-enabled {{ vector_databases.enabled | default(false) }} \
       --memory-overcommit-buffer-percent {{ balloons.memory_overcommit_buffer | default(0.1) }} \
-      --max-replicas-per-node {{ balloons.max_replicas_per_node | default(10) }}
+      --max-replicas-per-node {{ balloons.max_replicas_per_node | default(10) }} \
+      --vllm-memory-gib {{ VLLM_MEMORY_GIB }}
   register: replicas_calculation_result
   tags:
   - install

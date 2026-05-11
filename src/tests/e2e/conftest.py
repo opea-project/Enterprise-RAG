@@ -443,7 +443,7 @@ def collect_k8s_logs(request):
     logger.info(f"Logs archived: {tar_path}")
 
     # Attach in allure report
-    allure.attach.file(tar_path, f"logs_{test_name}.tar.gz")
+    allure.attach.file(tar_path, f"logs_{test_name}.tar.gz", extension="tar.gz")
 
 
 @pytest.fixture(scope="session")

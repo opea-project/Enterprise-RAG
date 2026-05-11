@@ -68,4 +68,4 @@ def allure_attach_output():
     for file_path in target_dir.iterdir():
         logger.info(f"attaching file to allure: {file_path}")
         if file_path.is_file():
-            allure.attach.file(str(file_path), name=file_path.name)
+            allure.attach.file(str(file_path), name=file_path.name, extension=file_path.suffix.lstrip("."))

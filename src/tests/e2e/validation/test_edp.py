@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import concurrent.futures
 import inspect
 import logging
 import pytest
@@ -472,6 +473,142 @@ def test_edp_extractor_pod_restart_during_extraction(edp_helper, k8s_helper):
     logger.info("Waiting for new ingestion pod to become ready...")
     k8s_helper.wait_for_pod_ready(namespace=EDP_NAMESPACE, label_selector=TEXT_EXTRACTOR_POD_LABEL_SELECTOR, timeout=300)
     logger.info("Ingestion pod is ready.")
+
+@allure.testcase("IEASG-T614")
+def test_edp_upload_many_links(edp_helper):
+    """Upload 20 links at once and verify that all of them are ingested"""
+    base_url = "https://arxiv.org/pdf/2007.15619"
+    links = [f"{base_url}?test_edp_upload_many_links={i}" for i in range(20)]
+
+    response = edp_helper.upload_links({"links": links})
+    assert response.status_code == 200, (
+        f"Upload failed. Status: {response.status_code}, Response: {response.text}"
+    )
+    for link in links:
+        edp_helper.wait_for_link_upload(link, "ingested", timeout=600)
+
+
+@allure.testcase("IEASG-T615")
+def test_edp_deleted_links_block_processing_queue(edp_helper, k8s_helper):
+    """
+    Upload 10 links, wait for at least one to start extracting, then delete all.
+    Poll text-extractor logs: count "Removed ... after processing" entries (completed extractions).
+    Once 6 completions are seen, wait 5s and check if a new "start fetch" appears.
+    If no new fetch starts, the queue was properly drained — PASS.
+    If a 7th fetch starts, deleted links are still in the queue — FAIL.
+    """
+    base_url = "https://research.nhm.org/pdfs/32460/32460-004.pdf"
+    links = [f"{base_url}?test_edp_deleted_links_block_queue={i}" for i in range(10)]
+
+    response = edp_helper.upload_links({"links": links})
+    assert response.status_code == 200, f"Upload failed. Response: {response.text}"
+    link_ids = response.json().get("id")
+
+    # Wait until at least one link starts extracting (queue is moving)
+    edp_helper.wait_for_link_upload(links[0], "text_extracting", timeout=120)
+    logger.info("First link reached text_extracting. Deleting all links now...")
+
+    for link_id in link_ids:
+        edp_helper.delete_link(link_id)
+    logger.info("All 10 links deleted. Polling text-extractor logs...")
+
+    # Poll until we see 6 completed extractions
+    poll_interval = 5
+    max_poll_time = 600
+    start_time = time.time()
+
+    while time.time() < start_time + max_poll_time:
+        pod_logs = k8s_helper.get_pod_logs(
+            namespace=EDP_NAMESPACE,
+            label_selector="app.kubernetes.io/name=edp-text-extractor",
+            since_seconds=int(time.time() - start_time) + 180
+        )
+        completed_count = 0
+        for pod_log in pod_logs:
+            for line in pod_log["logs"].splitlines():
+                if "after processing" in line:
+                    completed_count += 1
+
+        logger.info(f"Poll: {completed_count} extractions completed so far")
+
+        if completed_count >= 6:
+            logger.info("6 extractions completed. Waiting 5s to check if a 7th fetch starts...")
+            time.sleep(5)
+
+            # Re-read logs and count "start fetch" entries
+            pod_logs = k8s_helper.get_pod_logs(
+                namespace=EDP_NAMESPACE,
+                label_selector="app.kubernetes.io/name=edp-text-extractor",
+                since_seconds=int(time.time() - start_time) + 180
+            )
+            fetch_count = 0
+            for pod_log in pod_logs:
+                for line in pod_log["logs"].splitlines():
+                    if "start fetch" in line:
+                        fetch_count += 1
+
+            logger.info(f"Total 'start fetch' entries in logs: {fetch_count}")
+            if fetch_count > 6:
+                failure_message = (
+                    f"Expected at most 6 'start fetch' entries (workers already processing before delete), "
+                    f"but found {fetch_count}. "
+                    f"This indicates delete_link does not revoke queued Celery tasks."
+                )
+            else:
+                failure_message = None
+                logger.info("PASSED: No 7th fetch started after 6 completions")
+            break
+
+        time.sleep(poll_interval)
+    else:
+        failure_message = f"Timed out waiting for 6 extractions to complete. Only saw {completed_count}."
+
+    # Wait for all extractions to finish so subsequent tests are not affected
+    logger.info("Waiting for all extractions to complete before exiting...")
+    while time.time() < start_time + max_poll_time:
+        pod_logs = k8s_helper.get_pod_logs(
+            namespace=EDP_NAMESPACE,
+            label_selector="app.kubernetes.io/name=edp-text-extractor",
+            since_seconds=int(time.time() - start_time) + 180
+        )
+        completed_count = 0
+        for pod_log in pod_logs:
+            for line in pod_log["logs"].splitlines():
+                if "after processing" in line:
+                    completed_count += 1
+        if completed_count >= 10:
+            logger.info("All 10 extractions completed. Safe to proceed.")
+            break
+        time.sleep(poll_interval)
+    else:
+        logger.warning("Timed out waiting for all extractions to complete.")
+
+    if failure_message:
+        pytest.fail(failure_message)
+
+
+@allure.testcase("IEASG-T616")
+def test_edp_upload_many_links_parallel_requests(edp_helper, temporarily_remove_brute_force_detection):
+    """Upload 20 links via 20 parallel requests (1 link per request)"""
+    base_url = "https://arxiv.org/pdf/2007.15619"
+    links = [f"{base_url}?test_edp_upload_many_links_parallel_requests={i}" for i in range(20)]
+
+    def upload_single_link(link):
+        return edp_helper.upload_links({"links": [link]})
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(upload_single_link, link): link for link in links}
+        for future in concurrent.futures.as_completed(futures):
+            link = futures[future]
+            response = future.result()
+            assert response.status_code == 200, (
+                f"Upload failed for {link}. "
+                f"Status: {response.status_code}, Response: {response.text}"
+            )
+
+    for link in links:
+        edp_helper.wait_for_link_upload(link, "ingested", timeout=600)
+
 
 def method_name():
     return f"{inspect.stack()[1].function}_"

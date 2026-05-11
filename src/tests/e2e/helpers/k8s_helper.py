@@ -84,6 +84,17 @@ class K8sHelper:
             f"No pods found with label '{label_selector}' in namespace '{namespace}'"
         )
 
+    def get_pod_logs(self, namespace, label_selector, since_seconds=None):
+        """Get logs from all pods matching a label selector"""
+        all_logs = []
+        for pod in kr8s.get("pods", namespace=namespace, label_selector=label_selector):
+            kwargs = {}
+            if since_seconds:
+                kwargs["since_seconds"] = since_seconds
+            log_lines = list(pod.logs(**kwargs))
+            all_logs.append({"pod": pod.name, "logs": "\n".join(log_lines)})
+        return all_logs
+
     def exec_in_pod(self, pod, command):
         """Execute a command in a pod's container"""
         logger.debug(f"Executing command '{command}' in pod '{pod.name}'")

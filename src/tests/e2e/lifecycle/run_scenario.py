@@ -85,6 +85,10 @@ def main():
         sys.exit(1)
 
     scenario_config = scenarios[scenario_name]
+
+    if scenario_config.get("skip_auth_setup"):
+        os.environ["SKIP_AUTH_SETUP"] = "1"
+
     raw_lifecycle = scenario_config.get("lifecycle", [])
     lifecycle_files = []
 

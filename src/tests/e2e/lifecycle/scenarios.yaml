@@ -1,6 +1,7 @@
 scenarios:
 
   uninstall:
+    skip_auth_setup: true
     lifecycle:
       - test_uninstall.py
 

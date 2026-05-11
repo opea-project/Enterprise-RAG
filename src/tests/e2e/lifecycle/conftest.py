@@ -5,14 +5,17 @@
 
 import hashlib
 import logging
+import os
 
 import pytest
 
 logger = logging.getLogger(__name__)
 
+_skip_auth = os.environ.get("SKIP_AUTH_SETUP") == "1"
 
-@pytest.fixture(scope="session")
-def validation_user_persistent(keycloak_helper, suppress_logging):
+
+@pytest.fixture(scope="session", autouse=True)
+def validation_user_persistent(request, suppress_logging):
     """
     Ensure a permanent validation user exists in Keycloak for backup-restore test authentication.
 
@@ -25,7 +28,14 @@ def validation_user_persistent(keycloak_helper, suppress_logging):
 
     The user is NOT deleted after tests to preserve data continuity.
     Password is derived from a constant (not stored as "password" to avoid secret scanners).
+
+    Skipped when SKIP_AUTH_SETUP=1 (set by run_scenario.py from scenarios.yaml skip_auth_setup flag).
     """
+    if _skip_auth:
+        yield
+        return
+
+    keycloak_helper = request.getfixturevalue("keycloak_helper")
     validation_username = "erag-validation-user"
     # Derive auth_secret from constant string - meets Keycloak password policy requirements
     auth_constant = "ERAG_VALIDATION_CI_2026"
@@ -63,3 +73,25 @@ def validation_user_persistent(keycloak_helper, suppress_logging):
     keycloak_helper._ci_username = None
     keycloak_helper._ci_password = None
     logger.info(f"Validation user '{validation_username}' retained for future test runs")
+
+
+if _skip_auth:
+    @pytest.fixture(scope="session", autouse=True)
+    def temporarily_remove_user_required_actions():
+        """No-op: auth setup skipped via scenarios.yaml skip_auth_setup flag."""
+        yield
+
+    @pytest.fixture(scope="session", autouse=True)
+    def disable_guards_at_startup(suppress_logging, temporarily_remove_user_required_actions):
+        """No-op: auth setup skipped via scenarios.yaml skip_auth_setup flag."""
+        yield
+
+    @pytest.fixture(scope="function", autouse=True)
+    def edp_cleanup_after_test():
+        """No-op: auth setup skipped via scenarios.yaml skip_auth_setup flag."""
+        yield
+
+    @pytest.fixture(scope="session", autouse=True)
+    def edp_cleanup_after_session():
+        """No-op: auth setup skipped via scenarios.yaml skip_auth_setup flag."""
+        yield

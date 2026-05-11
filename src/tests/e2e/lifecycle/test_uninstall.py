@@ -5,27 +5,8 @@
 
 import allure
 import logging
-import pytest
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def validation_user_persistent():
-    """Overrides the global session-scoped fixture with a no-op for uninstall tests."""
-    yield
-
-
-@pytest.fixture(scope="session", autouse=True)
-def temporarily_remove_user_required_actions():
-    """Overrides the global session-scoped fixture with a no-op for uninstall tests."""
-    pass
-
-
-@pytest.fixture(scope="session", autouse=True)
-def disable_guards_at_startup(suppress_logging, temporarily_remove_user_required_actions):
-    """Overrides the global session-scoped fixture with a no-op for uninstall tests."""
-    pass
 
 
 @allure.testcase("IEASG-T309")

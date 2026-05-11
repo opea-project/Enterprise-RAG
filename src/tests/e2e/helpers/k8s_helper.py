@@ -43,11 +43,11 @@ class K8sHelper:
     def get_backups(self, namespace):
         """Get a list of kr8s CustomResource objects representing backups in a namespace"""
         logger.debug(f"Getting backups in namespace '{namespace}'")
-        return kr8s.get("backups", namespace=namespace)
+        return list(kr8s.get("backups", namespace=namespace))
 
     def list_pods(self, namespace):
         """List all pods in the specified namespace"""
-        return kr8s.get("pods", namespace=namespace)
+        return list(kr8s.get("pods", namespace=namespace))
 
     def get_pod_by_label(self, namespace, label_selector):
         """Returns first pod matching a label selector in a namespace"""

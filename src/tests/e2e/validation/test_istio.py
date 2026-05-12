@@ -52,7 +52,7 @@ for pipeline in cfg.get("pipelines", []):
         http_endpoints.extend(chatqa_endpoints)
 
 edp_endpoints = [
-    "edp-text-extractor.edp.svc.cluster.local:9398",
+    "edp-text-extractor-headless.edp.svc.cluster.local:9398",
     "edp-text-compression.edp.svc.cluster.local:9397",
     "edp-text-splitter.edp.svc.cluster.local:9399",
     "edp-ingestion.edp.svc.cluster.local:6120",

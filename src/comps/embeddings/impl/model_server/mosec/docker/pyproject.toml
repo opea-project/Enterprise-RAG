@@ -17,7 +17,7 @@ dependencies = [
     "intel-extension-for-pytorch==2.8.0",
     "setuptools == 80.10.2",     # security update
     "requests == 2.33.1",
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
     "hypothesis==6.82.0",
     "cmake>=3.13.0",
     "ninja==1.11.1",

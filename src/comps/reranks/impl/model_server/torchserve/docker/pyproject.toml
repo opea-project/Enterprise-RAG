@@ -22,7 +22,7 @@ dependencies = [
     "psutil==5.9.5",
     "expecttest==0.3.0",
     "packaging==24.2",
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
 ]
 
 [dependency-groups]

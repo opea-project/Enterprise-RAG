@@ -15,7 +15,7 @@ dependencies = [
     "MarkupSafe==3.0.2",
     "setuptools == 80.10.2",     # security update
     "requests == 2.33.1",
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
     "aiohttp == 3.13.5",
     "transformers == 4.53.3",
 ]

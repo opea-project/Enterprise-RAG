@@ -31,7 +31,7 @@ dependencies = [
     "python-dotenv==1.1.0",
     "h11==0.16.0",
     "requests == 2.33.1",
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
 ]
 
 [project.optional-dependencies]

@@ -26,7 +26,7 @@ dependencies = [
     "packaging==24.2",
     "setuptools == 80.10.2",     # security update
     "requests == 2.33.1",
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
     "einops == 0.8.2",
 ]
 

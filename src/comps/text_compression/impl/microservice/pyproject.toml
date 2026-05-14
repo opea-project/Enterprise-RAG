@@ -21,7 +21,7 @@ dependencies = [
     "pyyaml == 6.0.2",
     "nltk==3.9.4",
     "requests == 2.33.1",
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
 ]
 
 [project.optional-dependencies]

@@ -24,7 +24,7 @@ dependencies = [
     "h11==0.16.0",
     "pyyaml==6.0.3",
     "setuptools == 80.10.2",     # security update
-    "urllib3 == 2.6.3",
+    "urllib3>=2.6.3,<3.0.0",
 ]
 
 [project.optional-dependencies]

@@ -5,9 +5,12 @@ import { downloadBlob } from "@intel-enterprise-rag-ui/utils";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import { API_ENDPOINTS, ERROR_MESSAGES } from "@/config/api";
+import { RootState } from "@/store";
 import { DownloadFileRequest, GetFilePresignedUrlRequest } from "@/types/api";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
+
+export const selectAppApi = (state: RootState) => state.appApi;
 
 const AUTHORIZED_ENDPOINTS = ["getFilePresignedUrl", "downloadFile"];
 

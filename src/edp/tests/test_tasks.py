@@ -164,7 +164,7 @@ def test_process_link_task_link_not_found():
         try:
             process_link_task(1)
         except Exception as e:
-            assert str(e) == "Link with id None not found"
+            assert str(e) == "Link with id 1 not found"
 
 def test_delete_link_task_success():
     with patch('app.tasks.requests.post') as mock_post, \

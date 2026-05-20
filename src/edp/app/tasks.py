@@ -1224,7 +1224,11 @@ def delete_file_task(self, file_id: Any, *args, delete_from_sp: bool = True, **k
 def process_link_task(self, link_id: Any, *args, **kwargs):
     link_db = self.db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
     if link_db is None:
-        raise Exception(f"Link with id {link_db} not found")
+        raise Exception(f"Link with id {link_id} not found")
+
+    if link_db.marked_for_deletion is True:
+        logger.info(f"[{link_db.id}] Link is marked for deletion, skipping processing.")
+        return False
 
     logger.debug(f"[{link_db.id}] Started processing link.")
 

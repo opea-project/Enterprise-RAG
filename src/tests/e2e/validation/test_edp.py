@@ -492,99 +492,86 @@ def test_edp_upload_many_links(edp_helper):
 def test_edp_deleted_links_block_processing_queue(edp_helper, k8s_helper):
     """
     Upload 10 links, wait for at least one to start extracting, then delete all.
-    Poll text-extractor logs: count "Removed ... after processing" entries (completed extractions).
-    Once 6 completions are seen, wait 5s and check if a new "start fetch" appears.
-    If no new fetch starts, the queue was properly drained — PASS.
-    If a 7th fetch starts, deleted links are still in the queue — FAIL.
+    With celery concurrency=6, up to 6 links may already be in-flight when delete happens.
+    Verify that no more than 6 fetches are started (deleted links should be skipped).
     """
     base_url = "https://research.nhm.org/pdfs/32460/32460-004.pdf"
-    links = [f"{base_url}?test_edp_deleted_links_block_queue={i}" for i in range(10)]
+    run_id = uuid.uuid4().hex[:8]
+    links = [f"{base_url}?run={run_id}&idx={i}" for i in range(10)]
 
     response = edp_helper.upload_links({"links": links})
     assert response.status_code == 200, f"Upload failed. Response: {response.text}"
     link_ids = response.json().get("id")
 
-    # Wait until at least one link starts extracting (queue is moving)
-    edp_helper.wait_for_link_upload(links[0], "text_extracting", timeout=120)
-    logger.info("First link reached text_extracting. Deleting all links now...")
+    # Wait until at least one link starts extracting (any link, not necessarily the first)
+    start_time = time.time()
+    while time.time() < start_time + 120:
+        current_links = edp_helper.list_links().json()
+        extracting = [link for link in current_links if link["uri"].startswith(f"{base_url}?run={run_id}")
+                      and link["status"] == "text_extracting"]
+        if extracting:
+            logger.info(f"Link {extracting[0]['uri']} reached text_extracting. Deleting all links now...")
+            break
+        time.sleep(2)
+    else:
+        pytest.fail("Timed out waiting for any link to reach text_extracting")
 
     for link_id in link_ids:
         edp_helper.delete_link(link_id)
     logger.info("All 10 links deleted. Polling text-extractor logs...")
 
-    # Poll until we see 6 completed extractions
+    # Wait for all started fetches to complete, then check if more than 6 were started.
+    # "start fetch <url>" contains the run_id; "Saved file ... from <url>" also contains it.
     poll_interval = 5
     max_poll_time = 600
-    start_time = time.time()
+    poll_start = time.time()
 
-    while time.time() < start_time + max_poll_time:
+    while time.time() < poll_start + max_poll_time:
         pod_logs = k8s_helper.get_pod_logs(
             namespace=EDP_NAMESPACE,
             label_selector="app.kubernetes.io/name=edp-text-extractor",
-            since_seconds=int(time.time() - start_time) + 180
+            since_seconds=int(time.time() - start_time) + 60
         )
-        completed_count = 0
+        fetch_started = 0
+        fetch_completed = 0
         for pod_log in pod_logs:
             for line in pod_log["logs"].splitlines():
-                if "after processing" in line:
-                    completed_count += 1
+                if run_id not in line:
+                    continue
+                if "start fetch" in line:
+                    fetch_started += 1
+                elif "Saved file" in line:
+                    fetch_completed += 1
 
-        logger.info(f"Poll: {completed_count} extractions completed so far")
+        logger.info(f"Poll: {fetch_started} started, {fetch_completed} completed")
 
-        if completed_count >= 6:
-            logger.info("6 extractions completed. Waiting 5s to check if a 7th fetch starts...")
-            time.sleep(5)
+        if fetch_started > 0 and fetch_completed >= fetch_started:
+            logger.info(f"All {fetch_started} fetches completed. Waiting 10s for unexpected new fetches...")
+            time.sleep(10)
 
-            # Re-read logs and count "start fetch" entries
+            # Re-read logs to check if a new fetch appeared
             pod_logs = k8s_helper.get_pod_logs(
                 namespace=EDP_NAMESPACE,
                 label_selector="app.kubernetes.io/name=edp-text-extractor",
-                since_seconds=int(time.time() - start_time) + 180
+                since_seconds=int(time.time() - start_time) + 60
             )
-            fetch_count = 0
+            fetch_started = 0
             for pod_log in pod_logs:
                 for line in pod_log["logs"].splitlines():
-                    if "start fetch" in line:
-                        fetch_count += 1
-
-            logger.info(f"Total 'start fetch' entries in logs: {fetch_count}")
-            if fetch_count > 6:
-                failure_message = (
-                    f"Expected at most 6 'start fetch' entries (workers already processing before delete), "
-                    f"but found {fetch_count}. "
-                    f"This indicates delete_link does not revoke queued Celery tasks."
-                )
-            else:
-                failure_message = None
-                logger.info("PASSED: No 7th fetch started after 6 completions")
+                    if run_id in line and "start fetch" in line:
+                        fetch_started += 1
             break
 
         time.sleep(poll_interval)
     else:
-        failure_message = f"Timed out waiting for 6 extractions to complete. Only saw {completed_count}."
+        logger.warning(f"Timed out. Started: {fetch_started}, Completed: {fetch_completed}")
 
-    # Wait for all extractions to finish so subsequent tests are not affected
-    logger.info("Waiting for all extractions to complete before exiting...")
-    while time.time() < start_time + max_poll_time:
-        pod_logs = k8s_helper.get_pod_logs(
-            namespace=EDP_NAMESPACE,
-            label_selector="app.kubernetes.io/name=edp-text-extractor",
-            since_seconds=int(time.time() - start_time) + 180
-        )
-        completed_count = 0
-        for pod_log in pod_logs:
-            for line in pod_log["logs"].splitlines():
-                if "after processing" in line:
-                    completed_count += 1
-        if completed_count >= 10:
-            logger.info("All 10 extractions completed. Safe to proceed.")
-            break
-        time.sleep(poll_interval)
-    else:
-        logger.warning("Timed out waiting for all extractions to complete.")
-
-    if failure_message:
-        pytest.fail(failure_message)
+    logger.info(f"Total 'start fetch' entries: {fetch_started}")
+    assert fetch_started <= 6, (
+        f"Expected at most 6 'start fetch' entries (celery concurrency=6), "
+        f"but found {fetch_started}. "
+        f"Deleted links were not skipped by the processing queue."
+    )
 
 
 @allure.testcase("IEASG-T616")

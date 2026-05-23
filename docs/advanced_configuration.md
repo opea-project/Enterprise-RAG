@@ -381,7 +381,7 @@ Node: localhost
   Reranking CPU Size: 4
 ```
   
-  Use this information to determine the optimal number of vLLM replicas and their CPU allocation. Your maximum pool avaliable for vLLM will be `VLLM Replicas` multiplied by  `VLLM CPU` Size. In this case it will be 32 vCPU.
+  Use this information to determine the optimal number of vLLM replicas and their CPU allocation. Your maximum pool available for vLLM will be `VLLM Replicas` multiplied by  `VLLM CPU` Size. In this case it will be 32 vCPU.
 
 2. **Deploy external vLLM first**: Deploy your external vLLM instances with the proper number of replicas before deploying Intel® AI for Enterprise RAG
 3. **Configure replicas appropriately**: Ensure vLLM replicas are distributed to allow each instance to fit within a single NUMA node

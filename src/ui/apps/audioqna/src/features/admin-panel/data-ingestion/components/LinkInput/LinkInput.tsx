@@ -116,7 +116,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
         <TextInput
           ref={inputRef}
           data-testid="link-input"
-          type="url"
+          type="text"
           value={value}
           name="link-input"
           isInvalid={isInvalid}

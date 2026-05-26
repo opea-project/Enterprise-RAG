@@ -1,0 +1,55 @@
+{{- /*
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+
+EnvoyFilter — tunes the HTTPS listener (0.0.0.0:443) to prevent SSL EOF errors
+under burst TCP+TLS connections (e.g. Python requests library with 100+ concurrency).
+
+Fixes:
+  - Increases listener_filters_timeout (default 15s → 30s)
+  - Continues on timeout instead of closing the connection
+  - Enables exact_balance across Envoy workers (SO_REUSEPORT fairness)
+  - Enlarges tls_inspector initial_read_buffer_size (512 → 65535) to handle
+    large ClientHello messages without fragmentation
+*/ -}}
+{{- if .Values.gateway.listenerTuning.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: gateway-listener-tuning
+  namespace: {{ .Values.gateway.namespace }}
+  labels:
+    {{- include "erag-gateway.labels" . | nindent 4 }}
+spec:
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: {{ .Values.gateway.name }}
+  configPatches:
+    - applyTo: LISTENER
+      match:
+        context: ANY
+        listener:
+          name: 0.0.0.0_443
+          portNumber: 443
+      patch:
+        operation: MERGE
+        value:
+          listener_filters_timeout: {{ .Values.gateway.listenerTuning.listenerFiltersTimeout | quote }}
+          continue_on_listener_filters_timeout: {{ .Values.gateway.listenerTuning.continueOnTimeout }}
+          connection_balance_config:
+            exact_balance: {}
+    - applyTo: LISTENER_FILTER
+      match:
+        context: ANY
+        listener:
+          listenerFilter: envoy.filters.listener.tls_inspector
+          name: 0.0.0.0_443
+          portNumber: 443
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+            initial_read_buffer_size: {{ .Values.gateway.listenerTuning.initialReadBufferSize }}
+{{- end }}
+

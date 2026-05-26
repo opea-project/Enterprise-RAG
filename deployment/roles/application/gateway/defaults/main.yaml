@@ -11,6 +11,11 @@ gateway:
     enabled: true              # bare-metal: bind :80/:443 directly on the node; set false when using LoadBalancer
     httpPort: 80
     httpsPort: 443
+  listenerTuning:
+    enabled: true
+    listenerFiltersTimeout: "30s"
+    continueOnTimeout: true
+    initialReadBufferSize: 65535
   helm:
     chart_name: "erag-gateway"
     chart_directory: "{{ playbook_dir }}/../components/gateway"

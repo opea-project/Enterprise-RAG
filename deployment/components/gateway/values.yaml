@@ -60,6 +60,15 @@ gateway:
   # Number of worker threads for Envoy proxy (0 = one per CPU core).
   concurrency: 0
 
+  # Envoy listener tuning for HTTPS (port 443).
+  # Prevents SSL EOF errors under burst TCP+TLS connections by tuning
+  # timeouts, connection balancing, and TLS inspector buffer sizes.
+  listenerTuning:
+    enabled: true
+    listenerFiltersTimeout: "30s"
+    continueOnTimeout: true
+    initialReadBufferSize: 65535
+
 # HTTP → HTTPS redirect (301)
 # A catch-all HTTPRoute on the HTTP listener that redirects all traffic to HTTPS.
 httpToHttpsRedirect:

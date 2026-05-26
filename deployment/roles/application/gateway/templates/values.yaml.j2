@@ -9,6 +9,11 @@ gateway:
     enabled: {{ gateway.hostPort.enabled | lower }}
     httpPort: {{ gateway.hostPort.httpPort }}
     httpsPort: {{ gateway.hostPort.httpsPort }}
+  listenerTuning:
+    enabled: {{ gateway.listenerTuning.enabled | lower }}
+    listenerFiltersTimeout: {{ gateway.listenerTuning.listenerFiltersTimeout | default('30s') | string | tojson }}
+    continueOnTimeout: {{ gateway.listenerTuning.continueOnTimeout | lower }}
+    initialReadBufferSize: {{ gateway.listenerTuning.initialReadBufferSize | default(65535) }}
 
 image:
   repository: {{ registry }}

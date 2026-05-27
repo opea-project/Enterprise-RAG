@@ -472,56 +472,98 @@ class EdpHelper(ApiRequestHelper):
         raise DeleteTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be deleted")
 
-    def wait_for_all_files_ingestion(self, filenames: set, timeout=FILE_UPLOAD_TIMEOUT_S) -> None:
+    def wait_for_all_files_ingestion(
+        self, filenames: set, timeout=FILE_UPLOAD_TIMEOUT_S
+    ) -> None:
         """Wait for all files to be uploaded and ingested.
 
-        Uses sets logic for quick check for object readiness.
-        Expressions like filenames & filenames_all == filenames are way to continue if there are old files in edp.
+        Matches files by basename so it works both for direct uploads
+        (object_name = "file.txt") and SharePoint files
+        (object_name = "Documents/file.txt").
         """
-
         SLEEP_INTERVAL = 10
-        MAX_RDP_REGISTER_RETRIES = 30  # How many times wait until edp pick files from bucket
+        MAX_REGISTER_RETRIES = 30
 
         start_time = time.time()
-        all_ingested = False
-        filenames_ingested = set()
-        fails_remaining = MAX_RDP_REGISTER_RETRIES
+        ingested = set()
+        fails_remaining = MAX_REGISTER_RETRIES
+
+        def _basename(obj_name):
+            return obj_name.rsplit("/", 1)[-1] if "/" in obj_name else obj_name
+
         while time.time() < start_time + timeout:
             edp_files = self.list_files().json()
-            filenames_in_edp = set([f["object_name"] for f in edp_files])
-            # all files from filenames should be present in the EDP
-            if not (filenames & filenames_in_edp == filenames):
-                if fails_remaining > 0:
+            edp_basenames = {_basename(f["object_name"]) for f in edp_files}
 
+            if not (filenames <= edp_basenames):
+                if fails_remaining > 0:
                     fails_remaining -= 1
-                    missing_files = '\n'.join(list(filenames - filenames_in_edp))
-                    logger.warning(f"Not all files are present in the EDP:\n{missing_files}")
-                    logger.warning(f"Will wait {SLEEP_INTERVAL}s.. Remaining checks: {fails_remaining}/{MAX_RDP_REGISTER_RETRIES}")
+                    missing = filenames - edp_basenames
+                    logger.warning(
+                        "Not all files are present in the EDP:\n"
+                        + "\n".join(list(missing))
+                    )
+                    logger.warning(
+                        f"Will wait {SLEEP_INTERVAL}s.. "
+                        f"Remaining checks: "
+                        f"{fails_remaining}/{MAX_REGISTER_RETRIES}"
+                    )
                     time.sleep(SLEEP_INTERVAL)
                     continue
                 else:
-                    missing_files = '\n'.join(list(filenames - filenames_in_edp))
-                    raise RuntimeError(f"Not all files are present in the EDP:\n{missing_files}, failed {MAX_RDP_REGISTER_RETRIES} times.")
+                    missing = filenames - edp_basenames
+                    raise RuntimeError(
+                        "Not all files are present in the EDP:\n"
+                        + "\n".join(list(missing))
+                        + f"\nFailed {MAX_REGISTER_RETRIES} times."
+                    )
 
-            filenames_ingested = set([f["object_name"] for f in edp_files if f["status"] == "ingested"])
-            if filenames & filenames_ingested == filenames:
-                logger.info(f"All files have been ingested. Elapsed time: {round(time.time() - start_time, 1)}s")
-                all_ingested = True
-                break
+            errored = {
+                _basename(f["object_name"])
+                for f in edp_files
+                if _basename(f["object_name"]) in filenames
+                and f["status"] == "error"
+            }
+            if errored:
+                raise FileStatusException(
+                    f"{len(errored)} file(s) failed with error "
+                    f"status: {', '.join(list(errored)[:10])}"
+                )
+
+            ingested = {
+                _basename(f["object_name"])
+                for f in edp_files
+                if _basename(f["object_name"]) in filenames
+                and f["status"] == "ingested"
+            }
+            if filenames == ingested:
+                elapsed = round(time.time() - start_time, 1)
+                logger.info(
+                    f"All files have been ingested. "
+                    f"Elapsed time: {elapsed}s"
+                )
+                return
             else:
                 waiting_time = time.time() - start_time
                 waiting_h = int(waiting_time // 3600)
                 waiting_m = int((waiting_time % 3600) // 60)
                 waiting_s = int(waiting_time % 60)
-
-                logger.debug(f"(Total: {waiting_h:02d}:{waiting_m:02d}:{waiting_s:02d}) Waiting {SLEEP_INTERVAL}s for all files to be ingested. Still processing: {', '.join(list(filenames - filenames_ingested))}")
+                remaining = filenames - ingested
+                logger.debug(
+                    f"(Total: {waiting_h:02d}:{waiting_m:02d}:"
+                    f"{waiting_s:02d}) Waiting {SLEEP_INTERVAL}s "
+                    f"for all files to be ingested. "
+                    f"Still processing: "
+                    f"{', '.join(list(remaining)[:20])}"
+                )
                 time.sleep(SLEEP_INTERVAL)
 
-        if not all_ingested:
-            not_ingested = filenames - filenames_ingested
-            raise UploadTimeoutException(
-                f"Timed out after {timeout} seconds while waiting for the files to be ingested:" + "\n- ".join(not_ingested)
-            )
+        not_ingested = filenames - ingested
+        raise UploadTimeoutException(
+            f"Timed out after {timeout} seconds while waiting "
+            f"for the files to be ingested:\n- "
+            + "\n- ".join(not_ingested)
+        )
 
     def upload_file_and_wait_for_ingestion(self, file_path, bucket=None):
         file_name = os.path.basename(file_path)

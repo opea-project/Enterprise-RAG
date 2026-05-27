@@ -597,5 +597,23 @@ def test_edp_upload_many_links_parallel_requests(edp_helper, temporarily_remove_
         edp_helper.wait_for_link_upload(link, "ingested", timeout=600)
 
 
+@allure.testcase("IEASG-T617")
+def test_edp_upload_many_files(edp_helper, tmp_path):
+    """Upload 100 small files at once and verify all are ingested."""
+    num_files = 100
+    file_names = []
+    for i in range(num_files):
+        name = f"bulk_upload_{i:04d}.txt"
+        path = tmp_path / name
+        content = f"Bulk upload test file {i}. Content: {uuid.uuid4()}\n"
+        path.write_text(content * 20)
+        file_names.append(name)
+
+    edp_helper.upload_files_in_parallel(str(tmp_path), file_names)
+
+    logger.info(f"All {num_files} files uploaded. Waiting for ingestion...")
+    edp_helper.wait_for_all_files_ingestion(set(file_names), timeout=900)
+
+
 def method_name():
     return f"{inspect.stack()[1].function}_"

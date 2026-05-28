@@ -284,7 +284,7 @@ services:
       # average processing time of single token
       # 1/target value would mean tokens/sec
       # depends on used LLM model
-      # metric used for scaling 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>))'
+      # metric used for scaling 'sum(rate(vllm:request_time_per_output_token_seconds_sum{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:request_time_per_output_token_seconds_count{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>))'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 180

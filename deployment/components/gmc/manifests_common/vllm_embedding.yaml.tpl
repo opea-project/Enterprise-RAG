@@ -15,6 +15,9 @@ metadata:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  VLLM_TARGET_DEVICE: "cpu"
+  VLLM_DTYPE: "bfloat16"
+  XDG_CACHE_HOME: "/tmp"
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
@@ -137,25 +140,18 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           {{- end }}
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
 
-          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.19.1
           imagePullPolicy: IfNotPresent
           command:
             - bash
             - -c
             - |
-                {{- if $.Values.balloons.enabled }}
-                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
-                {{- end }}
-                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager {{ if $trustRemoteCode }}--trust-remote-code {{ end }}--download-dir /data --host 0.0.0.0 --port {{ $port }}
+                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE {{ if $trustRemoteCode }}--trust-remote-code {{ end }}--download-dir /data --host 0.0.0.0 --port {{ $port }}
           resources:
-            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
+            {{- $defaultValues := "{requests: {cpu: '4', memory: '2Gi'}, limits: {cpu: '4', memory: '8Gi'}}" -}}
             {{- include "manifest.getResource" (list $.filename $defaultValues $.Values) | nindent 12 }}
           volumeMounts:
             - mountPath: /data
@@ -266,24 +262,17 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           {{- end }}
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.19.1
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           command:
             - bash
             - -c
             - |
-                {{- if .Values.balloons.enabled }}
-                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
-                {{- end }}
-                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager {{ if $trustRemoteCode }}--trust-remote-code {{ end }}--download-dir /data --host 0.0.0.0 --port {{ $port }}
+                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE {{ if $trustRemoteCode }}--trust-remote-code {{ end }}--download-dir /data --host 0.0.0.0 --port {{ $port }}
           resources:
-            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
+            {{- $defaultValues := "{requests: {cpu: '4', memory: '2Gi'}, limits: {cpu: '4', memory: '8Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
           volumeMounts:
             - mountPath: /data

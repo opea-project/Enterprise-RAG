@@ -6,28 +6,41 @@
 modelConfigs:
   generic-base-cpu: &generic_base_cpu
     configMapValues:
-      VLLM_SKIP_WARMUP: "false"
+      XDG_CACHE_HOME: "/tmp"
+      VLLM_BLOCK_SIZE: "128"
+      VLLM_MAX_NUM_BATCHED_TOKENS: "2048"
+      VLLM_DATA_PARALLEL_SIZE: "1"
       VLLM_CPU_KVCACHE_SPACE: "10"
       VLLM_DTYPE: "bfloat16"
       VLLM_MAX_NUM_SEQS: "256"
       VLLM_TP_SIZE: "1"
-      OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
+      VLLM_RPC_TIMEOUT: "100000"
+      VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
+      VLLM_ENGINE_ITERATION_TIMEOUT_S: "120"
+      VLLM_CPU_SGL_KERNEL: "1"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data"]
+    extraCmdArgs: ["--distributed-executor-backend", "mp", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)","--download-dir", "/data"]
     tensor_parallel_size: "1" # not applied on CPU
 
   generic-base-awq-cpu: &generic_base_awq_cpu
     configMapValues:
-      VLLM_SKIP_WARMUP: "false"
+      XDG_CACHE_HOME: "/tmp"
+      VLLM_BLOCK_SIZE: "128"
+      VLLM_MAX_NUM_BATCHED_TOKENS: "2048"
+      VLLM_DATA_PARALLEL_SIZE: "1"
       VLLM_CPU_KVCACHE_SPACE: "10"
+      VLLM_CPU_INT4_W4A8: "1"
+      VLLM_CPU_SGL_KERNEL: "1"
       VLLM_DTYPE: "bfloat16"
       VLLM_MAX_NUM_SEQS: "256"
       VLLM_TP_SIZE: "1"
-      OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
+      VLLM_RPC_TIMEOUT: "100000"
+      VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
+      VLLM_ENGINE_ITERATION_TIMEOUT_S: "120"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq", "--enforce-eager"]
+    extraCmdArgs: ["--distributed-executor-backend", "mp", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)","--download-dir", "/data", "--quantization", "awq"]
     tensor_parallel_size: "1" # not applied on CPU
 
   "TechxGenus/Meta-Llama-3-8B-Instruct-AWQ":
@@ -131,6 +144,17 @@ modelConfigs:
 defaultModelConfigs:
   configMapValues:
     OMPI_MCA_btl_vader_single_copy_mechanism: none
+    VLLM_BLOCK_SIZE: "128"
+    VLLM_MAX_NUM_BATCHED_TOKENS: "2048"
+    VLLM_DATA_PARALLEL_SIZE: "1"
+    VLLM_MAX_NUM_SEQS: "256"
+    VLLM_DTYPE: "bfloat16"
+    VLLM_TP_SIZE: "1"
+    VLLM_PP_SIZE: "1"
+    VLLM_RPC_TIMEOUT: "100000"
+    VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
+    VLLM_ENGINE_ITERATION_TIMEOUT_S: "120"
+    VLLM_CPU_SGL_KERNEL: "1"
     VLLM_CPU_KVCACHE_SPACE: "10"
   extraCmdArgs: ["--block-size", "128", "--dtype", "bfloat16", "--max-model-len", "5196"]
   modelChatTemplate: ""     # default is empty

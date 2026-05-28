@@ -6,7 +6,7 @@ rules:
   default: false
   resources: []
   custom:
-    - seriesQuery: '{__name__="vllm:time_per_output_token_seconds_sum",service="vllm-service-m"}'
+    - seriesQuery: '{__name__="vllm:request_time_per_output_token_seconds_sum",service="vllm-service-m"}'
       seriesFilters: []
       resources:
         overrides:
@@ -15,9 +15,9 @@ rules:
           service:
             resource: service
       name:
-        matches: ^vllm:time_per_output_token_seconds_sum$
+        matches: ^vllm:request_time_per_output_token_seconds_sum$
         as: "vllm_token_latency"
-      metricsQuery: 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-service-m"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-service-m"}[1m])) by (<<.GroupBy>>))'
+      metricsQuery: 'sum(rate(vllm:request_time_per_output_token_seconds_sum{service="vllm-service-m"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:request_time_per_output_token_seconds_count{service="vllm-service-m"}[1m])) by (<<.GroupBy>>))'
     - seriesQuery: '{__name__="vllm:request_queue_time_seconds_sum",service="vllm-embedding-svc"}'
       seriesFilters: []
       resources:
@@ -30,7 +30,7 @@ rules:
         matches: ^vllm:request_queue_time_seconds_sum$
         as: "vllm_embedding_request_queue_time"
       metricsQuery: 'avg(rate(vllm:request_queue_time_seconds_sum{service="vllm-embedding-svc"}[2m])) by (<<.GroupBy>>)'
-    - seriesQuery: '{__name__="vllm:time_per_output_token_seconds_sum",service="vllm-gaudi-svc"}'
+    - seriesQuery: '{__name__="vllm:request_time_per_output_token_seconds_sum",service="vllm-gaudi-svc"}'
       seriesFilters: []
       resources:
         overrides:
@@ -39,9 +39,9 @@ rules:
           service:
             resource: service
       name:
-        matches: ^vllm:time_per_output_token_seconds_sum$
+        matches: ^vllm:request_time_per_output_token_seconds_sum$
         as: "vllm_token_latency_gaudi"
-      metricsQuery: 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>))'
+      metricsQuery: 'sum(rate(vllm:request_time_per_output_token_seconds_sum{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:request_time_per_output_token_seconds_count{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>))'
     - seriesQuery: '{__name__="ts_inference_requests_total",namespace="chatqa",service="torchserve-embedding-svc"}'
       seriesFilters: []
       resources:

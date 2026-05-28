@@ -36,6 +36,7 @@ data:
   {{- end }}
   LLM_DEVICE: "cpu"
   VLLM_TARGET_DEVICE: "cpu"
+  XDG_CACHE_HOME: "/tmp"
   PORT: {{ $port | quote }}
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
@@ -168,17 +169,13 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
             {{- end }}
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
             - name: VLLM_POD_INDEX
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.11.2
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.21.0
           imagePullPolicy: {{ toYaml (index $.Values "images" $.filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict $.Values.modelConfigs) $modelName).extraCmdArgs | default ((index $.Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
@@ -192,9 +189,8 @@ spec:
             - |
                 {{- if not $.Values.balloons.enabled }}
                 source /etc/helpers/assign_cores.sh
-                {{- end }}
-                {{- if $.Values.balloons.enabled }}
-                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
+                {{- else }}
+                export VLLM_CPU_OMP_THREADS_BIND=$(python3 -c "r=open('/sys/fs/cgroup/cpuset.cpus.effective').read().strip(); cores=[c for p in r.split(',') for c in (range(int(p.split('-')[0]),int(p.split('-')[1])+1) if '-' in p else [int(p)])]; print(','.join(map(str,cores[:-1])))")
                 {{- end }}
                 {{ join " " $cmd }}
           {{- else }}
@@ -204,11 +200,10 @@ spec:
             - |
                 {{- if not $.Values.balloons.enabled }}
                 source /etc/helpers/assign_cores.sh
+                {{- else }}
+                export VLLM_CPU_OMP_THREADS_BIND=$(python3 -c "r=open('/sys/fs/cgroup/cpuset.cpus.effective').read().strip(); cores=[c for p in r.split(',') for c in (range(int(p.split('-')[0]),int(p.split('-')[1])+1) if '-' in p else [int(p)])]; print(','.join(map(str,cores[:-1])))")
                 {{- end }}
-                {{- if $.Values.balloons.enabled }}
-                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
-                {{- end }}
-                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --device "cpu" --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}
+                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --data-parallel-size $VLLM_DATA_PARALLEL_SIZE --block-size $VLLM_BLOCK_SIZE --max-num-batched-tokens $VLLM_MAX_NUM_BATCHED_TOKENS --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --trust-remote-code --download-dir "/data"{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}
           {{- end }}
           volumeMounts:
             - mountPath: /data
@@ -366,17 +361,13 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
             {{- end }}
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
             - name: VLLM_POD_INDEX
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.11.2
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.21.0
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
@@ -391,9 +382,6 @@ spec:
                 {{- if not .Values.balloons.enabled }}
                 source /etc/helpers/assign_cores.sh
                 {{- end }}
-                {{- if .Values.balloons.enabled }}
-                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
-                {{- end }}
                 {{ join " " $cmd }}
           {{- else }}
           command:
@@ -403,10 +391,7 @@ spec:
                 {{- if not .Values.balloons.enabled }}
                 source /etc/helpers/assign_cores.sh
                 {{- end }}
-                {{- if .Values.balloons.enabled }}
-                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
-                {{- end }}
-                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}
+                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --data-parallel-size $VLLM_DATA_PARALLEL_SIZE --block-size $VLLM_BLOCK_SIZE --max-num-batched-tokens $VLLM_MAX_NUM_BATCHED_TOKENS --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --trust-remote-code --download-dir "/data"{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}
           {{- end }}
           volumeMounts:
             - mountPath: /data

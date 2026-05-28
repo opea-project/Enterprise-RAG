@@ -211,10 +211,10 @@ services:
     resources:
       requests:
         cpu: 4
-        memory: 4Gi
+        memory: 2Gi
       limits:
         cpu: 4
-        memory: 16Gi
+        memory: 8Gi
     hpa:
       minReplicas: 4
       maxReplicas: 10

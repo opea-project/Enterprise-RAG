@@ -1,0 +1,91 @@
+{{- if .Values.loki.enabled }}
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# PVC usage alerts for the logging stack (Loki single-binary PVC + bundled
+# MinIO PVCs that hold Loki chunks). Thresholds are intentionally hardcoded
+# (not exposed in inventory config.yaml) and chosen to give operators time to
+# react before Loki starts rejecting ingest:
+#   - 85% used  -> warning  (10m sustained)
+#   - 95% used  -> critical (5m sustained)
+#
+# The `release: telemetry` label is required so that the kube-prometheus-stack
+# Prometheus instance picks the rule up via its PrometheusRule selector
+# (same convention as monitoring.rules.labels in the upstream Loki chart).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: telemetry-logs-pvc-usage
+  namespace: monitoring
+  labels:
+    release: telemetry
+    app.kubernetes.io/part-of: ERAG
+    app.kubernetes.io/component: logs
+spec:
+  groups:
+  - name: telemetry-logs.pvc-usage
+    rules:
+    - alert: LogsPVCUsageHigh
+      expr: |
+        100 * (
+          1 - kubelet_volume_stats_available_bytes{namespace="monitoring",
+              persistentvolumeclaim=~"storage-telemetry-logs-loki-.*|data-telemetry-logs-minio-.*"}
+            / kubelet_volume_stats_capacity_bytes{namespace="monitoring",
+              persistentvolumeclaim=~"storage-telemetry-logs-loki-.*|data-telemetry-logs-minio-.*"}
+        ) > 85
+      for: 10m
+      labels:
+        severity: warning
+        component: telemetry-logs
+      annotations:
+        summary: "Logs PVC {{`{{ $labels.persistentvolumeclaim }}`}} > 85% used"
+        description: |
+          PVC {{`{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}`}}
+          is {{`{{ $value | printf "%.1f" }}`}}% full.
+          Increase telemetry.logging.objectStoreSize in inventory config.yaml
+          (and resize the existing PVC if the StorageClass supports
+          allowVolumeExpansion: true), or lower
+          telemetry.logging.retention.retentionHours.
+
+    - alert: LogsPVCUsageCritical
+      expr: |
+        100 * (
+          1 - kubelet_volume_stats_available_bytes{namespace="monitoring",
+              persistentvolumeclaim=~"storage-telemetry-logs-loki-.*|data-telemetry-logs-minio-.*"}
+            / kubelet_volume_stats_capacity_bytes{namespace="monitoring",
+              persistentvolumeclaim=~"storage-telemetry-logs-loki-.*|data-telemetry-logs-minio-.*"}
+        ) > 95
+      for: 5m
+      labels:
+        severity: critical
+        component: telemetry-logs
+      annotations:
+        summary: "Logs PVC {{`{{ $labels.persistentvolumeclaim }}`}} > 95% used"
+        description: |
+          PVC {{`{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }}`}}
+          is {{`{{ $value | printf "%.1f" }}`}}% full. Loki/MinIO will start
+          rejecting ingest soon. Free space immediately (resize PVC, lower
+          retention, or wipe MinIO bucket).
+
+  # Native MinIO capacity metric -- more accurate than kubelet_volume_stats
+  # because it accounts for MinIO erasure-code overhead. Only fires when the
+  # MinIO ServiceMonitor is scraped (default in this chart).
+  - name: telemetry-logs.minio-capacity
+    rules:
+    - alert: LogsMinIOCapacityLow
+      expr: |
+        100 * (
+          minio_cluster_capacity_usable_free_bytes
+          / minio_cluster_capacity_usable_total_bytes
+        ) < 15
+      for: 15m
+      labels:
+        severity: warning
+        component: telemetry-logs
+      annotations:
+        summary: "MinIO (Loki chunks) has < 15% usable free capacity"
+        description: |
+          Bundled MinIO backing Loki chunks reports
+          {{`{{ $value | printf "%.1f" }}`}}% free capacity.
+          Increase telemetry.logging.objectStoreSize and resize the MinIO PVC.
+{{- end }}

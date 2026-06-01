@@ -32,6 +32,24 @@ telemetry:
 
   logging:
     enabled: true
+    # Loki log retention policy.
+    # When `enabled: true`, the installer turns on Loki's compactor-based
+    # retention and sets `limits_config.retention_period: <hours>h`.
+    # When `enabled: false`, retention is disabled and logs are kept forever
+    # (matches the previous behaviour and the audit-friendly defaults shipped
+    # in components/telemetry/helm/charts/logs/values.yaml).
+    # Default `retentionHours: 744` (= 31 days) matches Loki's own built-in default
+    # for `limits_config.retention_period`
+    # (https://grafana.com/docs/loki/latest/configure/#limits_config).
+    retention:
+      enabled: true
+      retentionHours: 744
+    # PVC size for each MinIO drive backing Loki's chunks/ruler/admin buckets.
+    # The chart enforces 2 drives per node (erasure code requirement), so the
+    # raw object-store capacity available to Loki is roughly 2 * objectStoreSize.
+    # Default 20Gi (upstream Loki chart ships 5Gi; bumped here to give 31-day
+    # retention some headroom).
+    objectStoreSize: 20Gi
     charts_path: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs"
     helm_default_values_file: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs/values.yaml"
     helm_journalctl_values_file: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs/values-journalctl.yaml"

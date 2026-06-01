@@ -200,6 +200,20 @@ telemetry:
     enabled: false
   logging:
     enabled: true
+    # Loki log retention policy.
+    # `enabled: true`  -> installer enables Loki compactor retention and sets
+    #                     limits_config.retention_period to <retentionHours>h.
+    # `enabled: false` -> retention disabled, logs are kept forever.
+    # `retentionHours` default 744 = 31 days (Loki's own built-in default).
+    # Examples: 24 (1 day), 168 (7 days), 672 (28 days), 744 (31 days).
+    retention:
+      enabled: true
+      retentionHours: 744
+    # PVC size for each MinIO drive that stores Loki chunks. The chart uses
+    # 2 drives per MinIO replica (erasure code requirement), so the usable
+    # raw object-store capacity is approximately 2 * objectStoreSize.
+    # Default 20Gi (upstream Loki chart default is 5Gi).
+    objectStoreSize: 20Gi
 
 edp:
   enabled: true

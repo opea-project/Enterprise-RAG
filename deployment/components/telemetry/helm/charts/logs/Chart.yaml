@@ -14,7 +14,9 @@ dependencies:
 - name: loki
   condition: loki.enabled
   repository: https://grafana.github.io/helm-charts
-  version: 6.41.1
+  # Last OSS-compatible release of the grafana/loki chart (chart 7.x is GEL-only).
+  # See: https://artifacthub.io/packages/helm/grafana/loki
+  version: 6.55.0
 
 - name: opentelemetry-collector
   version: 0.136.1

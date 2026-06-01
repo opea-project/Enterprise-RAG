@@ -22,10 +22,7 @@ const formatCompact = (ms: number) => {
   if (duration.hours && duration.hours > 0) parts.push(`${duration.hours}h`);
   if (duration.minutes && duration.minutes > 0)
     parts.push(`${duration.minutes}m`);
-  if (duration.seconds && duration.seconds > 0)
-    parts.push(`${duration.seconds}s`);
-  if (duration.milliseconds && duration.milliseconds > 0)
-    parts.push(`${duration.milliseconds}ms`);
+  parts.push(`${duration.seconds ?? 0}s`);
 
   return parts.join(" ");
 };

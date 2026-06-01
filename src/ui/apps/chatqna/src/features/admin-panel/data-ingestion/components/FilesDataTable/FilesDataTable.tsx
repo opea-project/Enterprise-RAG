@@ -8,6 +8,10 @@ import {
   RowSelectionState,
   SearchBar,
 } from "@intel-enterprise-rag-ui/components";
+import {
+  S3BucketIcon,
+  SharePointSiteIcon,
+} from "@intel-enterprise-rag-ui/icons";
 import { useCallback, useMemo, useState } from "react";
 
 import {
@@ -27,10 +31,6 @@ import BatchDeleteDialog from "@/features/admin-panel/data-ingestion/components/
 import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { getFilesTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/files";
-import {
-  S3_BUCKET_EMOJI,
-  SHAREPOINT_SITE_EMOJI,
-} from "@/features/admin-panel/utils";
 
 const FilesDataTable = () => {
   const { data: files, refetch, isLoading } = useGetFilesQuery();
@@ -186,8 +186,12 @@ const FilesDataTable = () => {
       </div>
       {Object.keys(sourceMap).length > 0 && (
         <div className="text-light-text-primary dark:text-dark-text-primary flex gap-4 px-2 py-1 text-xs">
-          <span>{S3_BUCKET_EMOJI} S3 Bucket</span>
-          <span>{SHAREPOINT_SITE_EMOJI} SharePoint Site</span>
+          <span className="flex items-center gap-1">
+            <S3BucketIcon aria-hidden="true" /> S3 Bucket
+          </span>
+          <span className="flex items-center gap-1">
+            <SharePointSiteIcon aria-hidden="true" /> SharePoint Site
+          </span>
         </div>
       )}
       <DataTable

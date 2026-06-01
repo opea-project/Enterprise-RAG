@@ -98,11 +98,16 @@ const ProcessingTimePopover = memo(
       usePopover<HTMLButtonElement>();
 
     useEffect(() => {
+      const observationStart = Date.now();
+      const initialElapsed =
+        jobStartTime !== 0
+          ? Math.max(0, observationStart - jobStartTime * 1000)
+          : 0;
+
       const updateTimer = () => {
         if (jobStartTime !== 0) {
-          const startTime = jobStartTime * 1000;
-          const currentTime = Date.now();
-          const elapsedTime = Math.floor(currentTime - startTime);
+          const elapsedTime =
+            initialElapsed + Math.floor(Date.now() - observationStart);
           setTimer(formatProcessingTime(elapsedTime));
         }
       };

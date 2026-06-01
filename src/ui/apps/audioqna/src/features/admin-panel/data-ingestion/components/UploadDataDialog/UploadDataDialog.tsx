@@ -10,9 +10,12 @@ import {
   IconButton,
   Label,
   SelectInput,
-  SelectInputChangeHandler,
   Tooltip,
 } from "@intel-enterprise-rag-ui/components";
+import {
+  S3BucketIcon,
+  SharePointSiteIcon,
+} from "@intel-enterprise-rag-ui/icons";
 import { useMemo, useRef, useState } from "react";
 
 import { useGetFilePresignedUrlMutation } from "@/api";
@@ -38,10 +41,6 @@ import {
   createToBeUploadedMessage,
   isUploadDisabled,
 } from "@/features/admin-panel/data-ingestion/utils";
-import {
-  S3_BUCKET_EMOJI,
-  SHAREPOINT_SITE_EMOJI,
-} from "@/features/admin-panel/utils";
 import { useAppDispatch } from "@/store/hooks";
 import { getErrorMessage } from "@/utils/api";
 
@@ -49,6 +48,10 @@ const initialUploadErrors = {
   files: "",
   links: "",
 };
+
+type DestinationItem =
+  | { type: "s3"; value: string; label: string }
+  | { type: "sharepoint"; value: string; label: string };
 
 const UploadDataDialog = () => {
   const [getFiles] = useLazyGetFilesQuery();
@@ -75,38 +78,39 @@ const UploadDataDialog = () => {
 
   const dispatch = useAppDispatch();
 
-  const destinationItems = useMemo(() => {
-    const buckets = (bucketsList ?? []).map((b) => `${S3_BUCKET_EMOJI}${b}`);
+  const destinationItems = useMemo<DestinationItem[]>(() => {
+    const buckets = (bucketsList ?? []).map<DestinationItem>((b) => ({
+      type: "s3",
+      value: `s3::${b}`,
+      label: b,
+    }));
     if (!hasSites) return buckets;
-    const sites = spSites!.map(
-      (s) => `${SHAREPOINT_SITE_EMOJI}${s.display_name || s.name}`,
-    );
+    const sites = spSites!.map<DestinationItem>((s) => ({
+      type: "sharepoint",
+      value: `sp::${s.display_name || s.name}`,
+      label: s.display_name || s.name,
+    }));
     return [...buckets, ...sites];
   }, [bucketsList, spSites, hasSites]);
 
   const effectiveBucket = useMemo(() => {
-    if (!selectedDestination) return "";
-    if (selectedDestination.startsWith(SHAREPOINT_SITE_EMOJI)) {
-      return "";
-    }
-    return selectedDestination.slice(S3_BUCKET_EMOJI.length);
-  }, [selectedDestination]);
+    const item = destinationItems.find((d) => d.value === selectedDestination);
+    if (!item || item.type !== "s3") return "";
+    return item.label;
+  }, [selectedDestination, destinationItems]);
 
   const selectedSharePointSiteId = useMemo(() => {
-    if (!selectedDestination) return "";
-    if (!selectedDestination.startsWith(SHAREPOINT_SITE_EMOJI)) return "";
-    const siteName = selectedDestination.slice(SHAREPOINT_SITE_EMOJI.length);
-    const site = spSites?.find((s) => (s.display_name || s.name) === siteName);
+    const item = destinationItems.find((d) => d.value === selectedDestination);
+    if (!item || item.type !== "sharepoint") return "";
+    const site = spSites?.find(
+      (s) => (s.display_name || s.name) === item.label,
+    );
     return site?.id ?? "";
-  }, [selectedDestination, spSites]);
+  }, [selectedDestination, destinationItems, spSites]);
 
   const isSharePointDestination = selectedSharePointSiteId !== "";
 
   const hasFileTarget = effectiveBucket !== "" || isSharePointDestination;
-
-  const onDestinationChange: SelectInputChangeHandler<string> = (value) => {
-    setSelectedDestination(value);
-  };
 
   const resetUploadErrors = () => {
     setUploadErrors(initialUploadErrors);
@@ -255,22 +259,58 @@ const UploadDataDialog = () => {
         <div className="px-4 pt-3">
           <Label>Upload to</Label>
           {hasSites && (
-            <div className="text-light-text-primary dark:text-dark-text-primary flex gap-4 pt-1 text-xs">
-              <span>{S3_BUCKET_EMOJI} S3 Bucket</span>
-              <span>{SHAREPOINT_SITE_EMOJI} SharePoint Site</span>
+            <div className="text-light-text-primary dark:text-dark-text-primary mb-1 flex gap-4 pt-1 text-xs">
+              <span className="flex items-center gap-1">
+                <S3BucketIcon aria-hidden="true" /> S3 Bucket
+              </span>
+              <span className="flex items-center gap-1">
+                <SharePointSiteIcon aria-hidden="true" /> SharePoint Site
+              </span>
             </div>
           )}
         </div>
         <SelectInput
           data-testid="destination-dropdown"
-          value={selectedDestination || undefined}
-          items={destinationItems}
-          name="upload-destination"
+          value={selectedDestination || null}
+          items={destinationItems.map((d) => d.value)}
+          onChange={(v) => setSelectedDestination(String(v))}
           isDisabled={isSelectDisabled}
           isInvalid={isSelectInvalid}
+          aria-label="Upload destination"
           placeholder="Please select destination to upload files"
           className="px-4 pt-1"
-          onChange={onDestinationChange}
+          renderValue={(key) => {
+            const item = destinationItems.find((d) => d.value === key);
+            if (!item) return null;
+            return (
+              <span className="flex items-center gap-2">
+                {item.type === "s3" ? (
+                  <S3BucketIcon aria-hidden="true" />
+                ) : (
+                  <SharePointSiteIcon aria-hidden="true" />
+                )}
+                {item.label}
+              </span>
+            );
+          }}
+          renderItem={(value) => {
+            const item = destinationItems.find((d) => d.value === value);
+            if (!item) return value;
+            return (
+              <span className="flex items-center gap-2">
+                {item.type === "s3" ? (
+                  <S3BucketIcon aria-hidden="true" />
+                ) : (
+                  <SharePointSiteIcon aria-hidden="true" />
+                )}
+                {item.label}
+              </span>
+            );
+          }}
+          getItemTextValue={(value) => {
+            const item = destinationItems.find((d) => d.value === value);
+            return item?.label ?? value;
+          }}
         />
         <div className="upload-dialog__ingestion-panels-grid">
           <FilesIngestionPanel files={files} setFiles={setFiles} />

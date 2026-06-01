@@ -62,6 +62,17 @@ export const END_DATA_STATUSES: DataStatus[] = [
   "ingested",
   "canceled",
   "blocked",
+  "deleting",
+];
+
+// Statuses that indicate all processing is fully complete — polling can stop.
+// "deleting" is excluded here: the file is still being processed server-side
+// and must keep polling until it disappears from the list.
+export const POLLING_END_STATUSES: DataStatus[] = [
+  "error",
+  "ingested",
+  "canceled",
+  "blocked",
 ];
 
 export const POLLING_INTERVAL = 10000; // 10 seconds

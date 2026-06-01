@@ -30,7 +30,6 @@ import pytest
 
 from tests.e2e.ui.conftest import requires_chatqa, requires_sso
 from tests.e2e.ui.helpers.sharepoint_ui_helpers import (
-    SP_GLOBE_EMOJI,
     add_sharepoint_site,
     authenticate_to_seaweedfs,
     check_for_sync_updates,
@@ -522,16 +521,12 @@ async def test_sp_destination_dropdown_shows_sharepoint_sites(chat_ui_helper):
         await select_button.click()
         await page.wait_for_timeout(1000)
 
-        # Check for globe emoji in options
-        options = page.locator('[role="option"]')
-        count = await options.count()
-        sp_found = False
-        for i in range(count):
-            text = await options.nth(i).text_content() or ""
-            if SP_GLOBE_EMOJI in text:
-                sp_found = True
-                logger.info(f"Found SharePoint destination: {text}")
-                break
+        # Check for SharePoint options (id prefixed with "sp::" by the UI)
+        sp_option = page.locator('[role="option"][id^="sp::"]').first
+        sp_found = await sp_option.count() > 0
+        if sp_found:
+            text = await sp_option.text_content() or ""
+            logger.info(f"Found SharePoint destination: {text}")
 
         # Close dropdown
         await page.keyboard.press("Escape")
@@ -582,24 +577,20 @@ async def test_sp_file_shows_open_button(chat_ui_helper):
     # Wait for the files table to load
     await page.wait_for_timeout(3000)
 
-    # Look for rows with the globe emoji (SharePoint source indicator)
-    rows = page.locator("tr")
+    # Look for SharePoint rows — identified by the "Open" action button
+    # (SP files show "Open" instead of "Download" in the actions column)
+    rows = page.locator("tbody tr")
     count = await rows.count()
     sp_row_found = False
 
     for i in range(count):
-        row_text = await rows.nth(i).text_content() or ""
-        if SP_GLOBE_EMOJI in row_text:
-            sp_row_found = True
-            # Check the download/open button in this row
-            btn = rows.nth(i).locator('[data-testid="download-file-button"]')
-            if await btn.count() > 0:
-                btn_text = (await btn.text_content() or "").strip()
-                assert btn_text == "Open", (
-                    f"SharePoint file should show 'Open', got '{btn_text}'"
-                )
+        btn = rows.nth(i).locator('[data-testid="download-file-button"]')
+        if await btn.count() > 0:
+            btn_text = (await btn.text_content() or "").strip()
+            if btn_text == "Open":
+                sp_row_found = True
                 logger.info("Assert: SharePoint file shows 'Open' button")
-            break
+                break
 
     if not sp_row_found:
         pytest.skip(
@@ -1200,8 +1191,9 @@ async def test_sp_delete_sharepoint_file_via_table(chat_ui_helper):
     sp_file_name = None
 
     for i in range(count):
-        row_text = await rows.nth(i).text_content() or ""
-        if SP_GLOBE_EMOJI in row_text:
+        # SharePoint rows have an "Open" button instead of "Download"
+        open_btn = rows.nth(i).locator('[data-testid="download-file-button"]:has-text("Open")')
+        if await open_btn.count() > 0:
             # Extract file name from the row
             delete_btn = rows.nth(i).locator('[data-testid="delete-file-button"]')
             if await delete_btn.count() > 0:

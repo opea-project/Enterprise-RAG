@@ -9,7 +9,7 @@ import {
   SelectInputArrowUp,
 } from "@intel-enterprise-rag-ui/icons";
 import classNames from "classnames";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 import {
   Button as AriaButton,
   Key as AriaKey,
@@ -53,6 +53,12 @@ interface SelectInputProps<T extends AriaKey = AriaKey> extends Omit<
   fullWidth?: boolean;
   /** Callback for value change */
   onChange?: SelectInputChangeHandler<T>;
+  /** Custom renderer for the selected value displayed in the trigger button */
+  renderValue?: (selectedKey: T | null) => ReactNode;
+  /** Custom renderer for each list item */
+  renderItem?: (item: string) => ReactNode;
+  /** Returns the plain-text value used for type-ahead and aria-label when using renderItem */
+  getItemTextValue?: (item: string) => string;
 }
 
 /**
@@ -70,6 +76,9 @@ export const SelectInput = <T extends AriaKey = AriaKey>({
   className,
   value,
   onChange,
+  renderValue,
+  renderItem,
+  getItemTextValue,
   ...rest
 }: SelectInputProps<T>) => {
   const inputId = useId();
@@ -80,10 +89,10 @@ export const SelectInput = <T extends AriaKey = AriaKey>({
           key={`${inputId}-${index}-list-item`}
           // id is value passed to onChange handler
           id={item}
-          textValue={item}
+          textValue={getItemTextValue ? getItemTextValue(item) : item}
           className="select-input__options-list-item"
         >
-          {item}
+          {renderItem ? renderItem(item) : item}
         </AriaListBoxItem>
       ))
     : null;
@@ -128,9 +137,16 @@ export const SelectInput = <T extends AriaKey = AriaKey>({
             aria-expanded={isOpen}
           >
             <AriaSelectValue className="select-input__value">
-              {({ selectedText }) =>
-                selectedText || placeholder || "Select value from the list"
-              }
+              {({ selectedText, isPlaceholder }) => {
+                if (renderValue) {
+                  return isPlaceholder
+                    ? (placeholder ?? "Select value from the list")
+                    : renderValue(value as T);
+                }
+                return (
+                  selectedText || placeholder || "Select value from the list"
+                );
+              }}
             </AriaSelectValue>
             {isOpen ? <SelectInputArrowUp /> : <SelectInputArrowDown />}
           </AriaButton>

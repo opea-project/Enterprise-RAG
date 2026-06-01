@@ -24,9 +24,6 @@ logger = logging.getLogger(__name__)
 DIALOG_TIMEOUT_MS = 10_000
 SYNC_CHECK_TIMEOUT_MS = 30_000
 
-# Emoji indicators used by the UI for SharePoint sources / destinations.
-SP_GLOBE_EMOJI = "\U0001f310"  # globe — SharePoint destination in upload dropdown
-SP_LINK_EMOJI = "\U0001f517"  # link  — SharePoint source in files table
 
 
 # ---------------------------------------------------------------------------
@@ -253,7 +250,8 @@ async def open_upload_dialog(helper) -> bool:
 async def select_sharepoint_destination(helper) -> bool:
     """In the Upload Data dialog, select a SharePoint site as the destination.
 
-    SharePoint destinations are prefixed with the globe emoji.
+    SharePoint destination options have an id attribute prefixed with "sp::"
+    (set by the UI via SelectInput's item value encoding).
     Returns True if a SharePoint destination was selected, False if none found.
     """
     page = helper.page
@@ -268,15 +266,14 @@ async def select_sharepoint_destination(helper) -> bool:
     await select_button.evaluate("el => el.click()")
     await page.wait_for_timeout(1000)
 
-    options = page.locator('[role="option"]')
-    count = await options.count()
-    for i in range(count):
-        text = await options.nth(i).text_content() or ""
-        if SP_GLOBE_EMOJI in text:
-            await options.nth(i).evaluate("el => el.click()")
-            await page.wait_for_timeout(500)
-            logger.info(f"Selected SharePoint destination: {text}")
-            return True
+    # SharePoint options have id="sp::<site-name>" set by the SelectInput component
+    sp_option = page.locator('[role="option"][id^="sp::"]').first
+    if await sp_option.count() > 0:
+        text = await sp_option.text_content() or ""
+        await sp_option.evaluate("el => el.click()")
+        await page.wait_for_timeout(500)
+        logger.info(f"Selected SharePoint destination: {text}")
+        return True
 
     logger.warning("No SharePoint destination found in dropdown")
     await page.keyboard.press("Escape")
@@ -317,14 +314,18 @@ async def delete_row_via_table(helper, identifier: str):
         logger.info(f"Deleted row '{identifier}'")
 
 
-async def get_file_rows_with_source(helper, source_emoji: str) -> int:
-    """Count file rows in the Data Ingestion table matching a source emoji."""
+async def get_sharepoint_file_rows(helper) -> int:
+    """Count file rows in the Data Ingestion table that originate from SharePoint.
+
+    SharePoint file rows show an "Open" button (instead of "Download") because
+    the UI renders the button label based on the presence of a site_name.
+    """
     page = helper.page
     rows = page.locator("tbody tr")
     count = 0
     total = await rows.count()
     for i in range(total):
-        text = await rows.nth(i).text_content() or ""
-        if source_emoji in text:
+        open_btn = rows.nth(i).locator('[data-testid="download-file-button"]:has-text("Open")')
+        if await open_btn.count() > 0:
             count += 1
     return count

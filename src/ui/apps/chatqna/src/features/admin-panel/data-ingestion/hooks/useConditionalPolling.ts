@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "react";
 
 import {
-  END_DATA_STATUSES,
+  POLLING_END_STATUSES,
   POLLING_INTERVAL,
 } from "@/features/admin-panel/data-ingestion/config/api";
 import { selectIsAutorefreshEnabled } from "@/features/admin-panel/data-ingestion/store/dataIngestionSettings.slice";
@@ -16,7 +16,8 @@ import { useAppSelector } from "@/store/hooks";
 
 const isDataIngestionInProgress = (
   data: FileDataItem[] | LinkDataItem[] | undefined,
-) => data?.some(({ status }) => !END_DATA_STATUSES.includes(status)) ?? false;
+) =>
+  data?.some(({ status }) => !POLLING_END_STATUSES.includes(status)) ?? false;
 
 const useConditionalPolling = (
   data: FileDataItem[] | LinkDataItem[] | undefined,

@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@intel-enterprise-rag-ui/components";
+import {
+  S3BucketIcon,
+  SharePointSiteIcon,
+} from "@intel-enterprise-rag-ui/icons";
 import { formatFileSize } from "@intel-enterprise-rag-ui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -11,10 +15,6 @@ import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/comp
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { formatStatusForFilter } from "@/features/admin-panel/data-ingestion/utils/data-tables/utils";
-import {
-  S3_BUCKET_EMOJI,
-  SHAREPOINT_SITE_EMOJI,
-} from "@/features/admin-panel/utils";
 
 interface FileActionsHandlers {
   downloadHandler: (
@@ -56,15 +56,17 @@ export const getFilesTableColumns = ({
     }) => {
       if (site_name) {
         return (
-          <>
-            {SHAREPOINT_SITE_EMOJI} {site_name}
-          </>
+          <span className="flex items-center gap-1">
+            <SharePointSiteIcon aria-hidden="true" />
+            {site_name}
+          </span>
         );
       }
       return (
-        <>
-          {S3_BUCKET_EMOJI} {bucket_name}
-        </>
+        <span className="flex items-center gap-1">
+          <S3BucketIcon aria-hidden="true" />
+          {bucket_name}
+        </span>
       );
     },
   },

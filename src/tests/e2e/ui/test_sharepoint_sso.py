@@ -36,7 +36,6 @@ import pytest
 
 from tests.e2e.ui.conftest import requires_chatqa, requires_sso
 from tests.e2e.ui.helpers.sharepoint_ui_helpers import (
-    SP_LINK_EMOJI,
     add_sharepoint_site,
     authenticate_to_seaweedfs,
     close_sharepoint_dialog,
@@ -44,7 +43,7 @@ from tests.e2e.ui.helpers.sharepoint_ui_helpers import (
     disconnect_site_by_row_text,
     dismiss_any_overlay,
     force_reset_body,
-    get_file_rows_with_source,
+    get_sharepoint_file_rows,
     is_site_in_table,
     js_click_testid,
     open_sharepoint_dialog,
@@ -474,7 +473,7 @@ async def test_sso_admin_sync_and_view_files(sso_admin_helper):
         await page.wait_for_timeout(2000)
 
         # Count SP-sourced file rows (may be 0 if site has no files)
-        sp_files = await get_file_rows_with_source(sso_admin_helper, SP_LINK_EMOJI)
+        sp_files = await get_sharepoint_file_rows(sso_admin_helper)
         logger.info(f"Found {sp_files} SharePoint-sourced files in table")
         # We don't assert count > 0 because the test site may be empty;
         # the important thing is that the flow completed without errors.
@@ -553,8 +552,8 @@ async def test_sso_admin_open_file_points_to_sharepoint(sso_admin_helper):
         sp_row = None
 
         for i in range(total):
-            text = await rows.nth(i).text_content() or ""
-            if SP_LINK_EMOJI in text:
+            open_btn = rows.nth(i).locator('[data-testid="download-file-button"]:has-text("Open")')
+            if await open_btn.count() > 0:
                 sp_row = rows.nth(i)
                 break
 
@@ -658,8 +657,8 @@ async def test_sso_admin_delete_sharepoint_file(sso_admin_helper):
     target_file = None
 
     for i in range(total):
-        text = await rows.nth(i).text_content() or ""
-        if SP_LINK_EMOJI in text:
+        open_btn = rows.nth(i).locator('[data-testid="download-file-button"]:has-text("Open")')
+        if await open_btn.count() > 0:
             delete_btn = rows.nth(i).locator('[data-testid="delete-file-button"]')
             if await delete_btn.count() > 0:
                 # Get file identifier for verification

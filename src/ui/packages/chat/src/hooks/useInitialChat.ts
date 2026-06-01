@@ -12,6 +12,7 @@ import {
   UseChatStreamingConfig,
 } from "@/hooks/useChatStreaming";
 import { ChatTurn } from "@/types";
+import { parseSources } from "@/utils";
 
 export interface UseInitialChatConfig {
   usePostPromptMutation: UsePostPromptMutation;
@@ -96,9 +97,12 @@ export const useInitialChat = (config: UseInitialChatConfig) => {
       },
       // Update local state with sources
       (sources) => {
+        const parsedSources = parseSources(sources);
         setChatTurns((prevTurns) =>
           prevTurns.map((turn) =>
-            turn.id === conversationTurnId ? { ...turn, sources } : turn,
+            turn.id === conversationTurnId
+              ? { ...turn, sources: parsedSources.length > 0 ? parsedSources : [] }
+              : turn,
           ),
         );
       },

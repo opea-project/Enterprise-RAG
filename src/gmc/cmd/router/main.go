@@ -636,15 +636,17 @@ func mergeRequests(ctx context.Context, respReq []byte, initReqData map[string]i
 	var respReqData map[string]interface{}
 
 	if _, exists := initReqData[Parameters]; exists {
+		params, ok := initReqData[Parameters].(map[string]interface{})
+		if !ok {
+			otlpr.WithContext(log, ctx).Error(nil, "Parameters field is not a valid JSON object, skipping merge")
+			return respReq
+		}
 		if err := json.Unmarshal(respReq, &respReqData); err != nil {
 			otlpr.WithContext(log, ctx).Error(err, "Error unmarshaling respReqData:")
 			return nil
 		}
 		// Merge init request into respReq
-		for key, value := range initReqData[Parameters].(map[string]interface{}) {
-			/*if _, exists := respReqData[key]; !exists {
-				respReqData[key] = value
-			}*/
+		for key, value := range params {
 			// overwrite the respReq by initial request
 			respReqData[key] = value
 		}

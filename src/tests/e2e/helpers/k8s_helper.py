@@ -7,6 +7,7 @@ import base64
 import logging
 
 import kr8s
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,17 @@ class K8sHelper:
         if len(pods) == 0:
             raise ResourceNotFound(f"No running pods found with label '{label_selector}' in namespace '{namespace}'.")
         return pods[0]
+
+    def get_deployment_manifest_version(self, namespace="default"):
+        """Read the solution version from the erag-deployment-manifest ConfigMap."""
+        logger.debug("Reading version from erag-deployment-manifest ConfigMap")
+        configmaps = kr8s.get("configmaps", namespace=namespace)
+        for cm in configmaps:
+            if cm.name == "erag-deployment-manifest":
+                manifest_raw = cm.data.get("manifest.yaml", "")
+                manifest = yaml.safe_load(manifest_raw)
+                return manifest["deployment"]["version"]
+        raise ResourceNotFound("ConfigMap 'erag-deployment-manifest' not found")
 
     def delete_pods_by_label(self, namespace, label_selector):
         """Delete all pods matching a label selector in a namespace"""

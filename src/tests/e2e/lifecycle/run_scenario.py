@@ -92,12 +92,10 @@ def main():
     raw_lifecycle = scenario_config.get("lifecycle", [])
     lifecycle_files = []
 
-    # Logic for backup-restore scenario
-    if scenario_name == "backup-restore":
+    if isinstance(raw_lifecycle, dict):
         if not cluster_state:
             logger.error(f"Scenario '{scenario_name}' requires 'CLUSTER_STATE' environment variable.")
-            if isinstance(raw_lifecycle, dict):
-                logger.info(f"Available states for this scenario: {list(raw_lifecycle.keys())}")
+            logger.info(f"Available states for this scenario: {list(raw_lifecycle.keys())}")
             sys.exit(1)
 
         lifecycle_files = raw_lifecycle.get(cluster_state)
@@ -106,15 +104,9 @@ def main():
             logger.error(f"Invalid CLUSTER_STATE='{cluster_state}' for scenario '{scenario_name}'.")
             logger.info(f"Available states: {list(raw_lifecycle.keys())}")
             sys.exit(1)
-
-    # Logic for standard scenarios
     else:
         if cluster_state:
             logger.warning(f"CLUSTER_STATE='{cluster_state}' is set but ignored for scenario '{scenario_name}'.")
-
-        if isinstance(raw_lifecycle, dict):
-            logger.error(f"Scenario '{scenario_name}' has dict config but script treats it as list. check YAML.")
-            sys.exit(1)
 
         lifecycle_files = raw_lifecycle
 

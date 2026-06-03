@@ -6,8 +6,21 @@
 import allure
 import logging
 import os
+import pytest
 
 from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+
+
+@pytest.fixture(autouse=True)
+def edp_cleanup_after_test():
+    """No-op override: files must persist for post-restore verification."""
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def edp_cleanup_after_session():
+    """No-op override: files must persist for post-restore verification."""
+    yield
 
 logger = logging.getLogger(__name__)
 

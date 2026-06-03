@@ -48,8 +48,8 @@
   ansible.builtin.shell: kubectl api-resources --api-group=habanalabs.habana.ai
   register: api_check
   until: api_check.rc == 0 and 'ClusterPolicy' in api_check.stdout
-  retries: 12
-  delay: 5
+  retries: 24
+  delay: 10
   changed_when: false
   tags:
     - install

@@ -99,7 +99,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32"]
     tensor_parallel_size: "1"
 
   # meta-llama/Llama-3.1-70B-Instruct
@@ -113,7 +113,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","128","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","128"]
     tensor_parallel_size: "4"
 
   # meta-llama/Llama-3.1-405B-Instruct
@@ -127,7 +127,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","256","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","256"]
     tensor_parallel_size: "8"
 
   # meta-llama/Llama-3.1-405B-Instruct-FP8
@@ -150,7 +150,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "24768"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","96","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","96"]
     tensor_parallel_size: "1"
 
   # meta-llama/Llama-3.2-3B-Instruct
@@ -164,7 +164,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32"]
     tensor_parallel_size: "1"
 
   # meta-llama/Llama-3.3-70B-Instruct
@@ -178,7 +178,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "4352"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "9792"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","288","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","288"]
     tensor_parallel_size: "4"
     #   PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
     #   EXPERIMENTAL_WEIGHT_SHARING: "0"
@@ -343,7 +343,7 @@ modelConfigs:
       VLLM_GRAPH_PROMPT_RATIO: "0.7"
       VLLM_GRAPH_RESERVED_MEM: "0.05"
       VLLM_SKIP_WARMUP: "true"
-    extraCmdArgs: ["--dtype", "bfloat16", "--max-num-seqs", "256", "--max-model-len", "8192", "--trust-remote-code", "--disable-log-requests"]
+    extraCmdArgs: ["--dtype", "bfloat16", "--max-num-seqs", "256", "--max-model-len", "8192", "--trust-remote-code"]
     tensor_parallel_size: "8"
 
   # deepseek-ai/DeepSeek-R1-Distill-Llama-8B
@@ -357,7 +357,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32"]
     tensor_parallel_size: "1"
 
   # deepseek-ai/DeepSeek-R1-Distill-Llama-70B
@@ -371,7 +371,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32"]
     tensor_parallel_size: "4"
 
   # deepseek-ai/DeepSeek-R1-Distill-Qwen-32B

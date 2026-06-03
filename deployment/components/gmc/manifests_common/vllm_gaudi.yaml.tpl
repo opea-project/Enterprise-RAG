@@ -123,13 +123,13 @@ spec:
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
-            {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--disable-log-requests" "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
+            {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
             {{- if $modelChatTemplate }}
               {{- $cmd = concat $cmd (list "--chat-template" "/etc/vllm/chat_template.jinja") }}
             {{- end }}
           command: ["/bin/bash", "-c", {{ join " " $cmd | quote }} ]
           {{- else }}
-          command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --disable-log-requests --download-dir /data{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}" ]
+          command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --download-dir /data{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}" ]
           {{- end }}
           imagePullPolicy: Always
           volumeMounts:

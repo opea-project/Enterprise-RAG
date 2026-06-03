@@ -229,6 +229,10 @@ images:
     envfile: "src/comps/reranks/impl/model_server/torchserve/docker/.env"
     envs:
       TORCHSERVE_MODEL_NAME: *reranking_model_name
+  vllm_reranking:
+    envfile: "src/comps/reranks/impl/model_server/vllm/docker/.env"
+    envs:
+      RERANKING_VLLM_MODEL_NAME: *reranking_model_name
   retriever-usvc:
     image: "erag-retriever"
     repository: *repo

@@ -27,7 +27,7 @@ RerankScoreResponse = List[RerankScoreItem]
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-SUPPORTED_MODEL_SERVERS = ["torchserve", "tei"]
+SUPPORTED_MODEL_SERVERS = ["torchserve", "tei", "vllm"]
 
 class OPEAReranker:
     def __init__(self, service_endpoint: str, model_server: str, model_name: str = None, late_chunking_enabled: bool = True):
@@ -57,6 +57,11 @@ class OPEAReranker:
                 self._service_endpoint = self._service_endpoint + f"/predictions/{model_name.split('/')[-1]}"
             elif self._model_server == "tei":
                 self._service_endpoint = self._service_endpoint + "/rerank"
+            elif self._model_server == "vllm":
+                if not model_name:
+                    raise ValueError("The 'RERANKING_MODEL_NAME' cannot be empty when using 'vllm' as the model server.")
+                self._model_name = model_name
+                self._service_endpoint = self._service_endpoint.rstrip('/') + '/score'
 
         self._validate()
 
@@ -230,7 +235,13 @@ class OPEAReranker:
             Exception: For any other exceptions that occur during the request.
         """
 
-        data = {"query": user_prompt, "texts": retrieved_docs}
+        # vLLM exposes an OpenAI-compatible /v1/score endpoint that takes a
+        # different payload and wraps the scores in a {"data": [...]} object.
+        # torchserve/tei take {"query", "texts"} and return the bare list.
+        if self._model_server == "vllm":
+            data = {"model": self._model_name, "text_1": user_prompt, "text_2": retrieved_docs}
+        else:
+            data = {"query": user_prompt, "texts": retrieved_docs}
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -242,6 +253,9 @@ class OPEAReranker:
                 ) as response:
                     response_data = await response.json(content_type=None)
                     response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
+                    # vLLM wraps the scores in {"data": [{index, score}, ...]}
+                    if isinstance(response_data, dict):
+                        return response_data.get("data", response_data)
                     return response_data
 
         except TimeoutError:

@@ -21,7 +21,7 @@ spec:
 {% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
       - {{ balloons.vllm_custom_name }}
 {% endif %}
-      - torchserve-reranking
+      - {{ reranking_service_type | default('torchserve_reranking') | replace('_', '-') }}
       - {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}
 {% if audio is defined and audio.enabled %}
       - vllm-audio-cpu
@@ -52,7 +52,7 @@ spec:
 {% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
       - {{ balloons.vllm_custom_name }}
 {% endif %}
-  - name: torchserve-reranking-balloon
+  - name: {{ reranking_service_type | default('torchserve_reranking') | replace('_', '-') }}-balloon
     minCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
     maxCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
 {% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
@@ -69,7 +69,7 @@ spec:
     - key: name
       operator: In
       values:
-      - torchserve-reranking
+      - {{ reranking_service_type | default('torchserve_reranking') | replace('_', '-') }}
   - name: {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}-balloon
     minCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
     maxCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}

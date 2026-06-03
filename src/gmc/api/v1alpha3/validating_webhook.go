@@ -52,6 +52,7 @@ var (
 		"TorchserveEmbeddingGaudi",
 		"VLLMEmbedding",
 		"TorchserveReranking",
+		"VLLMReranking",
 		"LLMGuardInput",
 		"LLMGuardOutput",
 		"VLLMGaudi",

@@ -265,3 +265,87 @@ async def test_run_raises_exception_on_top_N_below_one(mock_post, test_class):
     mock_post.assert_not_called()
 
     assert "Input should be greater than 0 [type=greater_than, input_value=-1, input_type=int]" in str(context.value)
+
+
+# ---------------------------------------------------------------------------
+# vLLM reranking path
+# ---------------------------------------------------------------------------
+
+def test_vllm_initialization_appends_score_suffix():
+    with patch.object(OPEAReranker, '_validate', return_value=None):
+        reranker = OPEAReranker(
+            service_endpoint="http://bge-reranker-base-predictor.llm-inference.svc.cluster.local/v1",
+            model_server="vllm",
+            model_name="BAAI/bge-reranker-base",
+            late_chunking_enabled=False,
+        )
+    assert reranker._service_endpoint.endswith("/score")
+    assert reranker._model_name == "BAAI/bge-reranker-base"
+
+
+def test_vllm_initialization_raises_when_model_name_missing():
+    with pytest.raises(ValueError, match="RERANKING_MODEL_NAME"):
+        OPEAReranker(
+            service_endpoint="http://bge-reranker-base-predictor.llm-inference.svc.cluster.local/v1",
+            model_server="vllm",
+            late_chunking_enabled=False,
+        )
+
+
+@pytest.fixture
+def vllm_reranker():
+    with patch.object(OPEAReranker, '_validate', return_value=None):
+        return OPEAReranker(
+            service_endpoint="http://bge-reranker-base-predictor.llm-inference.svc.cluster.local/v1",
+            model_server="vllm",
+            model_name="BAAI/bge-reranker-base",
+            late_chunking_enabled=False,
+        )
+
+
+@pytest.mark.asyncio
+async def test_async_call_reranker_vllm_normalises_data_wrapper(vllm_reranker):
+    """vLLM path of _async_call_reranker unwraps {"data": [...]} to [...]."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    vllm_response = {"data": [{"index": 1, "score": 0.9}, {"index": 0, "score": 0.3}]}
+
+    mock_response = AsyncMock()
+    mock_response.json = AsyncMock(return_value=vllm_response)
+    mock_response.raise_for_status = MagicMock(return_value=None)
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=False)
+
+    mock_session = AsyncMock()
+    mock_session.post = MagicMock(return_value=mock_response)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    with patch("comps.reranks.utils.opea_reranking.aiohttp.ClientSession", return_value=mock_session):
+        result = await vllm_reranker._async_call_reranker("What is DL?", ["DL is not...", "DL is..."])
+
+    assert result == [{"index": 1, "score": 0.9}, {"index": 0, "score": 0.3}]
+
+
+@pytest.mark.asyncio
+async def test_async_call_reranker_vllm_passthrough_when_no_data_wrapper(vllm_reranker):
+    """If the reranker returns a bare list (not wrapped in data:), pass it through."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    bare_response = [{"index": 0, "score": 0.8}]
+
+    mock_response = AsyncMock()
+    mock_response.json = AsyncMock(return_value=bare_response)
+    mock_response.raise_for_status = MagicMock(return_value=None)
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=False)
+
+    mock_session = AsyncMock()
+    mock_session.post = MagicMock(return_value=mock_response)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    with patch("comps.reranks.utils.opea_reranking.aiohttp.ClientSession", return_value=mock_session):
+        result = await vllm_reranker._async_call_reranker("What is DL?", ["DL is not...", "DL is..."])
+
+    assert result == bare_response

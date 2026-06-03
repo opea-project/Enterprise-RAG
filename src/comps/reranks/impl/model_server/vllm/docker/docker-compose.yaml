@@ -1,0 +1,44 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  reranking-vllm-model-server:
+    image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.19.1
+    container_name: reranking-vllm-model-server
+    ports:
+      - "${RERANKING_VLLM_PORT}:80"
+    volumes:
+      - "../entrypoint.sh:/entrypoint.sh:ro"
+      - "./data:/data"
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      VLLM_CPU_KVCACHE_SPACE: ${VLLM_CPU_KVCACHE_SPACE}
+      VLLM_TARGET_DEVICE: "cpu"
+    ipc: host
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    command:  "--model ${RERANKING_VLLM_MODEL_NAME} \
+              --dtype ${VLLM_DTYPE} \
+              --download_dir /data \
+              --host 0.0.0.0 --port 80"
+
+  reranking_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/reranks/impl/microservice/Dockerfile
+    container_name: reranking-vllm-microservice
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      RERANKING_MODEL_NAME: ${RERANKING_VLLM_MODEL_NAME}
+      RERANKING_MODEL_SERVER: vllm
+      RERANKING_SERVICE_ENDPOINT: http://localhost:${RERANKING_VLLM_PORT}/v1
+    restart: unless-stopped
+    depends_on:
+      -   reranking-vllm-model-server

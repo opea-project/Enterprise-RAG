@@ -109,6 +109,34 @@
   - topology-preview
   - update-configuration
 
+- name: Detect reranking service type from pipeline
+  set_fact:
+    reranking_service_type: >-
+      {{
+        (
+          (
+            lookup('file', pipelines_dir ~ '/' ~ (
+              pipelines
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
+              | map(attribute='samplePath')
+              | first
+            ), errors='ignore')
+            | from_yaml
+          ).get('spec', {}).get('nodes', {}).get('root', {}).get('steps', [])
+          | selectattr('internalService.isDownstreamService', 'defined')
+          | selectattr('internalService.serviceName', 'search', '-reranking-svc$')
+          | map(attribute='internalService.serviceName')
+          | first
+          | default('torchserve-reranking-svc')
+          | regex_replace('-reranking-svc$', '')
+          | regex_replace('-', '_')
+        ) + '_reranking'
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
 - name: Set RERANKER_CPUS from resources reference file
   set_fact:
     RERANKER_CPUS: >-
@@ -119,7 +147,7 @@
             | from_yaml
           )
           | default({})
-        ).get('services', {}).get('torchserve_reranking', {}).get('resources', {}).get('requests', {}).get('cpu', 0)
+        ).get('services', {}).get(reranking_service_type, {}).get('resources', {}).get('requests', {}).get('cpu', 0)
         | int
       }}
   tags:

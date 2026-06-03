@@ -51,6 +51,7 @@ const (
 	TorchserveEmbeddingGaudi = "TorchserveEmbeddingGaudi"
 	VLLMEmbedding      		 = "VLLMEmbedding"
 	TorchserveReranking      = "TorchserveReranking"
+	VLLMReranking            = "VLLMReranking"
 	Retriever                = "Retriever"
 	PromptTemplate           = "PromptTemplate"
 	Reranking                = "Reranking"
@@ -126,6 +127,7 @@ var yamlDict = map[string]string{
 	TeiEmbeddingGaudi:   yaml_dir + "tei_gaudi.yaml",
 	TorchserveEmbedding: yaml_dir + "torchserve_embedding.yaml",
 	TorchserveReranking: yaml_dir + "torchserve_reranking.yaml",
+	VLLMReranking:       yaml_dir + "vllm_reranking.yaml",
 	VLLMEmbedding:       yaml_dir + "vllm_embedding.yaml",
 	Embedding:           yaml_dir + "embedding-usvc.yaml",
 	Retriever:           yaml_dir + "retriever-usvc.yaml",

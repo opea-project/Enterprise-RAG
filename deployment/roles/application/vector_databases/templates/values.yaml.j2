@@ -71,7 +71,13 @@ resources:
     memory: "{{ vector_databases[vector_databases.vector_store].resources.limits.memory | default('4Gi') }}"
 
 redis-cluster:
+  image:
+    repository: {{ vector_databases[vector_databases.vector_store].image.repository | default('redis') }}
   redis:
+    image:
+      repository: {{ vector_databases[vector_databases.vector_store].image.repository | default('redis') }}
+      tag: "{{ vector_databases[vector_databases.vector_store].image.tag | default('8.2.2') }}"
+      pullPolicy: {{ vector_databases[vector_databases.vector_store].image.pullPolicy | default('IfNotPresent') }}
     resources:
       requests:
         cpu: "{{ '100m' if (minimal_configuration is defined and minimal_configuration) else vector_databases[vector_databases.vector_store].resources.requests.cpu | default('500m') }}"

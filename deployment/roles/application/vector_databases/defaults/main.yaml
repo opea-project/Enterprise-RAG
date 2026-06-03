@@ -28,6 +28,15 @@ vector_databases:
     name: redis-cluster
     version: "8.2.2"
 
+    # Redis image configuration.
+    # Override repository and tag to use a custom image, e.g. one built with
+    # BUILD_INTEL_SVS_OPT=yes for SVS-VAMANA LeanVec/LVQ compression support.
+    # See src/comps/redis-svs-vamana/Dockerfile for build instructions.
+    image:
+      repository: "redis"
+      tag: "8.2.2"
+      pullPolicy: "IfNotPresent"
+
     cluster:
       nodes: 3
       replicasPerMaster: 0

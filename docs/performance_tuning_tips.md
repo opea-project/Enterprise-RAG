@@ -50,7 +50,7 @@ vector_databases:
 
 Starting with Redis 8.2, use `SVS-VAMANA` as the recommended vector index backend for Intel® AI for Enterprise RAG deployments, especially for medium/large datasets. It is optimized for better memory efficiency and query throughput while keeping high recall.
 
-This is configurable via `deployment/inventory/**/config.yaml` as follows:
+This is configurable in your inventory config file (e.g. `deployment/inventory/sample/config.yaml`) under the `edp` section:
 
 ```yaml
 edp:
@@ -62,6 +62,69 @@ edp:
 ```
 
 If your priority is faster index build time or compatibility with existing tuning profiles, `HNSW` remains a valid alternative.
+The three supported vector algorithms are:
+- **`FLAT`** — brute-force exact search, no index build time, best for small datasets (default)
+- **`HNSW`** — approximate nearest neighbor with fast index builds, good general-purpose choice
+- **`SVS-VAMANA`** — Intel-optimized approximate search with better memory efficiency and query throughput, recommended for medium/large datasets
+
+> [!IMPORTANT]
+> The retriever and ingestion services **must** use the same `vector_algorithm` and matching parameters.
+> These settings are automatically propagated to the retriever from `edp.ingestion.config` in `config.yaml`.
+> If they mismatch, each service will create a separate index in Redis and queries will return no results.
+> After changing the algorithm, re-upload all files so data is re-indexed with the new algorithm.
+
+#### Verifying the Redis Vector Index
+
+After deploying or changing the vector algorithm, verify that a **single** index exists in Redis.
+Two indexes might indicate a mismatch between the retriever and ingestion `vector_algorithm` settings — queries will return no results in that case.
+
+To check, exec into one of the Redis cluster pods and run:
+
+```bash
+kubectl exec -it <redis-cluster-pod> -c redis -- redis-cli -a <redis-password> FT._LIST
+```
+
+This should return **exactly one** index name. If you see two indexes, it might indicate the retriever and ingestion are using different algorithms.
+
+The index name encodes the configuration: `<model>_<algorithm>_<datatype>_<metric>_<dims>_index` (e.g., `nomic-ai/nomic-embed-text-v1_svs-vamana_float32_cosine_768_index`). Compare the algorithm in each index name to identify which service created it. Fix the configuration so both use the same `vector_algorithm`, redeploy, and re-upload your files.
+
+To inspect the index details (algorithm, vector dimensions, number of documents):
+
+```bash
+kubectl exec -it <redis-cluster-pod> -c redis -- redis-cli -a <redis-password> FT.INFO <index_name>
+```
+
+Look for the `algorithm` field in the output to confirm it matches your configured `vector_algorithm`.
+
+#### SVS-VAMANA with LeanVec4x8 Compression
+
+The default Redis 8.2.2 image supports SVS-VAMANA with basic 8-bit quantization only.
+To use `LeanVec4x8` compression (recommended for better memory efficiency),
+you need to build a custom Redis image with Intel SVS optimizations enabled.
+
+1. Build the custom image using the Dockerfile in `src/comps/redis-svs-vamana/`:
+
+```bash
+cd src/comps/redis-svs-vamana
+docker build -t <registry>/erag/redis:8.2.2-svs .
+docker push <registry>/erag/redis:8.2.2-svs
+```
+
+2. Configure the custom image and SVS-VAMANA with LeanVec4x8 compression in your inventory config file (e.g. `deployment/inventory/sample/config.yaml`):
+
+```yaml
+vector_databases:
+  redis-cluster:
+    image:
+      repository: <registry>/erag/redis
+      tag: "8.2.2-svs"
+
+edp:
+  ingestion:
+    config:
+      vector_algorithm: "SVS-VAMANA"
+      vector_svs_compression: "LeanVec4x8"
+```
 
 For detailed trade-offs and parameter tuning, see Redis documentation:
 - Vector indexes overview: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/

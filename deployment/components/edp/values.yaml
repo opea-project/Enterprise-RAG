@@ -1059,10 +1059,15 @@ ingestion:
     vector_datatype: "FLOAT32" # FLOAT16, FLOAT32, FLOAT64
     vector_distance_metric: "COSINE" # L2, IP, COSINE
     # For HNSW Algorithm additional settings are available
-    vector_hnsw_m: "32"
-    vector_hnsw_ef_construction: "32"
-    vector_hnsw_ef_runtime: "32"
+    vector_hnsw_m: "16"
+    vector_hnsw_ef_construction: "200"
+    vector_hnsw_ef_runtime: "10"
     vector_hnsw_epsilon: "0.01"
+    # For SVS-VAMANA Algorithm additional settings are available
+    vector_svs_graph_max_degree: "40"
+    vector_svs_construction_window_size: "250"
+    vector_svs_search_window_size: "200"
+    vector_svs_compression: "LeanVec4x8" # "LeanVec4x8" (requires custom Redis image), "Q8", or "" (none)
     # For hierarchical indices
     use_hierarchical_indices: "False"
   pullPolicy: Always

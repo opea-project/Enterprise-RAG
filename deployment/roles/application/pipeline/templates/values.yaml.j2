@@ -197,6 +197,22 @@ images:
       VECTOR_DATATYPE: {{ vector_databases.vector_datatype }}
       VECTOR_DIMS: {{ vector_databases.vector_dims }}
 {% endif %}
+{% if edp.ingestion.config is defined and edp.ingestion.config.vector_algorithm is defined %}
+      VECTOR_ALGORITHM: {{ edp.ingestion.config.vector_algorithm }}
+      VECTOR_DISTANCE_METRIC: {{ edp.ingestion.config.vector_distance_metric | default("COSINE") }}
+{% endif %}
+{% if edp.ingestion.config.vector_algorithm is defined and edp.ingestion.config.vector_algorithm == "SVS-VAMANA" %}
+      VECTOR_SVS_GRAPH_MAX_DEGREE: {{ edp.ingestion.config.vector_svs_graph_max_degree | default("40") }}
+      VECTOR_SVS_CONSTRUCTION_WINDOW_SIZE: {{ edp.ingestion.config.vector_svs_construction_window_size | default("250") }}
+      VECTOR_SVS_SEARCH_WINDOW_SIZE: {{ edp.ingestion.config.vector_svs_search_window_size | default("200") }}
+      VECTOR_SVS_COMPRESSION: {{ edp.ingestion.config.vector_svs_compression | default("NO_COMPRESSION") }}
+{% endif %}
+{% if edp.ingestion.config.vector_algorithm is defined and edp.ingestion.config.vector_algorithm == "HNSW" %}
+      VECTOR_HNSW_M: {{ edp.ingestion.config.vector_hnsw_m | default("16") }}
+      VECTOR_HNSW_EF_CONSTRUCTION: {{ edp.ingestion.config.vector_hnsw_ef_construction | default("200") }}
+      VECTOR_HNSW_EF_RUNTIME: {{ edp.ingestion.config.vector_hnsw_ef_runtime | default("10") }}
+      VECTOR_HNSW_EPSILON: {{ edp.ingestion.config.vector_hnsw_epsilon | default("0.01") }}
+{% endif %}
   llm-usvc:
     image: "erag-llm"
     repository: *repo

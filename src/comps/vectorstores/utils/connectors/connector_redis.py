@@ -51,6 +51,15 @@ class ConnectorRedis(VectorStoreConnector):
                     "epsilon": float(sanitize_env(str(os.getenv("VECTOR_HNSW_EPSILON", 0.01))))
                 }
             )
+        elif vector_schema["algorithm"] == "SVS-VAMANA":
+            vector_schema.update(
+                {
+                    "graph_max_degree": int(sanitize_env(str(os.getenv("VECTOR_SVS_GRAPH_MAX_DEGREE", 40)))),
+                    "construction_window_size": int(sanitize_env(str(os.getenv("VECTOR_SVS_CONSTRUCTION_WINDOW_SIZE", 250)))),
+                    "search_window_size": int(sanitize_env(str(os.getenv("VECTOR_SVS_SEARCH_WINDOW_SIZE", 200)))),
+                    "compression": str(sanitize_env(os.getenv("VECTOR_SVS_COMPRESSION", "LeanVec4x8"))),
+                }
+            )
         return vector_schema
 
     def _metadata_schema(self):
@@ -118,6 +127,15 @@ class ConnectorRedis(VectorStoreConnector):
                     "ef_construction": schema['ef_construction'],
                     "ef_runtime": schema['ef_runtime'],
                     "epsilon": schema['epsilon']
+                }
+            )
+        elif schema['algorithm'].lower() == "svs-vamana":
+            data['fields'][1]['attrs'].update(
+                {
+                    "graph_max_degree": schema['graph_max_degree'],
+                    "construction_window_size": schema['construction_window_size'],
+                    "search_window_size": schema['search_window_size'],
+                    "compression": schema['compression'],
                 }
             )
 

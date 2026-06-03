@@ -245,6 +245,14 @@ edp:
   late_chunking:
     # NOTE: If enabled, embedding_model_name must be 'jinaai/jina-embeddings-v2-base-en' for late chunking to work.
     enabled: false
+  # Ingestion vector algorithm configuration.
+  # Uncomment to switch from default FLAT to SVS-VAMANA or HNSW.
+  # The retriever will automatically use the same settings.
+  # After changing, re-upload all files so data is re-indexed.
+  # ingestion:
+  #   config:
+  #     vector_algorithm: "SVS-VAMANA"  # "FLAT", "HNSW", "SVS-VAMANA"
+  #     vector_svs_compression: "LeanVec4x8"  # "LeanVec4x8" (requires custom Redis image), "Q8", or "" (none)
 
 rag_utils:
   enabled: true
@@ -261,3 +269,8 @@ vector_databases:
   # to be set manually. Override only when using a custom model that is not
   # recognized by the auto-detection or you're in air-gapped environment.
   # vector_dims: 768
+  # Uncomment to use a custom Redis image (e.g. with SVS-VAMANA LeanVec/LVQ support):
+  # redis-cluster:
+  #   image:
+  #     repository: <registry>/erag/redis
+  #     tag: "8.2.2-svs"

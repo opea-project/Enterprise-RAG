@@ -13,8 +13,16 @@ data:
   VECTOR_DIMS: {{ .Values.ingestion.config.vector_dims | quote }}
   VECTOR_DATATYPE: {{ .Values.ingestion.config.vector_datatype | quote }}
   VECTOR_DISTANCE_METRIC: {{ .Values.ingestion.config.vector_distance_metric | quote }}
+  {{- if eq .Values.ingestion.config.vector_algorithm "HNSW" }}
   VECTOR_HNSW_M: {{ .Values.ingestion.config.vector_hnsw_m | quote }}
   VECTOR_HNSW_EF_CONSTRUCTION: {{ .Values.ingestion.config.vector_hnsw_ef_construction | quote }}
   VECTOR_HNSW_EF_RUNTIME: {{ .Values.ingestion.config.vector_hnsw_ef_runtime | quote }}
   VECTOR_HNSW_EPSILON: {{ .Values.ingestion.config.vector_hnsw_epsilon | quote }}
+  {{- end }}
+  {{- if eq .Values.ingestion.config.vector_algorithm "SVS-VAMANA" }}
+  VECTOR_SVS_GRAPH_MAX_DEGREE: {{ .Values.ingestion.config.vector_svs_graph_max_degree | quote }}
+  VECTOR_SVS_CONSTRUCTION_WINDOW_SIZE: {{ .Values.ingestion.config.vector_svs_construction_window_size | quote }}
+  VECTOR_SVS_SEARCH_WINDOW_SIZE: {{ .Values.ingestion.config.vector_svs_search_window_size | quote }}
+  VECTOR_SVS_COMPRESSION: {{ .Values.ingestion.config.vector_svs_compression | quote }}
+  {{- end }}
   USE_HIERARCHICAL_INDICES: {{ .Values.ingestion.config.use_hierarchical_indices | quote }}

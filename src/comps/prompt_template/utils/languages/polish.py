@@ -46,10 +46,7 @@ Odpowiadaj na podstawie swojej najlepszej wiedzy. \
 Jeśli nie znasz odpowiedzi na pytanie, nie podawaj fałszywych informacji.\n\
 """
 
-    TEMPLATE_USER = """
-### Question: {user_prompt}\n
-### Answer:
-"""
+    TEMPLATE_USER = """###Pytanie: {user_prompt}\n###Odpowiedź:"""
 
     _CONTEXTUAL_MAP = {
         (True, True): TEMPLATE_DOCS_AND_HISTORY,

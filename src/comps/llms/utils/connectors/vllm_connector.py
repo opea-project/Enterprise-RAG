@@ -82,6 +82,13 @@ class VLLMConnector(AbstractConnector):
                 logger.warning("Both max_completion_tokens and max_new_tokens are set. max_completion_tokens will take precedence.")
                 max_new_tokens = input.max_completion_tokens
 
+            # PLLuM models use passthrough chat template (raw ###Pytanie:/###Odpowiedź: format).
+            # After the answer, the model continues generating new Q&A pairs in the same format.
+            pllum_stop_words = (
+                ["###Pytanie", "###Historia rozmowy", "###Odpowiedź"]
+                if "pllum" in self._model_name.lower()
+                else None
+            )
             generator = await self._client.chat.completions.create(
                 model=self._model_name,
                 messages=input.messages.model_dump() if isinstance(input.messages, LLMPromptTemplate) else input.messages,
@@ -89,8 +96,7 @@ class VLLMConnector(AbstractConnector):
                 temperature=input.temperature,
                 top_p=input.top_p,
                 stream=input.stream and not self._disable_streaming,
-                # Stop words implementation changed after vllm update 0.10.2 - it needs more validation
-                # stop=["###Pytanie", "###Odpowiedź", "###Historia rozmowy"] if "pllum" in self._model_name.lower() else None,
+                stop=pllum_stop_words,
             )
         except ReadTimeout as e:
             error_message = f"Failed to stream from the VLLM Connector. Connection established with '{e.request.url}' but " \
@@ -144,11 +150,9 @@ class VLLMConnector(AbstractConnector):
                         # vLLM might send chunk with only role provided, so we need to handle it
                         if hasattr(chunk.choices[0].delta, "role") and chunk.choices[0].delta.role and not chunk.choices[0].delta.content:
                             continue
-                        if chunk.choices[0].finish_reason == 'stop':
-                            break
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
-                        
+
                         stream_chunk = ChatCompletionStreamResponse(
                             model=self._model_name,
                             choices=[

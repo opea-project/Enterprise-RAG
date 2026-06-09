@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 # User-configurable parameters (can be set via --set during helm install)
 
@@ -127,9 +127,22 @@ modelConfigs:
 
   "CYFRAGOVPL/PLLuM-12B-chat":
     <<: *generic_base_cpu
+    # PLLuM-12B has no chat_template in tokenizer_config.json — vLLM would use a broken fallback.
+    # Passthrough to raw ###Pytanie:/###Odpowiedź: format matches training distribution.
+    modelChatTemplate: |
+      {%- for message in messages -%}
+      {{ message['content'] }}{% if not loop.last %}
+      {% endif %}
+      {%- endfor -%}
 
   "CYFRAGOVPL/PLLuM-12B-instruct":
     <<: *generic_base_cpu
+    # Same rationale as PLLuM-12B-chat above.
+    modelChatTemplate: |
+      {%- for message in messages -%}
+      {{ message['content'] }}{% if not loop.last %}
+      {% endif %}
+      {%- endfor -%}
 
   "speakleash/Bielik-1.5B-v3.0-Instruct":
     <<: *generic_base_cpu

@@ -247,9 +247,7 @@ Jeśli nie znasz odpowiedzi na pytanie, nie podawaj fałszywych informacji.\n\
 ### Historia rozmowy:\n\
 {conversation_history}\n\
 """
-    user_prompt_template: str = """###Pytanie: {user_prompt} \n
-###Odpowiedź:
-"""
+    user_prompt_template: str = """###Pytanie: {user_prompt}\n###Odpowiedź:"""
 
 class RetrieverParams(Document):
     search_type: str = "similarity"

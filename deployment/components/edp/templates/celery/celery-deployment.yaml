@@ -144,6 +144,9 @@ spec:
                   name: edp-configmap
                   key: EMBEDDING_TIMEOUT_SECONDS
           {{- toYaml .Values.celery.environment | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: edp-configmap
           ports:
             - name: http
               containerPort: 5000

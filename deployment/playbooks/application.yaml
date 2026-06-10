@@ -63,6 +63,19 @@
         - pre-upgrade
       when: not ansible_check_mode
 
+    - name: Verify backup exists for deployed version before upgrade
+      ansible.builtin.include_role:
+        name: backup
+        tasks_from: verify_backup.yaml
+      vars:
+        solution_version: "{{ deployed_ver | default('') }}"
+      when:
+        - not ansible_check_mode
+        - manifest_exists | default(false) | bool
+        - is_upgrade_mode | default(false) | bool
+      tags:
+        - pre-upgrade
+
     - name: Initial deployment manifest configuration
       ansible.builtin.include_role:
         name: deployment_manifest
@@ -99,6 +112,16 @@
         - install
         - pre-upgrade
         - data-consistency
+
+    - name: Check for embedding model changes
+      ansible.builtin.include_role:
+        name: upgrade
+        tasks_from: check_embedding_model.yaml
+      vars:
+        source_config_path: "{{ config_yaml_path }}"
+      tags:
+        - install
+        - pre-upgrade
 
     - name: Build and push images
       ansible.builtin.include_role:

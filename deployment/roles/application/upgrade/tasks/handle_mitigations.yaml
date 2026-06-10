@@ -1,0 +1,25 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Mitigation Handler Dispatcher
+# Iterates metadata_mitigations_required and dispatches each to its action handler.
+# Each handler is responsible for:
+#   - Collecting any necessary human input
+#   - Applying the mitigation (e.g. creating a ConfigMap, updating a fact)
+#   - Appending an entry to metadata_mitigations_applied on success
+
+- name: Skip mitigation handling when nothing is required
+  ansible.builtin.debug:
+    msg: "No mitigations required."
+  when: metadata_mitigations_required | length == 0
+
+- name: Dispatch each pending mitigation to its handler
+  ansible.builtin.include_tasks:
+    file: "mitigations/{{ mitigation_item.action }}.yaml"
+  vars:
+    current_mitigation: "{{ mitigation_item }}"
+  loop: "{{ metadata_mitigations_required }}"
+  loop_control:
+    loop_var: mitigation_item
+    label: "{{ mitigation_item.action }} ({{ mitigation_item.component }})"
+  when: metadata_mitigations_required | length > 0

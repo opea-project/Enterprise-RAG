@@ -10,6 +10,44 @@
     - pre-upgrade
     - update-configuration
 
+- name: Check for embedding model migration status ConfigMap
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    name: embedding-model-migration-status
+    namespace: "{{ pipelines[0].namespace | default('chatqa') }}"
+  register: migration_configmap_info
+  failed_when: false
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
+- name: Set embedding model migration flags
+  ansible.builtin.set_fact:
+    embedding_migration_required: "{{ migration_configmap_info.resources[0].data.migration_required | default('false') }}"
+    embedding_migration_old_model: "{{ migration_configmap_info.resources[0].data.old_model | default('') }}"
+    embedding_migration_new_model: "{{ migration_configmap_info.resources[0].data.new_model | default('') }}"
+  when:
+    - migration_configmap_info.resources is defined
+    - migration_configmap_info.resources | length > 0
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
+- name: Set default migration flags when ConfigMap doesn't exist
+  ansible.builtin.set_fact:
+    embedding_migration_required: "false"
+    embedding_migration_old_model: ""
+    embedding_migration_new_model: ""
+  when:
+    - migration_configmap_info.resources is not defined or migration_configmap_info.resources | length == 0
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
 - name: Generate override values file from template
   ansible.builtin.template:
     src: "values.yaml.j2"

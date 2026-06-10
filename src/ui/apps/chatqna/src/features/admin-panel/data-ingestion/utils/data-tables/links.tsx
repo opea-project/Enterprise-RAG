@@ -1,15 +1,23 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Button } from "@intel-enterprise-rag-ui/components";
+import { Button, Tooltip } from "@intel-enterprise-rag-ui/components";
 import { ColumnDef } from "@tanstack/react-table";
 
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
 import LinkTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/LinkTextExtractionDialog/LinkTextExtractionDialog";
+import EmbeddingModelIndicator from "@/features/admin-panel/data-ingestion/components/EmbeddingModelIndicator/EmbeddingModelIndicator";
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { formatStatusForFilter } from "@/features/admin-panel/data-ingestion/utils/data-tables/utils";
+import { getChatQnAAppEnv } from "@/utils";
+
+// EMBEDDING_MODEL_MIGRATION_NEW_MODEL = current embedding model used by the system
+// Links with a different model need to be re-ingested
+const currentEmbeddingModel = getChatQnAAppEnv(
+  "EMBEDDING_MODEL_MIGRATION_NEW_MODEL",
+);
 
 interface LinkActionsHandlers {
   retryHandler: (id: string) => void;
@@ -19,7 +27,8 @@ interface LinkActionsHandlers {
 export const getLinksTableColumns = ({
   retryHandler,
   deleteHandler,
-}: LinkActionsHandlers): ColumnDef<LinkDataItem>[] => [
+}: LinkActionsHandlers): ColumnDef<LinkDataItem>[] => {
+  return [
   {
     accessorKey: "status",
     header: "Status",
@@ -35,13 +44,30 @@ export const getLinksTableColumns = ({
     header: "Link",
     cell: ({
       row: {
-        original: { uri },
+        original: { uri, embedding_model },
       },
-    }) => (
-      <div className="text-wrap" style={{ overflowWrap: "anywhere" }}>
-        {uri}
-      </div>
-    ),
+    }) => {
+      const tooltipContent = (
+        <div className="text-xs">
+          <p className="mb-1 font-semibold">Embedding Model</p>
+          <p className="font-mono">{embedding_model || "unknown"}</p>
+        </div>
+      );
+
+      return (
+        <div
+          className="flex items-center text-wrap"
+          style={{ overflowWrap: "anywhere" }}
+        >
+          <EmbeddingModelIndicator itemEmbeddingModel={embedding_model} />
+          <Tooltip
+            title={tooltipContent}
+            placement="top"
+            trigger={<span className="cursor-help">{uri}</span>}
+          />
+        </div>
+      );
+    },
   },
   {
     id: "chunks",
@@ -99,30 +125,48 @@ export const getLinksTableColumns = ({
     header: () => <p className="w-full text-center">Actions</p>,
     cell: ({
       row: {
-        original: { id, uri, status },
+        original: { id, uri, status, embedding_model },
       },
-    }) => (
-      <div className="flex items-center justify-center gap-2">
-        <LinkTextExtractionDialog uuid={id} linkUri={uri} />
-        {status === "error" && (
+    }) => {
+      const needsReingest =
+        currentEmbeddingModel &&
+        embedding_model !== currentEmbeddingModel &&
+        status === "ingested";
+
+      return (
+        <div className="flex items-center justify-center gap-2">
+          <LinkTextExtractionDialog uuid={id} linkUri={uri} />
+          {status === "error" && (
+            <Button
+              data-testid="retry-link-button"
+              size="sm"
+              variant="outlined"
+              onPress={() => retryHandler(id)}
+            >
+              Retry
+            </Button>
+          )}
+          {needsReingest && (
+            <Button
+              data-testid="reingest-link-button"
+              size="sm"
+              variant="outlined"
+              onPress={() => retryHandler(id)}
+            >
+              Reingest
+            </Button>
+          )}
           <Button
-            data-testid="retry-link-button"
+            data-testid="delete-link-button"
             size="sm"
-            variant="outlined"
-            onPress={() => retryHandler(id)}
+            color="error"
+            onPress={() => deleteHandler(id)}
           >
-            Retry
+            Delete
           </Button>
-        )}
-        <Button
-          data-testid="delete-link-button"
-          size="sm"
-          color="error"
-          onPress={() => deleteHandler(id)}
-        >
-          Delete
-        </Button>
-      </div>
-    ),
+        </div>
+      );
+    },
   },
-];
+  ];
+};

@@ -28,7 +28,7 @@ from app.sharepoint import (
     sp_sync_lock, filter_sp_sites_for_user,
     download_sp_file_by_path
 )
-from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
+from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery, EMBEDDING_MODEL_NAME
 from app.rbac import RBACFactory, get_seaweedfs_client_using_bearer_token
 from celery.result import AsyncResult
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
@@ -393,6 +393,7 @@ def add_new_file(object_name, etag, content_type, size, bucket_name=None, site_n
                 size=size,
                 site_name=site_name,
                 status='uploaded',
+                embedding_model=EMBEDDING_MODEL_NAME,
                 created_at=datetime.now(timezone.utc)
             )
             db.add(file_status)
@@ -496,6 +497,7 @@ def add_new_link(uri):
         link_status = LinkStatus(
             uri=uri,
             status='uploaded',
+            embedding_model=EMBEDDING_MODEL_NAME,
             created_at=datetime.now(timezone.utc)
         )
         db.add(link_status)

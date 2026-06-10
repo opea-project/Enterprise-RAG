@@ -24,5 +24,8 @@ data:
       {{- end }}
       "ERAG_VERSION": {{ .Chart.AppVersion | quote }},
       "MAINTENANCE_MODE": {{ (.Values.extraUiConfigVars.chatMaintenanceMode | lower) | quote }},
-      "NER_ENABLED": {{ (.Values.extraUiConfigVars.nerEnabled | default "false" | lower) | quote }}
+      "NER_ENABLED": {{ (.Values.extraUiConfigVars.nerEnabled | default "false" | lower) | quote }},
+      "EMBEDDING_MODEL_MIGRATION_REQUIRED": {{ (.Values.extraUiConfigVars.embeddingModelMigrationRequired | default "false" | lower) | quote }},
+      "EMBEDDING_MODEL_MIGRATION_OLD_MODEL": {{ .Values.extraUiConfigVars.embeddingModelOldModel | default "" | quote }},
+      "EMBEDDING_MODEL_MIGRATION_NEW_MODEL": {{ .Values.extraUiConfigVars.embeddingModelNewModel | default "" | quote }}
     }

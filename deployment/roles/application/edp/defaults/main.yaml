@@ -66,6 +66,7 @@ edp:
         password_file_name: "edp-postgresql-admin-password"
       user:
         db_username: edp
+        db_name: edp
         password_file_name: "edp-postgresql-user-password"
 
   tls:

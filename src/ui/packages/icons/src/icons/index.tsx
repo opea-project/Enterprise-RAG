@@ -66,6 +66,7 @@ import { SuccessIcon } from "@/icons/SuccessIcon";
 import { TelemetryIcon } from "@/icons/TelemetryIcon";
 import { TextFileIcon } from "@/icons/TextFileIcon";
 import { UploadIcon } from "@/icons/UploadIcon";
+import { WarningIcon } from "@/icons/WarningIcon";
 
 export const icons: Record<string, ComponentType<IconBaseProps>> = {
   "admin-panel": AdminPanelIcon,
@@ -129,6 +130,7 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   "s3-bucket": S3BucketIcon,
   "sharepoint-site": SharePointSiteIcon,
   speaker: SpeakerIcon,
+  warning: WarningIcon,
   "external-link": ExternalLinkIcon,
 };
 

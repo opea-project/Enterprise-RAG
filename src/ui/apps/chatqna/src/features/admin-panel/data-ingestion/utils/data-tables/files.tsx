@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Button } from "@intel-enterprise-rag-ui/components";
+import { Button, Tooltip } from "@intel-enterprise-rag-ui/components";
 import {
   S3BucketIcon,
   SharePointSiteIcon,
@@ -12,9 +12,17 @@ import { ColumnDef } from "@tanstack/react-table";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
 import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/FileTextExtractionDialog/FileTextExtractionDialog";
+import EmbeddingModelIndicator from "@/features/admin-panel/data-ingestion/components/EmbeddingModelIndicator/EmbeddingModelIndicator";
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { formatStatusForFilter } from "@/features/admin-panel/data-ingestion/utils/data-tables/utils";
+import { getChatQnAAppEnv } from "@/utils";
+
+// EMBEDDING_MODEL_MIGRATION_NEW_MODEL = current embedding model used by the system
+// Files with a different model need to be re-ingested
+const currentEmbeddingModel = getChatQnAAppEnv(
+  "EMBEDDING_MODEL_MIGRATION_NEW_MODEL",
+);
 
 interface FileActionsHandlers {
   downloadHandler: (
@@ -35,7 +43,8 @@ export const getFilesTableColumns = ({
   downloadHandler,
   retryHandler,
   deleteHandler,
-}: FileActionsHandlers): ColumnDef<FileDataItem>[] => [
+}: FileActionsHandlers): ColumnDef<FileDataItem>[] => {
+  return [
   {
     accessorKey: "status",
     header: "Status",
@@ -75,13 +84,30 @@ export const getFilesTableColumns = ({
     header: "Name",
     cell: ({
       row: {
-        original: { object_name: fileName },
+        original: { object_name: fileName, embedding_model },
       },
-    }) => (
-      <div className="text-wrap" style={{ overflowWrap: "anywhere" }}>
-        {fileName}
-      </div>
-    ),
+    }) => {
+      const tooltipContent = (
+        <div className="text-xs">
+          <p className="mb-1 font-semibold">Embedding Model</p>
+          <p className="font-mono">{embedding_model || "unknown"}</p>
+        </div>
+      );
+
+      return (
+        <div
+          className="flex items-center text-wrap"
+          style={{ overflowWrap: "anywhere" }}
+        >
+          <EmbeddingModelIndicator itemEmbeddingModel={embedding_model} />
+          <Tooltip
+            title={tooltipContent}
+            placement="top"
+            trigger={<span className="cursor-help">{fileName}</span>}
+          />
+        </div>
+      );
+    },
   },
   {
     accessorKey: "size",
@@ -145,39 +171,64 @@ export const getFilesTableColumns = ({
     header: () => <p className="w-full text-center">Actions</p>,
     cell: ({
       row: {
-        original: { object_name, status, id, bucket_name, site_name },
+        original: {
+          object_name,
+          status,
+          id,
+          bucket_name,
+          site_name,
+          embedding_model,
+        },
       },
-    }) => (
-      <div className="flex items-center justify-center gap-2">
-        <Button
-          data-testid="download-file-button"
-          size="sm"
-          onPress={() => downloadHandler(object_name, bucket_name, site_name)}
-        >
-          {site_name ? "Open" : "Download"}
-        </Button>
-        <FileTextExtractionDialog uuid={id} fileName={object_name} />
-        {status === "error" && (
+    }) => {
+      const needsReingest =
+        currentEmbeddingModel &&
+        embedding_model !== currentEmbeddingModel &&
+        status === "ingested";
+
+      return (
+        <div className="flex items-center justify-center gap-2">
           <Button
-            data-testid="retry-file-button"
+            data-testid="download-file-button"
             size="sm"
-            variant="outlined"
-            onPress={() => retryHandler(id)}
+            onPress={() => downloadHandler(object_name, bucket_name, site_name)}
           >
-            Retry
+            {site_name ? "Open" : "Download"}
           </Button>
-        )}
-        {(bucket_name || site_name) && (
-          <Button
-            data-testid="delete-file-button"
-            size="sm"
-            color="error"
-            onPress={() => deleteHandler(object_name, bucket_name, site_name)}
-          >
-            Delete
-          </Button>
-        )}
-      </div>
-    ),
+          <FileTextExtractionDialog uuid={id} fileName={object_name} />
+          {status === "error" && (
+            <Button
+              data-testid="retry-file-button"
+              size="sm"
+              variant="outlined"
+              onPress={() => retryHandler(id)}
+            >
+              Retry
+            </Button>
+          )}
+          {needsReingest && (
+            <Button
+              data-testid="reingest-file-button"
+              size="sm"
+              variant="outlined"
+              onPress={() => retryHandler(id)}
+            >
+              Reingest
+            </Button>
+          )}
+          {(bucket_name || site_name) && (
+            <Button
+              data-testid="delete-file-button"
+              size="sm"
+              color="error"
+              onPress={() => deleteHandler(object_name, bucket_name, site_name)}
+            >
+              Delete
+            </Button>
+          )}
+        </div>
+      );
+    },
   },
-];
+  ];
+};

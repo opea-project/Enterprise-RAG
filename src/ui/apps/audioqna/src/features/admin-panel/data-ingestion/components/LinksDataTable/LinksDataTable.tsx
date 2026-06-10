@@ -20,6 +20,7 @@ import BatchDeleteDialog from "@/features/admin-panel/data-ingestion/components/
 import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { getLinksTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/links";
+import { getAudioQnAAppEnv } from "@/utils";
 
 const LinksDataTable = () => {
   const { data: links, refetch, isLoading } = useGetLinksQuery();
@@ -66,10 +67,29 @@ const LinksDataTable = () => {
     return selectedLinks.filter((link) => link.status === "error");
   }, [selectedLinks]);
 
+  const reingestableLinks = useMemo(() => {
+    const currentEmbeddingModel = getAudioQnAAppEnv(
+      "EMBEDDING_MODEL_MIGRATION_NEW_MODEL",
+    );
+    if (!currentEmbeddingModel) return [];
+    return selectedLinks.filter(
+      (link) =>
+        link.embedding_model !== currentEmbeddingModel &&
+        link.status === "ingested",
+    );
+  }, [selectedLinks]);
+
   const handleBatchRetry = useCallback(async () => {
     await Promise.all(retryableLinks.map((link) => retryLinkAction(link.id)));
     setRowSelection({});
   }, [retryableLinks, retryLinkAction]);
+
+  const handleBatchReingest = useCallback(async () => {
+    await Promise.all(
+      reingestableLinks.map((link) => retryLinkAction(link.id)),
+    );
+    setRowSelection({});
+  }, [reingestableLinks, retryLinkAction]);
 
   const handleBatchDelete = useCallback(async () => {
     await Promise.all(selectedLinks.map((link) => deleteLink(link.id)));
@@ -94,7 +114,9 @@ const LinksDataTable = () => {
         <BatchActionsDropdown
           selectedCount={selectedLinks.length}
           retryableCount={retryableLinks.length}
+          reingestableCount={reingestableLinks.length}
           onRetry={handleBatchRetry}
+          onReingest={handleBatchReingest}
           onDelete={() => setIsDeleteDialogOpen(true)}
         />
       </div>

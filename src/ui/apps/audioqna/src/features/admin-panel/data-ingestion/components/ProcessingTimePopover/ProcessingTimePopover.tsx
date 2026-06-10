@@ -109,6 +109,9 @@ const ProcessingTimePopover = memo(
           const elapsedTime =
             initialElapsed + Math.floor(Date.now() - observationStart);
           setTimer(formatProcessingTime(elapsedTime));
+        } else {
+          // Job starting but jobStartTime not yet updated - show 0s instead of old value
+          setTimer(formatProcessingTime(0));
         }
       };
 

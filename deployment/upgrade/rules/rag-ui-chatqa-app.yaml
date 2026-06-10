@@ -25,6 +25,16 @@ validation_rules:
     response: "approve"
     note: "[2.1.1/2.2.0] NER feature toggle environment variable added to config"
 
+  # Embedding model migration feature fields added in nomic-ai embedding update
+  - path_regex: ".*extraUiConfigVars.*"
+    data_regex: ".*embeddingModel.*"
+    response: "approve"
+    note: "Embedding model migration UI configuration fields — added with nomic-ai embedding update"
+
+  - data_regex: ".*EMBEDDING_MODEL_MIGRATION.*"
+    response: "approve"
+    note: "Embedding model migration environment variables added to UI config"
+
   # HTTPRoute additions (replacing legacy Ingress)
   - path_regex: ".*httpRoute.*"
     response: "approve"

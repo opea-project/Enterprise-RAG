@@ -154,6 +154,13 @@ Test application functionality:
 3. Verify chat functionality
 4. Check existing data is accessible
 
+### Post-Upgrade Re-embedding (If Embedding Model Changed)
+
+If you switched to a new embedding model during the upgrade, all existing documents need to be embedded again.
+
+Go to Admin Panel → Data Ingestion. If any documents require re‑ingestion, you’ll see a warning banner there automatically. The system keeps track of which embedding model was used for each file, so any documents embedded with the previous model will be flagged until they’re reingested. Once all documents are re‑ingested with the new model, the warning banner will disappear automatically.
+
+
 ## Rollback Procedure
 
 If issues occur after upgrade:

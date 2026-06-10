@@ -12,6 +12,12 @@ validation_rules:
     response: "approve"
     note: "OIDC client secret may change"
 
+  # Embedding model changes require operator acknowledgment via the mitigation handler.
+  - path_regex: ".*EMBEDDING_MODEL_NAME.*|.*embedding_model_name.*"
+    response: "mitigate"
+    action: "verify_embedding_model_change"
+    note: "Embedding model change requires operator decision — re-embedding all documents may be needed"
+
   # Require mitigation for vector dimension changes
   - path_regex: ".*VECTOR_DIMS.*|.*vector_dims.*"
     response: "reject"

@@ -130,6 +130,9 @@ spec:
             - name: VECTOR_DB_RBAC_CACHE_EXPIRATION
               value: {{ .Values.backend.config.rbac.cacheExpiration | quote }}
           {{- end }}
+          envFrom:
+            - configMapRef:
+                name: edp-configmap
           ports:
             - name: http
               containerPort: 5000

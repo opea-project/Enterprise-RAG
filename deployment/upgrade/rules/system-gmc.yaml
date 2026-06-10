@@ -22,10 +22,14 @@ validation_rules:
     response: "approve"
     note: "Template formatting changes do not affect functionality"
 
+  # Embedding model changes require operator acknowledgment via the mitigation handler.
+  # The handler (mitigations/verify_embedding_model_change.yaml) prompts the operator
+  # during --tags pre-upgrade and creates the migration ConfigMap for --tags install.
   - path_regex: "embedding-usvc-config"
     data_regex: ".*EMBEDDING_MODEL_NAME.*"
-    response: "reject"
-    note: "changing EMBEDDING_MODEL_NAME breaks operation of deployed solution"
+    response: "mitigate"
+    action: "verify_embedding_model_change"
+    note: "Embedding model change requires operator decision — re-embedding all documents may be needed"
 
   # Approve VECTOR_STORE configuration changes from redis-cluster to redis
   - path_regex: ".*VECTOR_STORE.*"

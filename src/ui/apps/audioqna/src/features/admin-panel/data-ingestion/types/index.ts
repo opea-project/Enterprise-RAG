@@ -44,6 +44,7 @@ export interface FileDataItem {
   size: number;
   etag: string;
   site_name: string | null;
+  embedding_model: string | null;
 }
 
 export interface LinkDataItem {
@@ -65,6 +66,7 @@ export interface LinkDataItem {
   ingestion_duration: number;
   processing_duration: number;
   uri: string;
+  embedding_model: string | null;
 }
 
 export interface UploadErrors {

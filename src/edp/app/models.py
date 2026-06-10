@@ -136,6 +136,7 @@ class ObjectResponse(BaseModel):
     embedding_duration: int
     ingestion_duration: int
     processing_duration: int
+    embedding_model: Optional[str] = None
 
 class FileResponse(ObjectResponse):
     id: str
@@ -174,6 +175,7 @@ class ObjectStatus(Base):
     late_chunking_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
     embedding_end = Column(DateTime, index=False)
+    embedding_model = Column(String, index=True, nullable=True)
     ingestion_start = Column(DateTime, index=False)
     ingestion_end = Column(DateTime, index=False)
 
@@ -216,6 +218,7 @@ class ObjectStatus(Base):
             embedding_duration=embedding_duration,
             ingestion_duration=ingestion_duration,
             processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+late_chunking_duration,
+            embedding_model=self.embedding_model,
             **kwargs
         )
 

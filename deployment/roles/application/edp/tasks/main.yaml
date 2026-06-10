@@ -212,6 +212,112 @@
     - install
     - update-configuration
 
+- name: Backfill embedding_model column for existing files
+  block:
+    - name: Check for embedding model migration status
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: embedding-model-migration-status
+        namespace: "{{ chatqa_namespace }}"
+      register: migration_status_configmap
+      failed_when: false
+
+    - name: Set migration active flag
+      ansible.builtin.set_fact:
+        migration_in_progress: "{{ migration_status_configmap.resources | length > 0 and migration_status_configmap.resources[0].data.migration_required | default('false') == 'true' }}"
+
+    - name: Get old model from migration ConfigMap
+      ansible.builtin.set_fact:
+        migration_old_model: "{{ migration_status_configmap.resources[0].data.old_model | default('') }}"
+      when:
+        - migration_in_progress | bool
+        - migration_status_configmap.resources | length > 0
+
+    - name: Skip backfill during migration
+      ansible.builtin.debug:
+        msg: |
+          Skipping embedding_model backfill - migration in progress.
+          Pre-upgrade documents with NULL embedding_model will be flagged in UI for re-ingestion.
+          Old model: {{ migration_old_model | default('unknown') }}
+      when: migration_in_progress | bool
+
+    - name: Perform backfill when no migration is active
+      when: not (migration_in_progress | bool)
+      block:
+        - name: Get current embedding model from ConfigMap
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: ConfigMap
+            name: embedding-usvc-config
+            namespace: "{{ chatqa_namespace }}"
+          register: embedding_configmap
+          failed_when: false
+
+        - name: Set embedding model name from ConfigMap
+          ansible.builtin.set_fact:
+            current_embedding_model: "{{ embedding_configmap.resources[0].data.EMBEDDING_MODEL_NAME }}"
+          when: embedding_configmap.resources | length > 0
+
+        - name: Validate embedding model format
+          ansible.builtin.assert:
+            that:
+              - current_embedding_model is match('^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?$')
+            fail_msg: >-
+              Refusing to backfill - embedding model name '{{ current_embedding_model }}'
+              does not match the expected pattern (alphanumerics, '.', '_', '-' with an
+              optional single '/' segment).
+          when:
+            - current_embedding_model is defined
+            - current_embedding_model | length > 0
+
+        - name: Backfill embedding_model for existing files with NULL values
+          kubernetes.core.k8s_exec:
+            namespace: "{{ edp.namespace }}"
+            pod: "edp-postgresql-0"
+            command: >
+              psql -U {{ edp.postgresql.auth.user.db_username }}
+              -d {{ edp.postgresql.auth.user.db_name }}
+              -v ON_ERROR_STOP=1
+              -v model={{ current_embedding_model }}
+              -c "UPDATE files SET embedding_model = :'model'
+              WHERE embedding_model IS NULL AND status = 'ingested';"
+          when:
+            - embedding_configmap.resources | length > 0
+            - current_embedding_model is defined
+            - current_embedding_model | length > 0
+          register: backfill_result
+
+        - name: Backfill embedding_model for existing links with NULL values
+          kubernetes.core.k8s_exec:
+            namespace: "{{ edp.namespace }}"
+            pod: "edp-postgresql-0"
+            command: >
+              psql -U {{ edp.postgresql.auth.user.db_username }}
+              -d {{ edp.postgresql.auth.user.db_name }}
+              -v ON_ERROR_STOP=1
+              -v model={{ current_embedding_model }}
+              -c "UPDATE links SET embedding_model = :'model'
+              WHERE embedding_model IS NULL AND status = 'ingested';"
+          when:
+            - embedding_configmap.resources | length > 0
+            - current_embedding_model is defined
+            - current_embedding_model | length > 0
+
+        - name: Display backfill result
+          ansible.builtin.debug:
+            msg: "Backfilled embedding_model column for existing files and links with: {{ current_embedding_model }}"
+          when:
+            - current_embedding_model is defined
+            - current_embedding_model | length > 0
+  rescue:
+    - name: Handle backfill failure
+      ansible.builtin.debug:
+        msg: "Failed to backfill embedding_model column - this is expected for fresh installations"
+  tags:
+    - install
+    - update-configuration
+
 - name: Mark secrets for password management
   ansible.builtin.include_role:
     name: password_mgmt

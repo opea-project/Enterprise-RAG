@@ -68,3 +68,4 @@ export { SuccessIcon } from "@/icons/SuccessIcon";
 export { TelemetryIcon } from "@/icons/TelemetryIcon";
 export { TextFileIcon } from "@/icons/TextFileIcon";
 export { UploadIcon } from "@/icons/UploadIcon";
+export { WarningIcon } from "@/icons/WarningIcon";

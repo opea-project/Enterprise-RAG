@@ -31,6 +31,7 @@ import BatchDeleteDialog from "@/features/admin-panel/data-ingestion/components/
 import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { getFilesTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/files";
+import { getAudioQnAAppEnv } from "@/utils";
 
 const FilesDataTable = () => {
   const { data: files, refetch, isLoading } = useGetFilesQuery();
@@ -148,10 +149,29 @@ const FilesDataTable = () => {
     return selectedFiles.filter((file) => file.status === "error");
   }, [selectedFiles]);
 
+  const reingestableFiles = useMemo(() => {
+    const currentEmbeddingModel = getAudioQnAAppEnv(
+      "EMBEDDING_MODEL_MIGRATION_NEW_MODEL",
+    );
+    if (!currentEmbeddingModel) return [];
+    return selectedFiles.filter(
+      (file) =>
+        file.embedding_model !== currentEmbeddingModel &&
+        file.status === "ingested",
+    );
+  }, [selectedFiles]);
+
   const handleBatchRetry = useCallback(async () => {
     await Promise.all(retryableFiles.map((file) => retryFileAction(file.id)));
     setRowSelection({});
   }, [retryableFiles, retryFileAction]);
+
+  const handleBatchReingest = useCallback(async () => {
+    await Promise.all(
+      reingestableFiles.map((file) => retryFileAction(file.id)),
+    );
+    setRowSelection({});
+  }, [reingestableFiles, retryFileAction]);
 
   const handleBatchDelete = useCallback(async () => {
     await Promise.all(
@@ -180,7 +200,9 @@ const FilesDataTable = () => {
         <BatchActionsDropdown
           selectedCount={selectedFiles.length}
           retryableCount={retryableFiles.length}
+          reingestableCount={reingestableFiles.length}
           onRetry={handleBatchRetry}
+          onReingest={handleBatchReingest}
           onDelete={() => setIsDeleteDialogOpen(true)}
         />
       </div>

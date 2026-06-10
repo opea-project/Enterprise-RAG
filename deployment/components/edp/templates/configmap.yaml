@@ -26,6 +26,7 @@ data:
   USE_BEARER_TOKEN_AUTH: {{ .Values.useBearerTokenAuth | default "false" | quote }}
   {{- /* Lookup EMBEDDING_TIMEOUT_SECONDS from embedding-usvc-config in chatqa namespace */ -}}
   {{- $embeddingTimeout := .Values.embedding.config.timeout | default "120" }}
+  {{- $embeddingModelName := "unknown" }}
   {{- $embeddingConfigMap := lookup "v1" "ConfigMap" (.Values.pipelineNamespace | default "chatqa") "embedding-usvc-config" }}
   {{- if $embeddingConfigMap }}
     {{- if hasKey $embeddingConfigMap.data "EMBEDDING_TIMEOUT_SECONDS" }}
@@ -34,8 +35,12 @@ data:
       {{- /* Fallback to old name for backwards compatibility */ -}}
       {{- $embeddingTimeout = index $embeddingConfigMap.data "EMBEDDING_TIMEOUT" }}
     {{- end }}
+    {{- if hasKey $embeddingConfigMap.data "EMBEDDING_MODEL_NAME" }}
+      {{- $embeddingModelName = index $embeddingConfigMap.data "EMBEDDING_MODEL_NAME" }}
+    {{- end }}
   {{- end }}
   EMBEDDING_TIMEOUT_SECONDS: {{ $embeddingTimeout | quote }}
+  EMBEDDING_MODEL_NAME: {{ $embeddingModelName | quote }}
   {{- /* Query embedding service configuration from chatqa namespace */ -}}
   {{- $embeddingReplicas := 1 }}
   {{- $maxNewWorkers := 8 }}

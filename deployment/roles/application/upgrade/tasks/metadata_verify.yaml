@@ -35,6 +35,10 @@
     loop_var: diff_file_item
     label: "{{ diff_file_item.path | basename }}"
 
+- name: Handle pending mitigations
+  ansible.builtin.include_tasks:
+    file: handle_mitigations.yaml
+
 - name: Calculate verification result and status
   ansible.builtin.set_fact:
     metadata_verification_result:

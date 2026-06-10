@@ -245,6 +245,26 @@
   tags:
     - install
 
+# To avoid upgrade failures, the StatefulSet is orphan-deleted before the
+# chart upgrade. This removes only the StatefulSet controller while preserving
+# the managed Pods and PVCs (e.g. storage-telemetry-logs-loki-* and
+# data-telemetry-logs-minio-*).
+- name: Orphan-delete telemetry-logs StatefulSets to allow immutable-field upgrade
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ telemetry.monitoring.namespace }}"
+    name: "{{ item }}"
+    delete_options:
+      propagationPolicy: Orphan
+  loop:
+    - telemetry-logs-loki
+    - telemetry-logs-minio
+  failed_when: false
+  tags:
+    - install
+
 - name: Install logging Helm chart
   kubernetes.core.helm:
     name: telemetry-logs
@@ -264,6 +284,18 @@
           tag: "{{ helm_otelcol_logs_image_tag }}"
       loki:
         enabled: "{{ telemetry.logging.enabled | default(true) | bool }}"
+        gateway:
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    topologyKey: kubernetes.io/hostname
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/component: gateway
+                        app.kubernetes.io/instance: telemetry-logs
+                        app.kubernetes.io/name: loki
         # Loki applies `limits_config.retention_period` only when the compactor
         # has `retention_enabled: true`, so it is safe to keep both fields
         # populated and toggle retention via `compactor.retention_enabled`.

@@ -1,0 +1,177 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Check Embedding Model Changes
+# Works for both install and upgrade scenarios:
+# - Install/fresh: displays current embedding model info only
+# - Upgrade (--tags pre-upgrade or --tags install after pre-upgrade):
+#   reads the installed model from the live embedding-usvc-config ConfigMap,
+#   compares with the target config, and records embedding_model_changed for
+#   downstream tasks (mitigation handler, edp backfill, ui banner).
+
+- name: Set upgrade mode flag for embedding check
+  ansible.builtin.set_fact:
+    embedding_check_is_upgrade: >-
+      {{
+        (is_upgrade_mode | default(false) | bool)
+        or ('pre-upgrade' in ansible_run_tags)
+        or ('test-upgrade' in ansible_run_tags)
+      }}
+  tags: always
+
+- name: Read installed embedding model from cluster (upgrade only)
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    namespace: "{{ pipelines[0].namespace | default('chatqa') }}"
+    name: embedding-usvc-config
+  register: installed_embedding_cm
+  when: embedding_check_is_upgrade | bool
+  failed_when: false
+  tags: always
+
+- name: Extract installed embedding model name (upgrade only)
+  ansible.builtin.set_fact:
+    source_embedding_model: >-
+      {{
+        installed_embedding_cm.resources[0].data.EMBEDDING_MODEL_NAME | default('')
+        if (embedding_check_is_upgrade | bool and installed_embedding_cm.resources | default([]) | length > 0)
+        else embedding_model_name | default('')
+      }}
+  tags: always
+
+- name: Set target embedding model name
+  ansible.builtin.set_fact:
+    target_embedding_model: "{{ embedding_model_name | default('') }}"
+  tags: always
+
+- name: Detect embedding model change (upgrade only)
+  ansible.builtin.set_fact:
+    embedding_model_changed: >-
+      {{
+        source_embedding_model != target_embedding_model
+        and source_embedding_model != ''
+        and target_embedding_model != ''
+        and embedding_check_is_upgrade | bool
+      }}
+  tags: always
+
+- name: Display embedding model comparison
+  ansible.builtin.debug:
+    msg:
+      - "========================================"
+      - "Embedding Model Check"
+      - "========================================"
+      - "{% if embedding_check_is_upgrade %}Installed model: {{ source_embedding_model | default('unknown') }}{% endif %}"
+      - "{% if embedding_check_is_upgrade %}Target model:    {{ target_embedding_model | default('unknown') }}{% else %}Current model:   {{ target_embedding_model | default('unknown') }}{% endif %}"
+      - "{% if embedding_check_is_upgrade %}Model changed:   {{ 'YES' if embedding_model_changed else 'NO' }}{% endif %}"
+      - "========================================"
+  tags: always
+
+- name: Display install mode info
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+         EMBEDDING MODEL INFORMATION
+      ========================================
+
+      Installation will use embedding model:
+        {{ target_embedding_model }}
+
+      IMPORTANT:
+        - All new documents will use this embedding model
+        - Existing documents from previous installations may use a different model
+        - Documents with mismatched models won't appear in search results together
+
+        POST-INSTALLATION STEPS:
+          1. Open Admin Panel -> Data Ingestion
+          2. Look for files with warning icon
+          3. Re-ingest flagged files to use the new model
+
+      ========================================
+  when:
+    - not (embedding_check_is_upgrade | bool)
+    - target_embedding_model != ''
+  tags: always
+
+- name: Set default values when model has not changed or not an upgrade
+  ansible.builtin.set_fact:
+    embedding_model_user_decision: "no_change"
+    embedding_model_requires_reembedding: false
+  when: not (embedding_model_changed | bool)
+  tags: always
+
+# Install-without-pre-upgrade guard.
+# check_version.yaml (tagged install) sets is_upgrade_mode: true when a prior deployment exists,
+# which makes embedding_check_is_upgrade: true and embedding_model_changed: true above.
+# source_embedding_model and target_embedding_model are therefore already populated here.
+- name: Check for existing migration decision (install without pre-upgrade)
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    namespace: "{{ pipelines[0].namespace | default('chatqa') }}"
+    name: embedding-model-migration-status
+  register: install_migration_cm_check
+  when:
+    - embedding_model_changed | bool
+    - "'install' in ansible_run_tags"
+    - "'pre-upgrade' not in ansible_run_tags"
+  failed_when: false
+  tags: always
+
+# To switch from fail to auto-create: remove this task and uncomment the auto-create block below.
+- name: Fail if embedding model changed without prior pre-upgrade run
+  ansible.builtin.fail:
+    msg: |
+      Embedding model change requires --tags pre-upgrade to be run first.
+
+        FROM: {{ source_embedding_model }}
+          TO: {{ target_embedding_model }}
+
+      Run pre-upgrade to acknowledge the migration decision:
+        ansible-playbook playbooks/application.yaml --tags pre-upgrade \
+          -e @inventory/<cluster>/config.yaml
+
+      Then re-run install.
+  when:
+    - embedding_model_changed | bool
+    - "'install' in ansible_run_tags"
+    - "'pre-upgrade' not in ansible_run_tags"
+    - install_migration_cm_check is defined
+    - install_migration_cm_check.resources | default([]) | length == 0
+  tags: always
+
+# - name: Auto-create migration ConfigMap when install skips pre-upgrade
+#   kubernetes.core.k8s:
+#     state: present
+#     definition:
+#       apiVersion: v1
+#       kind: ConfigMap
+#       metadata:
+#         name: embedding-model-migration-status
+#         namespace: "{{ pipelines[0].namespace | default('chatqa') }}"
+#         annotations:
+#           description: "Auto-created during install — pre-upgrade was not run"
+#       data:
+#         decision: "use_new"
+#         migration_required: "true"
+#         old_model: "{{ source_embedding_model }}"
+#         new_model: "{{ target_embedding_model }}"
+#         created_at: "{{ ansible_date_time.iso8601 }}"
+#   when:
+#     - embedding_model_changed | bool
+#     - "'install' in ansible_run_tags"
+#     - "'pre-upgrade' not in ansible_run_tags"
+#     - install_migration_cm_check is defined
+#     - install_migration_cm_check.resources | default([]) | length == 0
+#   tags: always
+#
+# - name: Set migration decision fact when auto-created
+#   ansible.builtin.set_fact:
+#     embedding_model_user_decision: "use_new"
+#     embedding_model_requires_reembedding: true
+#   when:
+#     - embedding_model_changed | bool
+#     - "'install' in ansible_run_tags"
+#     - "'pre-upgrade' not in ansible_run_tags"
+#     - install_migration_cm_check is defined
+#     - install_migration_cm_check.resources | default([]) | length == 0
+#   tags: always

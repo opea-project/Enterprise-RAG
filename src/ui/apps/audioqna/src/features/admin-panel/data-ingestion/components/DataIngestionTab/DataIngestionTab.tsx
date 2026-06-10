@@ -5,6 +5,7 @@ import "./DataIngestionTab.scss";
 
 import { InfoIcon } from "@intel-enterprise-rag-ui/icons";
 
+import EmbeddingModelMigrationBanner from "@/features/admin-panel/data-ingestion/components/EmbeddingModelMigrationBanner/EmbeddingModelMigrationBanner";
 import BucketSynchronizationDialog from "@/features/admin-panel/data-ingestion/components/BucketSynchronizationDialog/BucketSynchronizationDialog";
 import DataIngestionSettingsDialog from "@/features/admin-panel/data-ingestion/components/DataIngestionSettingsDialog/DataIngestionSettingsDialog";
 import FilesDataTable from "@/features/admin-panel/data-ingestion/components/FilesDataTable/FilesDataTable";
@@ -32,6 +33,7 @@ const DataIngestionTab = () => {
         </p>
       </div>
       <S3CertificateAlertBanner />
+      <EmbeddingModelMigrationBanner />
       <header>
         <h2>Stored Data</h2>
         <div className="data-ingestion-tab__actions">

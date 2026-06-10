@@ -56,6 +56,7 @@ TEXT_EXTRACTOR_ENDPOINT  = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
 TEXT_COMPRESSION_ENDPOINT  = os.environ.get('TEXT_COMPRESSION_ENDPOINT')
 TEXT_SPLITTER_ENDPOINT  = os.environ.get('TEXT_SPLITTER_ENDPOINT')
 EMBEDDING_ENDPOINT = os.environ.get('EMBEDDING_ENDPOINT')
+EMBEDDING_MODEL_NAME = os.environ.get('EMBEDDING_MODEL_NAME', 'unknown')
 LATE_CHUNKING_ENDPOINT = os.environ.get('LATE_CHUNKING_ENDPOINT')
 INGESTION_ENDPOINT = os.environ.get('INGESTION_ENDPOINT')
 EMBEDDING_TIMEOUT = int(os.getenv('EMBEDDING_TIMEOUT_SECONDS', '120'))
@@ -1152,9 +1153,10 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     # Update the processing time
     file_db.status = 'ingested'
     file_db.job_message = 'Data ingestion completed.'
+    file_db.embedding_model = EMBEDDING_MODEL_NAME
     file_db.task_id = ""
     self.safe_commit()
-    logger.debug(f"[{file_db.id}] File stored successfully.")
+    logger.debug(f"[{file_db.id}] File stored successfully with embedding model: {EMBEDDING_MODEL_NAME}")
     return True
 
 
@@ -1546,9 +1548,10 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     # Update the processing time
     link_db.status = 'ingested'
     link_db.job_message = 'Data ingestion completed.'
+    link_db.embedding_model = EMBEDDING_MODEL_NAME
     link_db.task_id = ""
     self.safe_commit()
-    logger.debug(f"[{link_db.id}] File stored successfully.")
+    logger.debug(f"[{link_db.id}] Link stored successfully with embedding model: {EMBEDDING_MODEL_NAME}")
     return True
 
 

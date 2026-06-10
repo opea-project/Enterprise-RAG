@@ -38,6 +38,9 @@ extraUiConfigVars:
   asrModel: "{{ audio.asr_model | default('openai/whisper-small') }}"
   useBearerTokenAuth: "{{ (edp.storageType | default('') == 'seaweedfs') and (edp.rbac.enabled | default(false)) }}"
   nerEnabled: "{{ ner.enabled | default(false) }}"
+  embeddingModelMigrationRequired: "{{ embedding_migration_required | default('false') }}"
+  embeddingModelOldModel: "{{ embedding_migration_old_model | default('') }}"
+  embeddingModelNewModel: "{{ embedding_migration_new_model | default('') }}"
 
 service:
   type: ClusterIP

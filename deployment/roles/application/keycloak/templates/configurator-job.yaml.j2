@@ -105,6 +105,8 @@ spec:
                   key: admin-password
             - name: MINIO_DOMAIN
               value: "{{ minio_domain }}"
+            - name: UI_DOMAIN
+              value: "{{ ui_domain }}"
 {% if minio_path_prefix is defined %}
             - name: MINIO_PATH_PREFIX
               value: "{{ minio_path_prefix }}"

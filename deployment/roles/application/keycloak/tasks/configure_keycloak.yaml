@@ -20,6 +20,7 @@
     keycloak_path_prefix: "{{ keycloak.pathPrefix | default('') }}"
     minio_domain: "{{ edp.minio.domainName }}"
     minio_path_prefix: "{{ edp.seaweedfsPathPrefix | default('') }}"
+    ui_domain: "{{ ui.domainName }}"
     credentials_secret_name: "erag-credentials"
     configurator_job_name: "keycloak-configurator-{{ ansible_date_time.epoch }}"
     # OIDC configuration (optional)

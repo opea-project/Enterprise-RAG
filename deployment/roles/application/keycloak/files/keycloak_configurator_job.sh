@@ -16,6 +16,7 @@ ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://keycloak-http:80}"
 MINIO_DOMAIN="${MINIO_DOMAIN:-minio.erag.com}"
 MINIO_PATH_PREFIX="${MINIO_PATH_PREFIX:-}"
+UI_DOMAIN="${UI_DOMAIN:-erag.com}"
 CREDENTIALS_SECRET_NAME="${CREDENTIALS_SECRET_NAME:-erag-credentials}"
 CREDENTIALS_SECRET_NAMESPACE="${CREDENTIALS_SECRET_NAMESPACE:-auth}"
 
@@ -448,8 +449,9 @@ create_client() {
   local authentication=${4:-false}
   local public_client=${5:-true}
   local root_url=${6:-}
-  local redirect_uris=${7:-*}
+  local redirect_uris=${7:-}
   local direct_access=${8:-true}
+  local web_origins=${9:-}
 
   local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients"
 
@@ -464,7 +466,7 @@ create_client() {
     "rootUrl": "'$root_url'",
     "baseUrl": "'$root_url'",
     "redirectUris": ["'$redirect_uris'"],
-    "webOrigins": ["*"],
+    "webOrigins": ["'$web_origins'"],
     "protocol": "openid-connect",
     "frontchannelLogout": false
   }'
@@ -980,6 +982,7 @@ create_federation_mapper() {
 
 log_info "Starting Keycloak configuration"
 log_info "Keycloak URL: $KEYCLOAK_URL"
+log_info "UI domain: $UI_DOMAIN"
 log_info "MinIO domain: $MINIO_DOMAIN"
 
 # Wait for Keycloak to be ready
@@ -1008,8 +1011,8 @@ prevent_bruteforce "$KEYCLOAK_REALM"
 
 # Create clients
 log_info "Creating clients..."
-create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "false" "false" "true"
-create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "true" "true" "false"
+create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "false" "false" "true" "" "https://${UI_DOMAIN}/*" "true" "https://${UI_DOMAIN}"
+create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "true" "true" "false" "" "https://${UI_DOMAIN}/*" "true" "https://${UI_DOMAIN}"
 
 # Create client roles
 log_info "Creating roles..."
@@ -1065,7 +1068,7 @@ else
   minio_base_url="https://$MINIO_DOMAIN"
   minio_redirect_uri="https://$MINIO_DOMAIN/oauth_callback"
 fi
-create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "false" "true" "false" "$minio_base_url" "$minio_redirect_uri" "false"
+create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "false" "true" "false" "$minio_base_url" "$minio_redirect_uri" "false" "https://${MINIO_DOMAIN}"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-admin-group"

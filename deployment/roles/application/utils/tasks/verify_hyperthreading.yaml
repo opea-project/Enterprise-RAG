@@ -42,6 +42,28 @@
   - topology-preview
   - update-configuration
 
+- name: Fail if no nodes detected in topology
+  fail:
+    msg: |
+      ERROR: Node topology detection returned no nodes.
+
+      This likely means:
+        1. namespace_node_selector in config.yaml specifies a non-existent node hostname
+           Current namespace_node_selector: {{ namespace_node_selector | default({}) }}
+           Available K8s nodes: Run 'kubectl get nodes' to see node names
+        2. OR topology discovery DaemonSet pods failed to schedule
+
+      Please either:
+        1. Fix the hostname in namespace_node_selector to match an actual K8s node name, or
+        2. Set namespace_node_selector: {} to allow pods on all nodes
+  when:
+  - balloons.enabled | default(false) | bool
+  - cpu_topology_per_node | default({}) | length == 0
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
 - name: Fail if balloons are enabled but no node has hyperthreading enabled
   fail:
     msg: |
@@ -59,6 +81,7 @@
         2. Disable balloons in your config.yaml by setting: balloons.enabled: false
   when:
   - balloons.enabled | default(false) | bool
+  - cpu_topology_per_node | default({}) | length > 0
   - nodes_with_hyperthreading | length == 0
   tags:
   - install

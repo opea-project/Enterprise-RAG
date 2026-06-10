@@ -5,6 +5,18 @@
     - install
     - update-configuration
 
+- name: Compute allowed CPUs string for NUMA restriction
+  set_fact:
+    allowed_cpus_string: >-
+      {{
+        (balloons.allowed_numa_nodes | default([]) | map('string') | map('extract', item.value.cpus_per_numa | default({})) | select('string') | join(','))
+        if (balloons.allowed_numa_nodes | default([]) | length > 0 and item.value.cpus_per_numa is defined)
+        else ''
+      }}
+  tags:
+    - install
+    - update-configuration
+
 - name: Generate Balloons policy
   ansible.builtin.template:
     src: "values.yaml.j2"
@@ -23,6 +35,7 @@
     embedding_cpus: "{{ EMBEDDING_CPUS }}"
     maxReplicasGaudi_VLLM: "{{ maxReplicasGaudi_VLLM }}"
     cpus_per_numa_node: "{{ item.value.cpus_per_numa_node }}"
+    allowed_cpus: "{{ allowed_cpus_string }}"
   tags:
     - install
     - update-configuration

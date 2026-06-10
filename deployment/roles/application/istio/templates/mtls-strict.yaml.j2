@@ -34,6 +34,16 @@ spec:
   portLevelMtls:
     16379:
       mode: DISABLE
+{% elif mcp is defined and mcp.enabled and item == (mcp.namespace | default("mcp-gateway")) %}
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  portLevelMtls:
+    # SSE connections from APISIX are long-lived HTTP/1.1 streams.
+    # PERMISSIVE allows ztunnel to pass them through without mTLS termination
+    # on the inbound side; APISIX → mcp-gateway mTLS is handled by ambient.
+    8000:
+      mode: PERMISSIVE
 {% elif item == gateway.namespace | default("erag-gateway") %}
   selector:
     matchLabels:

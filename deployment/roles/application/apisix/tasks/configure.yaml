@@ -56,6 +56,46 @@
   tags:
     - install
 
+- name: Generate MCP gateway endpoint when mcp is enabled
+  ansible.builtin.set_fact:
+    mcp_endpoint: >-
+      {{
+        [{
+          'name': 'mcp-gateway',
+          'enabled': true,
+          'namespace': mcp.namespace | default('mcp-gateway'),
+          'path': '/api/v1/mcp/*',
+          'backend_service': 'mcp-gateway-svc',
+          'service_port': 8000,
+          'rate_limit_count': 60,
+          'service_regex': [
+            '^/api/v1/mcp/(.*)$',
+            '/$1'
+          ],
+          'skip_auth': true
+        }]
+      }}
+  when:
+    - apisix.enabled
+    - mcp is defined
+    - mcp.enabled | default(false)
+  tags:
+    - install
+
+- name: Merge MCP endpoint with default endpoints
+  ansible.builtin.set_fact:
+    apisix_routes_raw_config: >-
+      {{
+        apisix_routes_raw_config | combine({
+          'endpoints': apisix_routes_raw_config.endpoints + (mcp_endpoint | default([]))
+        }, recursive=True)
+      }}
+  when:
+    - apisix.enabled
+    - mcp_endpoint is defined
+  tags:
+    - install
+
 - name: Merge dynamic pipeline endpoints with default endpoints
   ansible.builtin.set_fact:
     apisix_routes_raw_config: >-

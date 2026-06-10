@@ -34,4 +34,5 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/fgp-usvc
+        - cluster.local/ns/mcp/sa/fgp-usvc
         - cluster.local/ns/fingerprint/sa/fingerprint

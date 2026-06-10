@@ -28,6 +28,9 @@ extraNginxVars:
   audioqnaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   # Status endpoint
   statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  # MCP Gateway endpoint (enabled via mcpEnabled flag)
+  mcpEnabled: false
+  mcpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
 
 extraUiConfigVars:
   keycloakDomainName: "auth.erag.com"

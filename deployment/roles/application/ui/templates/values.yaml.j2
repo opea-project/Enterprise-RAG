@@ -33,7 +33,7 @@ extraUiConfigVars:
   s3PathPrefix: "{{ edp.s3PathPrefix }}"
 {% endif %}
   chatDisclaimerText: "{{ ui.extraUiConfigVars.chatDisclaimerText }}"
-  chatMaintenanceMode: "{{ upload_pipelines | default(false) | string | lower }}"
+  chatMaintenanceMode: "{{ chat_maintenance_mode | default(upload_pipelines | default(false)) | string | lower }}"
   audioEnabled: "{{ audio.enabled | default(false) }}"
   asrModel: "{{ audio.asr_model | default('openai/whisper-small') }}"
   useBearerTokenAuth: "{{ (edp.storageType | default('') == 'seaweedfs') and (edp.rbac.enabled | default(false)) }}"
@@ -60,6 +60,9 @@ image:
     tag: {{ tag }}
     repository: {{ registry }}
 {% endif %}
+extraNginxVars:
+  mcpEnabled: {{ (mcp is defined and mcp.enabled) | lower }}
+
 ingress:
   enabled: false
 

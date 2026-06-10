@@ -1,0 +1,131 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# resources-reference-cpu.yaml - Resource configuration for MCP retrieval-only pipeline.
+# Only embedding, retriever, and reranker services. No LLM.
+
+services:
+  vllm:
+    replicas: "0"
+  embedding-usvc:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+  fingerprint-usvc:
+    replicas: 1
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 0.25
+      limits:
+        memory: 1Gi
+        cpu: 0.5
+  reranking-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        cpu: 1
+        memory: 500Mi
+  retriever-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 250Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+  vllm_embedding:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      targetValue: 50
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 90
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          selectPolicy: Max
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 90
+  torchserve_reranking:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+    hpa:
+      minReplicas: 2
+      maxReplicas: 3
+      targetValue: 1000m
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 120
+        scaleUp:
+          selectPolicy: Max
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 15
+          - type: Pods
+            value: 1
+            periodSeconds: 15
+  vllm_reranking:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+    hpa:
+      minReplicas: 2
+      maxReplicas: 3
+      targetValue: 50
+      # average request queue waiting time in seconds
+      # metric used: 'avg(rate(vllm:request_queue_time_seconds_sum{service="vllm-reranking-svc"}[2m])) by (<<.GroupBy>>)'
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 120
+        scaleUp:
+          selectPolicy: Max
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 90

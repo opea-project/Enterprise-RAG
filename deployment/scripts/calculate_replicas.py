@@ -72,7 +72,7 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
         memory_usage_percent = (verified_replicas_count * inference_memory_sum / node_memory_size) * 100
         return verified_replicas_count, memory_usage_percent
 
-def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent, max_replicas_per_node, vllm_memory_gib=42):
+def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent, max_replicas_per_node, vllm_memory_gib=42, allowed_numa_nodes=None):
     """
     Calculate optimal replica distribution for VLLM, reranking, and embedding services.
 
@@ -87,16 +87,17 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
         vector_databases_enabled: Boolean flag indicating if vector databases are enabled
         memory_overcommit_buffer_percent: Memory buffer percentage for pod memory overcommit/burst
         max_replicas_per_node: Maximum replicas per node to avoid exceeding pod limits
+        allowed_numa_nodes: List of NUMA node IDs to restrict to (empty/None = use all)
 
     Returns:
         Dict with node names as keys and calculations with metadata as values.
 
     Algorithm:
-        - When all services fit in NUMA node (n > 0) and throughput_mode=True: tries to maximize 
+        - When all services fit in NUMA node (n > 0) and throughput_mode=True: tries to maximize
           replicas while keeping VLLM >= 75% of original size
-        - When all services fit in NUMA node (n > 0) and throughput_mode=False: uses standard 
+        - When all services fit in NUMA node (n > 0) and throughput_mode=False: uses standard
           calculation (n * numa_nodes_count) without optimization
-        - Throughput mode (n == 0, throughput_mode=True): maximizes replicas with VLLM >= 50% 
+        - Throughput mode (n == 0, throughput_mode=True): maximizes replicas with VLLM >= 50%
           of original size
         - Fallback mode (n == 0 and throughput_mode=False, or cannot fit replicas): allocates
           one replica set per 2 NUMA nodes (replicas = numa_nodes_count // 2), with VLLM taking
@@ -113,6 +114,10 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
     vllm_50_percent = vllm_size // 2  # Minimum for throughput mode when n == 0
     vllm_25_percent = vllm_size // 4  # Minimum for fallback mode
 
+    # Normalize allowed_numa_nodes
+    if allowed_numa_nodes:
+        allowed_numa_nodes = [str(n) for n in allowed_numa_nodes]
+
     results = {}
     total_replicas = 0
     gaudi_nodes_count = 0
@@ -120,7 +125,23 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
     for node_name, node_data in nodes_dict.items():
         numa_nodes_count = node_data['numa_nodes']
         numa_node_size = node_data['cpus_per_numa_node']
+        total_numa_nodes = node_data['numa_nodes']
+
+        # Restrict to allowed NUMA nodes if specified
+        if allowed_numa_nodes:
+            numa_nodes_count = len(allowed_numa_nodes)
+            cpus_per_numa = node_data.get('cpus_per_numa', {})
+            if cpus_per_numa:
+                allowed_cpu_counts = [len(cpus_per_numa.get(n, '').split(',')) for n in allowed_numa_nodes if cpus_per_numa.get(n)]
+                if allowed_cpu_counts:
+                    numa_node_size = min(allowed_cpu_counts)
+
+        # Adjust memory to reflect only allowed NUMA nodes
+        # Assumption: memory is uniformly distributed across NUMA nodes (typical for modern servers)
+        # Note: This is an approximation; actual per-NUMA memory may vary on some hardware
         node_memory_size = node_data['total_memory_GiB']
+        if allowed_numa_nodes and total_numa_nodes > 0:
+            node_memory_size = (node_data['total_memory_GiB'] / total_numa_nodes) * numa_nodes_count
 
         # Initialize VLLM size for this node (may be adjusted based on calculation mode)
         current_vllm_size = vllm_size
@@ -262,11 +283,13 @@ if __name__ == "__main__":
     parser.add_argument('--vector-databases-enabled', type=lambda x: x.lower() == 'true', required=True, help='Vector databases enabled flag')
     parser.add_argument('--memory-overcommit-buffer-percent', type=float, default=0.1, help='Memory buffer percentage for pod memory overcommit/burst (default: 0.1)')
     parser.add_argument('--max-replicas-per-node', type=int, default=10, help='Maximum replicas per node to avoid exceeding pod limits (default: 10)')
+    parser.add_argument('--allowed-numa-nodes', type=str, default='[]', help='JSON list of NUMA node IDs to restrict to (default: [] = use all)')
     parser.add_argument('--vllm-memory-gib', type=int, default=42, help='Memory reserved per VLLM replica in GiB, derived from model config (default: 42 = 32 base + 10 KV cache)')
 
     args = parser.parse_args()
 
     nodes_dict = json.loads(args.nodes_dict)
+    allowed_numa_nodes = json.loads(args.allowed_numa_nodes)
 
     results = calculate_replicas(
         nodes_dict,
@@ -279,6 +302,7 @@ if __name__ == "__main__":
         args.vector_databases_enabled,
         args.memory_overcommit_buffer_percent,
         args.max_replicas_per_node,
-        args.vllm_memory_gib
+        args.vllm_memory_gib,
+        allowed_numa_nodes
     )
     sys.stdout.write(json.dumps(results))

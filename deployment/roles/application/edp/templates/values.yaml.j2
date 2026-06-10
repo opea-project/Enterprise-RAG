@@ -3,6 +3,8 @@ Copyright (C) 2024-2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
+pipelineNamespace: "{{ chatqa_namespace | default('chatqa') }}"
+
 proxy:
   httpProxy: {{ httpProxy }}
   httpsProxy: {{ httpsProxy }}
@@ -153,10 +155,10 @@ hierarchicalDataprep:
   config:
     max_new_tokens: {{ edp.hierarchical_indices.maxNewTokens }}
 {% if "cpu" in pipelines[0].samplePath %}
-    vllm_server_endpoint: "http://vllm-service-m.chatqa.svc:8000"
+    vllm_server_endpoint: "http://vllm-service-m.{{ chatqa_namespace | default('chatqa') }}.svc:8000"
     summary_model_name: {{ llm_model }}
 {% elif "hpu" in pipelines[0].samplePath %}
-    vllm_server_endpoint: "http://vllm-gaudi-svc.chatqa.svc:80"
+    vllm_server_endpoint: "http://vllm-gaudi-svc.{{ chatqa_namespace | default('chatqa') }}.svc:80"
     summary_model_name: {{ llm_model_gaudi }}
 {% endif %}
 {% endif %}
@@ -169,7 +171,7 @@ lateChunking:
   config:
     chunk_size: "{{ edp.late_chunking.chunk_size | default('512') }}"
     chunk_overlap: "{{ edp.late_chunking.chunk_overlap | default('0') }}"
-    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+    embedding_service_endpoint: "http://embedding-svc.{{ chatqa_namespace | default('chatqa') }}.svc:6000/v1/embeddings"
     model_name: "{{ edp.late_chunking.model_name | default('jinaai/jina-embeddings-v2-base-en') }}"
 {% elif not edp.hierarchical_indices.enabled %}
 textExtractor:
@@ -185,8 +187,9 @@ textCompression:
 textSplitter:
   tag: {{ tag }}
   repository: {{ registry }}
-{% if edp.semantic_chunking.enabled is true %}
   config:
+    embedding_service_endpoint: "http://embedding-svc.{{ chatqa_namespace | default('chatqa') }}.svc:6000/v1/embeddings"
+{% if edp.semantic_chunking.enabled is true %}
     use_semantic_chunking: "True"
 {% endif %}
 {% endif %}
@@ -208,7 +211,7 @@ ingestion:
 {% endif %}
 embedding:
   enabled: false
-  remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+  remoteEmbeddingUri: "http://embedding-svc.{{ chatqa_namespace | default('chatqa') }}.svc:6000/v1/embeddings"
   repository: {{ registry }}
 dpguard:
   enabled: {{ edp.dpGuard.enabled }}

@@ -309,6 +309,14 @@
         - pre-upgrade
         - update-configuration
 
+    - name: MCP Gateway role
+      ansible.builtin.include_role:
+        name: mcp_gateway
+      when: mcp is defined and mcp.enabled
+      tags:
+        - install
+        - uninstall
+
     - name: Telemetry role
       ansible.builtin.include_role:
         name: telemetry

@@ -8,6 +8,7 @@ balloons:
   wait_timeout: 300
   throughput_mode: true
   max_replicas_per_node: 10
+  allowed_numa_nodes: []
   helm:
     repo_url: "https://containers.github.io/nri-plugins"
     repo_name: "nri-plugins"

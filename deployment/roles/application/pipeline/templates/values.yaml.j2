@@ -70,7 +70,7 @@ balloons:
 {% if optimal_replicas is defined and (optimal_replicas | length) > 0 %}
 vllmNodes:
 {% for node_name, node_info in optimal_replicas.items() %}
-{% if node_info is mapping and node_info.replicas is defined and node_info.adjusted_vllm_size is defined and (node_info.amx_supported == true or node_info.gaudi == true) %}
+{% if node_info is mapping and node_info.replicas is defined and node_info.adjusted_vllm_size is defined and node_info.adjusted_vllm_size > 0 and (node_info.amx_supported == true or node_info.gaudi == true) %}
   - name: {{ node_name }}
     nodeSelector:
       kubernetes.io/hostname: {{ node_name }}

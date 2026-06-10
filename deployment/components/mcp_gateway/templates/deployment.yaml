@@ -1,0 +1,114 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: mcp-gateway
+    app.kubernetes.io/name: mcp-gateway
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+        app.kubernetes.io/name: mcp-gateway
+    spec:
+      serviceAccountName: mcp-gateway
+      automountServiceAccountToken: false
+      {{- if .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml .Values.hostAliases | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp-gateway
+          image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: EDP_ENDPOINT
+              value: {{ .Values.config.edpEndpoint | quote }}
+            - name: KEYCLOAK_TOKEN_ENDPOINT
+              value: {{ .Values.config.keycloakTokenEndpoint | quote }}
+            - name: MCP_SERVER_PORT
+              value: {{ .Values.service.port | quote }}
+            - name: MCP_ROOT_PATH
+              value: {{ .Values.config.rootPath | default "/api/v1/mcp" | quote }}
+            - name: S3_TLS_VERIFY
+              value: {{ .Values.config.s3TlsVerify | default "true" | quote }}
+            {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy | quote }}
+            {{- end }}
+            {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy | quote }}
+            {{- end }}
+            {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ .Values.proxy.noProxy | quote }}
+            {{- end }}
+            {{- if .Values.tls.secretName }}
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/erag-ca.crt
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/ssl/certs/erag-ca.crt
+            {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.tls.secretName }}
+            - name: tls-ca
+              mountPath: /etc/ssl/certs/erag-ca.crt
+              subPath: tls.crt
+              readOnly: true
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.tls.secretName }}
+        - name: tls-ca
+          secret:
+            secretName: {{ .Values.tls.secretName }}
+        {{- end }}

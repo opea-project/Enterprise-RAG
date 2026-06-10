@@ -162,7 +162,12 @@
       KEYCLOAK_ERAG_USER_PASSWORD="{{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_USER_PASSWORD'] | b64decode }}"
       KEYCLOAK_ERAG_MAINTAINER_USERNAME={{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_MAINTAINER_USERNAME'] | b64decode }}
       KEYCLOAK_ERAG_MAINTAINER_PASSWORD="{{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_MAINTAINER_PASSWORD'] | b64decode }}"
+      {% if mcp is defined and mcp.enabled | default(false) %}
+      MCP_TEST_CLIENT_ID=mcp-test-client
+      MCP_TEST_CLIENT_SECRET="{{ erag_credentials_secret.resources[0].data['MCP_TEST_CLIENT_SECRET'] | b64decode }}"
+      {% endif %}
   no_log: "{{ secure_logs }}"
   when: erag_credentials_secret.resources | length > 0
   tags:
     - install
+

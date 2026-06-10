@@ -113,6 +113,8 @@ spec:
               value: "{{ credentials_secret_name }}"
             - name: CREDENTIALS_SECRET_NAMESPACE
               value: "{{ keycloak_namespace }}"
+            - name: MCP_ENABLED
+              value: "{{ mcp.enabled | default(false) | string | lower }}"
 {% if keycloak_oidc_endpoint is defined and keycloak_oidc_endpoint %}
             - name: OIDC_ENDPOINT
               value: "{{ keycloak_oidc_endpoint }}"

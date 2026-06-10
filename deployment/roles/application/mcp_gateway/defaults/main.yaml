@@ -1,0 +1,11 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+mcp:
+  enabled: false
+  namespace: mcp-gateway
+  helm:
+    release_name: mcp-gateway
+    chart_directory: "{{ playbook_dir }}/../components/mcp_gateway"
+    default_values_file: "{{ playbook_dir }}/../components/mcp_gateway/values.yaml"

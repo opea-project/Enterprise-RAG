@@ -15,8 +15,8 @@ data:
   LATE_CHUNKING_ENDPOINT: {{ if .Values.lateChunking.enabled }}{{ print "http://" .Values.lateChunking.nameOverride ":8003/v1/late_chunking" | quote }}{{ else }}""{{ end }}
   EMBEDDING_ENDPOINT: {{ if .Values.embedding.enabled }}{{ print "http://" .Values.embedding.nameOverride ":6000/v1/embeddings" | quote }}{{ else }}{{ .Values.embedding.remoteEmbeddingUri | quote }}{{ end }}
   INGESTION_ENDPOINT: {{ print "http://" .Values.ingestion.nameOverride ":6120/v1/ingestion" | quote }}
-  RETRIEVER_ENDPOINT: http://retriever-svc.chatqa.svc:6620/v1/retrieval
-  RERANKER_ENDPOINT: http://reranking-svc.chatqa.svc:8000/v1/reranking
+  RETRIEVER_ENDPOINT: http://retriever-svc.{{ .Values.pipelineNamespace | default "chatqa" }}.svc:6620/v1/retrieval
+  RERANKER_ENDPOINT: http://reranking-svc.{{ .Values.pipelineNamespace | default "chatqa" }}.svc:8000/v1/reranking
   BUCKET_NAME_REGEX_FILTER: {{ .Values.bucketNameRegexFilter | quote }}
   SEAWEEDFS_IGNORE_BUCKETS: "{{ range $i, $b := .Values.seaweedfs.ignoreBuckets }}{{ if $i }},{{ end }}{{ $b.name }}{{ end }}"
   DPGUARD_ENDPOINT: {{ if .Values.dpguard.enabled }}{{ print "http://" .Values.dpguard.nameOverride ":8070/v1/llmguarddataprep" | quote }}{{ else }}""{{ end }}
@@ -26,7 +26,7 @@ data:
   USE_BEARER_TOKEN_AUTH: {{ .Values.useBearerTokenAuth | default "false" | quote }}
   {{- /* Lookup EMBEDDING_TIMEOUT_SECONDS from embedding-usvc-config in chatqa namespace */ -}}
   {{- $embeddingTimeout := .Values.embedding.config.timeout | default "120" }}
-  {{- $embeddingConfigMap := lookup "v1" "ConfigMap" "chatqa" "embedding-usvc-config" }}
+  {{- $embeddingConfigMap := lookup "v1" "ConfigMap" (.Values.pipelineNamespace | default "chatqa") "embedding-usvc-config" }}
   {{- if $embeddingConfigMap }}
     {{- if hasKey $embeddingConfigMap.data "EMBEDDING_TIMEOUT_SECONDS" }}
       {{- $embeddingTimeout = index $embeddingConfigMap.data "EMBEDDING_TIMEOUT_SECONDS" }}
@@ -41,7 +41,7 @@ data:
   {{- $maxNewWorkers := 8 }}
   {{- $celeryBatchSize := 128 }}
   {{- /* Lookup deployments in chatqa namespace */ -}}
-  {{- $deployments := lookup "apps/v1" "Deployment" "chatqa" "" }}
+  {{- $deployments := lookup "apps/v1" "Deployment" (.Values.pipelineNamespace | default "chatqa") "" }}
   {{- if $deployments }}
     {{- range $deployments.items }}
       {{- /* Check for vLLM or TorchServe embedding service */ -}}

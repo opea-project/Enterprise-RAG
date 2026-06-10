@@ -10,13 +10,38 @@
   - topology-preview
   - update-configuration
 
+- name: Set supported pipeline types
+  set_fact:
+    supported_pipeline_types: ['chatqa', 'docsum', 'mcp']
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Filter topology to nodes matching namespace_node_selector
+  set_fact:
+    cpu_topology_per_node: >-
+      {{
+        cpu_topology_per_node
+        | dict2items
+        | selectattr('key', 'equalto', namespace_node_selector['kubernetes.io/hostname'])
+        | items2dict
+      }}
+  when:
+    - namespace_node_selector | default({}) | length > 0
+    - "'kubernetes.io/hostname' in namespace_node_selector"
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
 - name: Determine effective resource path based on upload mode
   set_fact:
     effective_resources_path: >-
       {{
-        (upload_pipelines_config | selectattr('type', 'in', ['chatqa', 'docsum']) | map(attribute='resourcesPath') | first)
+        (upload_pipelines_config | selectattr('type', 'in', supported_pipeline_types) | map(attribute='resourcesPath') | first)
         if (upload_pipelines | default(false) | bool)
-        else (pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | map(attribute='resourcesPath') | first)
+        else (pipelines | selectattr('type', 'in', supported_pipeline_types) | map(attribute='resourcesPath') | first)
       }}
   tags:
   - install
@@ -34,20 +59,20 @@
           At least one pipeline must be configured.
       when: pipelines | default([]) | length == 0
 
-    - name: Ensure at least one chatqa or docsum pipeline exists
+    - name: Ensure at least one supported pipeline exists
       fail:
         msg: |
-          ERROR: No pipeline of type 'chatqa' or 'docsum' found in config.yaml.
+          ERROR: No pipeline of type {{ supported_pipeline_types | join(', ') }} found in config.yaml.
 
-          At least one pipeline with type 'chatqa' or 'docsum' must be defined.
+          At least one pipeline with a supported type must be defined.
           Configured pipeline types: {{ pipelines | map(attribute='type') | list | join(', ') }}
-      when: pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | length == 0
+      when: pipelines | selectattr('type', 'in', supported_pipeline_types) | length == 0
 
     - name: Check existence of samplePath files
       stat:
         path: "{{ pipelines_dir }}/{{ item.samplePath }}"
       register: sample_path_checks
-      loop: "{{ pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) }}"
+      loop: "{{ pipelines | selectattr('type', 'in', supported_pipeline_types) }}"
       loop_control:
         label: "{{ item.samplePath }}"
 
@@ -69,7 +94,7 @@
       stat:
         path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
       register: resources_path_checks
-      loop: "{{ pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) }}"
+      loop: "{{ pipelines | selectattr('type', 'in', supported_pipeline_types) }}"
       loop_control:
         label: "{{ item.resourcesPath }}"
 
@@ -117,7 +142,7 @@
           (
             lookup('file', pipelines_dir ~ '/' ~ (
               pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
+              | selectattr('type', 'in', supported_pipeline_types)
               | map(attribute='samplePath')
               | first
             ), errors='ignore')
@@ -163,7 +188,7 @@
           (
             lookup('file', pipelines_dir ~ '/' ~ (
               pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
+              | selectattr('type', 'in', supported_pipeline_types)
               | map(attribute='samplePath')
               | first
             ), errors='ignore')
@@ -196,6 +221,39 @@
         ).get('services', {}).get(embedding_service_type, {}).get('resources', {}).get('requests', {}).get('cpu', 0)
         | int
       }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Fail if allowed_numa_nodes is set on multi-node cluster
+  fail:
+    msg: |
+      ERROR: 'balloons.allowed_numa_nodes' is only supported on single-node deployments.
+
+      Detected {{ cpu_topology_per_node | length }} nodes, but allowed_numa_nodes is set to {{ balloons.allowed_numa_nodes }}.
+      Remove 'allowed_numa_nodes' or reduce to a single-node cluster.
+  when:
+    - balloons.allowed_numa_nodes | default([]) | length > 0
+    - cpu_topology_per_node | length > 1
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Validate allowed_numa_nodes exist on the machine
+  fail:
+    msg: |
+      ERROR: 'balloons.allowed_numa_nodes' contains NUMA node IDs not present on the machine.
+
+      Requested NUMA nodes: {{ balloons.allowed_numa_nodes }}
+      Available NUMA nodes on {{ (cpu_topology_per_node | dict2items | first).key }}: {{ (cpu_topology_per_node | dict2items | first).value.cpus_per_numa | default({}) | list | map('int') | sort | list }}
+
+      Please set 'allowed_numa_nodes' to valid NUMA node IDs.
+  when:
+    - balloons.allowed_numa_nodes | default([]) | length > 0
+    - cpu_topology_per_node | length == 1
+    - (balloons.allowed_numa_nodes | map('string') | list) | difference((cpu_topology_per_node | dict2items | first).value.cpus_per_numa | default({}) | list) | length > 0
   tags:
   - install
   - topology-preview
@@ -242,6 +300,7 @@
       --vector-databases-enabled {{ vector_databases.enabled | default(false) }} \
       --memory-overcommit-buffer-percent {{ balloons.memory_overcommit_buffer | default(0.1) }} \
       --max-replicas-per-node {{ balloons.max_replicas_per_node | default(10) }} \
+      --allowed-numa-nodes '{{ balloons.allowed_numa_nodes | default([]) | to_json }}' \
       --vllm-memory-gib {{ VLLM_MEMORY_GIB }}
   register: replicas_calculation_result
   tags:

@@ -8,6 +8,10 @@ metadata:
   name: node.{{ nodeName }}
   namespace: {{ balloons.namespace | default('kube-system') }}
 spec:
+{% if allowed_cpus is defined and allowed_cpus | length > 0 %}
+  availableResources:
+    cpus: "{{ allowed_cpus }}"
+{% endif %}
   agent:
     nodeResourceTopology: true
   allocatorTopologyBalancing: true

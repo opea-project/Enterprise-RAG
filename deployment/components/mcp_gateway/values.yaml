@@ -1,0 +1,39 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+image:
+  repository: docker.io/opea
+  name: erag-mcp-gateway
+  tag: "latest"
+  pullPolicy: Always
+
+replicaCount: 1
+
+service:
+  port: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+proxy:
+  httpProxy: ""
+  httpsProxy: ""
+  noProxy: ""
+
+tls:
+  secretName: ""         # K8s secret containing tls.crt (mounted as CA for outbound HTTPS)
+
+hostAliases: []          # e.g. [{ip: "10.233.19.137", hostnames: ["erag.com", "s3.erag.com"]}]
+
+config:
+  # Overridden by Ansible values.yaml.j2 at deploy time with cluster-specific DNS
+  edpEndpoint: ""
+  keycloakTokenEndpoint: ""
+  rootPath: "/api/v1/mcp"
+  s3TlsVerify: "true"   # Set to "false" to disable TLS verification for S3 storage
+  s3InternalEndpoint: "" # Cluster-internal S3 endpoint (e.g. http://seaweedfs-s3.seaweedfs.svc:8333)

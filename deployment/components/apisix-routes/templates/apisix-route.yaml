@@ -41,8 +41,9 @@ spec:
         count: {{ .rate_limit_count }}
         time_window: 60
         key_type: var
-        key: http_authorization
+        key: {{ if .skip_auth }}http_x_mcp_client_id{{ else }}http_authorization{{ end }}
         rejected_code: 429
+    {{- if not .skip_auth }}
     - name: authz-keycloak
       enable: true
       config:
@@ -55,6 +56,7 @@ spec:
           {{- range .permissions }}
           - {{ . }}
           {{- end }}
+    {{- end }}
 ---
 {{- end }}
 {{- end }}

@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: security.istio.io/v1
@@ -17,3 +17,4 @@ spec:
         notPrincipals:
         - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/erag-gateway/sa/erag-gateway-istio
+        - cluster.local/ns/mcp-gateway/sa/mcp-gateway

@@ -1,0 +1,27 @@
+{#
+Copyright (C) 2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+image:
+  repository: "{{ registry }}"
+  tag: "{{ tag }}"
+
+proxy:
+  httpProxy: "{{ httpProxy | default('') }}"
+  httpsProxy: "{{ httpsProxy | default('') }}"
+  noProxy: "{{ noProxy | default('') }}{% if FQDN is defined and FQDN != '' %},{{ FQDN }}{% endif %}"
+
+tls:
+  secretName: "tls-secret"
+
+hostAliases:
+  - ip: "{{ mcp_gateway_ingress_ip }}"
+    hostnames:
+      - "{{ FQDN }}"
+{% if routing_mode | default('subdomain') == 'subdomain' %}
+      - "s3.{{ FQDN }}"
+{% endif %}
+
+config:
+  edpEndpoint: "http://edp-backend.{{ edp.namespace | default('edp') }}.svc:5000"
+  keycloakTokenEndpoint: "http://keycloak-http.{{ keycloak.namespace | default('auth') }}.svc:80{{ keycloak.pathPrefix | default('') }}/realms/{{ ui.extraUiConfigVars.keycloakRealm | default('EnterpriseRAG') }}/protocol/openid-connect/token"

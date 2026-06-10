@@ -45,7 +45,7 @@
     helm_override_values_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
     helm_resources_path: "{{ pipelines_dir }}/{{ effective_resources_path }}"
     helm_override_resources_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-resources.yaml"
-    helm_override_model_config_path: "{{ pipelines_dir }}/{{ item.modelConfigPath }}"
+    helm_override_model_config_path: "{{ pipelines_dir }}/{{ item.modelConfigPath | default('') }}"
   tags:
     - install
     - pre-upgrade

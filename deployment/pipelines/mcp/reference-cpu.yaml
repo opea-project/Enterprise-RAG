@@ -1,0 +1,77 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# reference-cpu.yaml - MCP retrieval-only pipeline configuration
+# This configuration contains ONLY the components needed for semantic retrieval:
+#   - Fingerprint: Request metadata tracking
+#   - Embedding: Vector embedding service
+#   - VLLMEmbedding: Model server for embedding inference
+#   - Retriever: Vector search
+#   - Reranking: Result reranking service
+#   - TorchserveReranking: Model server for reranking inference
+#
+# Components excluded (not needed for retrieval-only MCP use case):
+#   - Prompt template
+#   - Guardrails (input/output)
+#   - LLM service
+#   - VLLM (LLM model server)
+#
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: xeon
+  name: mcp
+  namespace: mcp
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: Fingerprint
+        dependency: Hard
+        internalService:
+          serviceName: fgp-svc
+          config:
+            endpoint: /v1/system_fingerprint/append_arguments
+      - name: Embedding
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            EMBEDDING_MODEL_SERVER_ENDPOINT: vllm-embedding-svc
+            EMBEDDING_MODEL_SERVER: "vllm"
+      - name: VLLMEmbedding
+        dependency: Hard
+        internalService:
+          serviceName: vllm-embedding-svc
+          isDownstreamService: true
+      - name: Retriever
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: retriever-svc
+          config:
+            endpoint: /v1/retrieval
+      - name: Reranking
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: reranking-svc
+          config:
+            endpoint: /v1/reranking
+            RERANKING_SERVICE_ENDPOINT: vllm-reranking-svc
+            RERANKING_MODEL_SERVER: "vllm"
+            RERANKING_MODEL_NAME: "BAAI/bge-reranker-base"
+      - name: VLLMReranking
+        dependency: Hard
+        internalService:
+          serviceName: vllm-reranking-svc
+          isDownstreamService: true

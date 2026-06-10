@@ -48,7 +48,11 @@
     label_selectors:
     - app=node-topology-debugger
   register: pods_info
-  until: pods_info.resources | length > 0 and (pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length) == (pods_info.resources | length)
+  until: >-
+    pods_info.resources | length > 0 and
+    (pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length) == (pods_info.resources | length) and
+    (pods_info.resources | selectattr('status.containerStatuses', 'defined') |
+     selectattr('status.containerStatuses.0.ready', 'equalto', true) | list | length) == (pods_info.resources | length)
   retries: 30
   delay: 10
   tags:
@@ -64,12 +68,27 @@
   - topology-preview
   - update-configuration
 
+- name: Filter topology pods to target nodes
+  set_fact:
+    topology_pods: >-
+      {{
+        pods_info.resources
+        | selectattr('spec.nodeName', 'equalto', namespace_node_selector['kubernetes.io/hostname'])
+        | list
+        if (namespace_node_selector | default({}) | length > 0 and 'kubernetes.io/hostname' in namespace_node_selector)
+        else pods_info.resources
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
 - name: Gather CPU/NUMA/AMX info for each node
   include_tasks: get_single_node_topology.yaml
   vars:
     node_name: "{{ item.spec.nodeName }}"
     pod_name: "{{ item.metadata.name }}"
-  loop: "{{ pods_info.resources }}"
+  loop: "{{ topology_pods }}"
   loop_control:
     label: "{{ item.spec.nodeName }}"
   tags:

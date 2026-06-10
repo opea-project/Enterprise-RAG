@@ -47,6 +47,22 @@
   tags:
     - install
 
+- name: Apply node selector annotation to ERAG namespaces
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+        annotations:
+          scheduler.alpha.kubernetes.io/node-selector: >-
+            {{ namespace_node_selector | dictsort | map('join', '=') | join(',') }}
+  loop: "{{ enabled_namespaces }}"
+  when: namespace_node_selector | default({}) | length > 0
+  tags:
+    - install
+
 - name: Check if each namespace exists
   kubernetes.core.k8s_info:
     api_version: v1

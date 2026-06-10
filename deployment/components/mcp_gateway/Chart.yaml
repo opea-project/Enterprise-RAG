@@ -1,0 +1,9 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: mcp-gateway
+description: MCP Gateway - exposes Intel AI for Enterprise RAG as MCP tools for AI agents
+type: application
+version: 0.1.0
+appVersion: "2.2.0"

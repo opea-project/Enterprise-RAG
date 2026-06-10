@@ -1,0 +1,145 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Validate MCP gateway requirements
+  ansible.builtin.fail:
+    msg: |
+      ERROR: MCP gateway requires EDP to be enabled.
+
+      MCP gateway exposes only EDP-based tools (retrieve_context, ingest_url, ingest_file, list_buckets, check_ingestion_status).
+      Without EDP, no tools will be registered and the MCP gateway will be non-functional.
+
+      Please set 'edp.enabled: true' in config.yaml or disable MCP gateway by setting 'mcp.enabled: false'.
+  when:
+    - not (edp.enabled | default(false) | bool)
+  tags:
+    - install
+
+- name: Set override values path
+  ansible.builtin.set_fact:
+    mcp_gateway_helm_override_values_path: "{{ tmp_dir }}/{{ mcp.helm.release_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ mcp.namespace | default('mcp-gateway') }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ mcp.namespace | default('mcp-gateway') }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Resolve chatqa namespace (empty when no chatqa pipeline configured)
+  ansible.builtin.set_fact:
+    mcp_chatqa_namespace: >-
+      {{
+        (pipelines | selectattr('type', 'equalto', 'chatqa') | list | first).namespace
+        if (pipelines | selectattr('type', 'equalto', 'chatqa') | list | length > 0)
+        else ''
+      }}
+  tags:
+    - install
+
+- name: Get ingress gateway ClusterIP for hostAliases
+  kubernetes.core.k8s_info:
+    kind: Service
+    namespace: erag-gateway
+    name: erag-gateway-istio
+  register: gw_svc
+  tags:
+    - install
+
+- name: Set ingress gateway IP fact
+  ansible.builtin.set_fact:
+    mcp_gateway_ingress_ip: "{{ gw_svc.resources[0].spec.clusterIP }}"
+  tags:
+    - install
+
+- name: Read TLS secret from erag-gateway namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: tls-secret
+    namespace: erag-gateway
+  register: source_tls_secret
+  tags:
+    - install
+
+- name: Copy TLS secret to MCP gateway namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: tls-secret
+        namespace: "{{ mcp.namespace | default('mcp-gateway') }}"
+      type: kubernetes.io/tls
+      data: "{{ source_tls_secret.resources[0].data }}"
+  tags:
+    - install
+
+- name: Generate override values from template
+  ansible.builtin.template:
+    src: values.yaml.j2
+    dest: "{{ mcp_gateway_helm_override_values_path }}"
+    mode: '0600'
+  tags:
+    - install
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ mcp.helm.release_name }}"
+    chart_ref: "{{ mcp.helm.chart_directory }}"
+    namespace: "{{ mcp.namespace | default('mcp-gateway') }}"
+    values_files:
+      - "{{ mcp.helm.default_values_file }}"
+      - "{{ mcp_gateway_helm_override_values_path }}"
+    state: present
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+  register: mcp_helm_result
+  until: mcp_helm_result is succeeded
+  retries: 5
+  delay: 15
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ mcp.helm.release_name }}"
+    namespace: "{{ mcp.namespace | default('mcp-gateway') }}"
+    state: absent
+    wait: true
+    wait_timeout: "300s"
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ mcp.namespace | default('mcp-gateway') }}"
+  tags:
+    - uninstall

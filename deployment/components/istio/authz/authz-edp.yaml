@@ -67,7 +67,9 @@ spec:
         - cluster.local/ns/seaweedfs/sa/seaweedfs
         - cluster.local/ns/auth-apisix/sa/auth-apisix
         - cluster.local/ns/chatqa/sa/retriever-usvc
+        - cluster.local/ns/mcp/sa/retriever-usvc
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/mcp-gateway/sa/mcp-gateway
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

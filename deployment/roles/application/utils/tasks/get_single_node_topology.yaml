@@ -19,6 +19,15 @@
     - topology-preview
     - update-configuration
 
+- name: Build CPU list per NUMA node
+  ansible.builtin.shell: |
+    echo "{{ cpu_numa_mapping.stdout }}" | grep -v '^#' | sed '/^\s*$/d' | awk -F, '{cpus[$1] = cpus[$1] ? cpus[$1]","$2 : $2} END {for(i in cpus) print i" "cpus[i]}'
+  register: cpus_per_numa_raw
+  tags:
+    - install
+    - topology-preview
+    - update-configuration
+
 - name: Extract CPU counts
   ansible.builtin.shell: |
     echo "{{ cpu_counts_per_node.stdout }}" | awk '{print $2}'
@@ -127,6 +136,32 @@
     - topology-preview
     - update-configuration
 
+- name: Reset cpus_per_numa_dict for this node
+  set_fact:
+    cpus_per_numa_dict: {}
+  tags:
+    - install
+    - topology-preview
+    - update-configuration
+
+- name: Parse CPU list per NUMA node into dict
+  set_fact:
+    cpus_per_numa_dict: >-
+      {{
+        cpus_per_numa_dict | combine({
+          (line_parts[0] | string): (line_parts[1] | string)
+        })
+      }}
+  loop: "{{ cpus_per_numa_raw.stdout_lines }}"
+  loop_control:
+    label: "NUMA {{ (item.split())[0] }}"
+  vars:
+    line_parts: "{{ item.split() }}"
+  tags:
+    - install
+    - topology-preview
+    - update-configuration
+
 - name: Update cpu_topology_per_node dict
   set_fact:
     cpu_topology_per_node: >-
@@ -139,7 +174,8 @@
             'numa_balanced': numa_balanced,
             'gaudi': habana_plugin_present,
             'total_memory_GiB': (total_memory_GiB.stdout | int),
-            'threads_per_core': (threads_per_core_result.stdout | int)
+            'threads_per_core': (threads_per_core_result.stdout | int),
+            'cpus_per_numa': cpus_per_numa_dict
           }
         })
       }}

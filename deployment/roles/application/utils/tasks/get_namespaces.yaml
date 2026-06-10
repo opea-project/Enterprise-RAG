@@ -40,7 +40,8 @@
           chat_history.namespace if (chat_history.enabled and not (upload_pipelines | default(false) | bool)) else None,
           vector_databases.namespace if vector_databases.enabled else None,
           edp.seaweedfs.namespace if (edp.enabled and edp.storageType == 'seaweedfs') else None,
-          audio.namespace if (audio is defined and audio.enabled) else None
+          audio.namespace if (audio is defined and audio.enabled) else None,
+          (mcp.namespace | default('mcp-gateway')) if (mcp is defined and mcp.enabled) else None
         ]
         | select('defined') | select('truthy') | list
         +

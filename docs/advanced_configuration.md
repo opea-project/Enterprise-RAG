@@ -37,6 +37,7 @@ This document describes configuration options available when deploying Intel® A
    9. [Local Image Building](#local-image-building)
    10. [Routing Mode](#routing-mode)
    11. [Pipeline Language](#pipeline-language)
+   12. [Node Pinning (namespace_node_selector)](#node-pinning-namespace_node_selector)
 
 ---
 
@@ -712,3 +713,42 @@ solution_language: "auto"  # or "en" or "pl"
 
 > [!NOTE]
 > When setting `solution_language` explicitly, ensure the selected LLM, embedding, and reranking models support the target language.
+
+### Node Pinning (namespace_node_selector)
+
+Restricts solution pods to run on a specific node in the Kubernetes cluster:
+
+```yaml
+# Default: {} (no pinning, pods schedule anywhere)
+namespace_node_selector: {}
+
+# Example: Pin to a specific node by hostname
+namespace_node_selector:
+  kubernetes.io/hostname: "worker-node-1"
+```
+
+**Important Limitations**:
+- **Single node only**: Only one node can be specified. Multi-node selectors (e.g. label-based selection across multiple nodes) are not supported.
+- **Topology detection**: When enabled, topology detection runs only on the selected node. The deployment calculates resource allocations based solely on that node's hardware.
+- **Memory calculation**: The `allowed_numa_nodes` restriction (if set) scales memory proportionally assuming uniform distribution across NUMA nodes, which is typical for modern servers but not guaranteed on all hardware.
+
+**Requirements**:
+- The `PodNodeSelector` admission plugin must be enabled on the Kubernetes cluster
+- The annotation `scheduler.alpha.kubernetes.io/node-selector` is applied to all solution namespaces
+
+**Use Cases**:
+- **Resource isolation**: Dedicate a specific node to the solution, separate from other cluster workloads
+- **Hardware targeting**: Force pods onto a node with specific hardware (e.g. high-memory node, node with accelerators)
+- **Multi-tenant clusters**: Partition cluster resources between different teams or applications
+- **Development/testing**: Deploy on a single known node for simplified debugging
+
+**How It Works**:
+When `namespace_node_selector` is set, the deployment applies a node selector annotation to all solution namespaces (chatqa, docsum, mcp, edp, telemetry, etc.). Kubernetes then schedules all pods in those namespaces only on the specified node.
+
+**Verification**:
+After deployment, verify the annotation was applied:
+```bash
+kubectl get namespace chatqa -o jsonpath='{.metadata.annotations.scheduler\.alpha\.kubernetes\.io/node-selector}'
+```
+
+You should see output matching your `namespace_node_selector` configuration (e.g. `{"kubernetes.io/hostname":"worker-node-1"}`).

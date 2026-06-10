@@ -155,3 +155,7 @@ images:
     image_name: nri-balloons-controller
     dockerfile_path: src/nri_balloons_controller/Dockerfile
     docker_context: src/nri_balloons_controller
+  mcpGateway:
+    image_name: mcp-gateway
+    dockerfile_path: src/mcp_gateway/impl/microservice/Dockerfile
+    docker_context: src

@@ -15,6 +15,8 @@ proxy:
 
 alternateTagging: false
 
+pipelineNamespace: "chatqa"
+
 edpExternalUrl: "https://s3.erag.com"
 edpExternalCertVerify: "false"
 edpInternalUrl: "http://seaweedfs-s3.seaweedfs.svc:8333"

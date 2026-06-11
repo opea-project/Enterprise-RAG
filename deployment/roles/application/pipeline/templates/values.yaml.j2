@@ -168,6 +168,9 @@ images:
     tag: *tag
     envs:
       TORCHSERVE_MODEL_NAME: *reranking_model_name
+  vllm_reranking:
+    envs:
+      RERANKING_VLLM_MODEL_NAME: *reranking_model_name
   retriever-usvc:
     image: "erag-retriever"
     repository: *repo

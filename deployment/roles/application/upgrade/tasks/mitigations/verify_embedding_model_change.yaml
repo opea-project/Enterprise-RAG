@@ -67,7 +67,22 @@
 
           ========================================
 
-    - name: Prompt for decision
+    - name: Validate embedding_model_decision_action if provided
+      ansible.builtin.fail:
+        msg: >-
+          Invalid value for embedding_model_decision_action: '{{ embedding_model_decision_action }}'.
+          Accepted values: 'keep' or 'use_new_model'.
+      when:
+        - embedding_model_decision_action is defined
+        - embedding_model_decision_action not in ['keep', 'use_new_model']
+
+    - name: Display automated-override notice
+      ansible.builtin.debug:
+        msg: >-
+          embedding_model_decision_action='{{ embedding_model_decision_action }}' — skipping interactive prompt.
+      when: embedding_model_decision_action is defined
+
+    - name: Prompt for decision (interactive)
       ansible.builtin.pause:
         prompt: |
 
@@ -80,24 +95,38 @@
 
           Choice [1/2/3]:
       register: embedding_model_decision
+      when: embedding_model_decision_action is not defined
 
-    - name: Validate input
+    - name: Validate interactive input
       ansible.builtin.fail:
         msg: "Invalid choice '{{ embedding_model_decision.user_input }}'. Run pre-upgrade again and select 1, 2, or 3."
-      when: embedding_model_decision.user_input not in ['1', '2', '3']
+      when:
+        - embedding_model_decision_action is not defined
+        - embedding_model_decision.user_input not in ['1', '2', '3']
 
-    - name: Abort on user request
+    - name: Abort on user request (interactive)
       ansible.builtin.fail:
         msg: |
           Pre-upgrade assessment aborted.
           To proceed: select 1 (keep model) or 2 (switch model) on next run.
-      when: embedding_model_decision.user_input == '3'
+      when:
+        - embedding_model_decision_action is not defined
+        - embedding_model_decision.user_input == '3'
+
+    - name: Resolve effective action
+      ansible.builtin.set_fact:
+        _embedding_effective_action: >-
+          {{
+            (embedding_model_decision_action == 'keep') | ternary('1',
+            (embedding_model_decision_action == 'use_new_model') | ternary('2',
+            embedding_model_decision.user_input))
+          }}
 
     - name: Record keep-previous decision
       ansible.builtin.set_fact:
         embedding_model_user_decision: "keep_previous"
         embedding_model_requires_reembedding: false
-      when: embedding_model_decision.user_input == '1'
+      when: _embedding_effective_action == '1'
 
     - name: Display keep-previous instructions
       ansible.builtin.debug:
@@ -111,18 +140,18 @@
 
           Then re-run pre-upgrade assessment to confirm no model change is detected.
           ========================================
-      when: embedding_model_decision.user_input == '1'
+      when: _embedding_effective_action == '1'
 
     - name: Fail after keep-previous — config must be updated before proceeding
       ansible.builtin.fail:
         msg: "Update embedding_model_name in target config.yaml to '{{ source_embedding_model }}' then re-run."
-      when: embedding_model_decision.user_input == '1'
+      when: _embedding_effective_action == '1'
 
     - name: Record use-new-model decision
       ansible.builtin.set_fact:
         embedding_model_user_decision: "use_new"
         embedding_model_requires_reembedding: true
-      when: embedding_model_decision.user_input == '2'
+      when: _embedding_effective_action == '2'
 
     - name: Create migration status ConfigMap
       kubernetes.core.k8s:
@@ -141,7 +170,7 @@
             old_model: "{{ source_embedding_model }}"
             new_model: "{{ target_embedding_model }}"
             created_at: "{{ ansible_date_time.iso8601 }}"
-      when: embedding_model_decision.user_input == '2'
+      when: _embedding_effective_action == '2'
 
     - name: Display use-new-model confirmation
       ansible.builtin.debug:
@@ -158,7 +187,7 @@
 
           Continuing pre-upgrade assessment...
           ========================================
-      when: embedding_model_decision.user_input == '2'
+      when: _embedding_effective_action == '2'
 
 - name: Record mitigation as applied
   ansible.builtin.set_fact:

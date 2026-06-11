@@ -9,6 +9,7 @@ This document provides instructions for upgrading Intel&reg; AI for Enterprise R
 1. [Upgrade Process](#upgrade-process)
 1. [Verification](#verification)
 1. [Rollback Procedure](#rollback-procedure)
+1. [Version-specific Notes](#version-specific-notes)
 
 ## Introduction
 
@@ -160,6 +161,24 @@ If you switched to a new embedding model during the upgrade, all existing docume
 
 Go to Admin Panel → Data Ingestion. If any documents require re‑ingestion, you’ll see a warning banner there automatically. The system keeps track of which embedding model was used for each file, so any documents embedded with the previous model will be flagged until they’re reingested. Once all documents are re‑ingested with the new model, the warning banner will disappear automatically.
 
+#### Automating the Embedding Model Decision in CI/CD
+
+During the pre-upgrade assessment, when an embedding model change is detected the playbook normally pauses and waits for operator input. To skip the interactive prompt in automated pipelines, pass `embedding_model_decision_action`:
+
+```bash
+# Accept the new model — migration ConfigMap is created, re-embedding banner will appear after upgrade
+ansible-playbook playbooks/application.yaml --tags pre-upgrade \
+  -e @inventory/test-cluster/config.yaml \
+  -e embedding_model_decision_action=use_new_model
+
+# Keep the previous model — playbook exits with instructions to update config.yaml
+ansible-playbook playbooks/application.yaml --tags pre-upgrade \
+  -e @inventory/test-cluster/config.yaml \
+  -e embedding_model_decision_action=keep
+```
+
+Accepted values are `use_new_model` and `keep`. Any other value fails immediately with a validation error. When the variable is not set, the interactive prompt is always shown regardless of environment — the override has no effect on runs where no embedding model change is detected.
+
 
 ## Rollback Procedure
 
@@ -194,3 +213,16 @@ ansible-playbook playbooks/backup.yaml --tags restore,monitor_restore \
 ```
 
 Replace the backup name with the actual backup created in Step 1.
+
+## Version-specific Notes
+
+This section collects upgrade considerations that apply only when crossing specific version boundaries. Add a new subsection here whenever a release introduces a breaking change, a mandatory manual step, or a new automation variable that operators need to know about.
+
+### 2.2.0 — Default Embedding Model Change
+
+The default embedding model changed from `BAAI/bge-base-en-v1.5` to `nomic-ai/nomic-embed-text-v1`.
+
+Operators upgrading from any earlier version will encounter the embedding model decision prompt during pre-upgrade assessment (see [Automating the Embedding Model Decision in CI/CD](#automating-the-embedding-model-decision-in-cicd)). The two options are:
+
+- **Keep `BAAI/bge-base-en-v1.5`**: set `embedding_model_name: "BAAI/bge-base-en-v1.5"` in your target `config.yaml` before running pre-upgrade. No re-embedding required.
+- **Switch to `nomic-ai/nomic-embed-text-v1`**: proceed without changing `config.yaml`. All existing documents must be re-embedded after upgrade via Admin Panel → Data Ingestion.

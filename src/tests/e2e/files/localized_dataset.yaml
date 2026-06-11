@@ -496,8 +496,8 @@ test_docx_multi_paragraph:
           expected_any: ["12", "13"]
         - question: "What is the name of the group offering the Cloud Solutions Developer Intern for AI RAG position?"
           expected_any: ["dcai", "ecosystem"]
-        - question: "What technologies do I need to know when applying for the position of Cloud Solutions Developer Intern for AI RAG Application?"
-          expected_all: ["react", "javascript", "css", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "cicd", "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
+        - question: "What technologies or frameworks do I need to know when applying for the position of Cloud Solutions Developer Intern for AI RAG Application?"
+          expected_all: ["react", "javascript", "css", "go", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "ci/cd", "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
     pl:
       files: [Front-end Intern_example.docx]
       questions:
@@ -505,8 +505,8 @@ test_docx_multi_paragraph:
           expected_any: ["12", "13"]
         - question: "Jak nazywa się grupa oferująca stanowisko Stażysty Cloud Solutions Developer dla AI RAG?"
           expected_any: ["dcai", "ecosystem"]
-        - question: "Jakie technologie muszę znać, aplikując na stanowisko Stażysty Cloud Solutions Developer dla aplikacji AI RAG?"
-          expected_all: ["react", "javascript", "css", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "cicd", "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
+        - question: "Znajomość jakich technologii, frameworków i procesów jest wymagana lub mile widziane na stanowisku Stażysty Cloud Solutions Developer (AI RAG)? Proszę o pełną listę."
+          expected_all: ["react", "javascript", "css", "go", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "ci/cd", "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
 test_logs_parsing_capability:
   - en:
       files: [system_logs.txt]

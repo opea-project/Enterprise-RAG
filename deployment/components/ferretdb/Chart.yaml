@@ -10,8 +10,8 @@ description: >-
 
 type: application
 
-version: 0.1.9
-appVersion: "2.2.0"
+version: 0.1.10
+appVersion: "2.3.0"
 annotations:
   app.kubernetes.io/part-of: ERAG
   dependency-only: "true"

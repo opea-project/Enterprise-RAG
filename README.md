@@ -17,7 +17,7 @@ Enable intelligent AI experiences that understand your business context:
 * **Enterprise-Grade Security & Compliance** - Integrated Identity and Access Management (IAM) with Keycloak, programmable guardrails for fine-grained control, Pod Security Standards (PSS) enforcement for secure enterprise operations, role-based access control for vector databases, and Intel® Trust Domain Extensions (TDX) support for confidential computing.
 * **Comprehensive Monitoring & Observability** - Integrated telemetry stack with Prometheus, Grafana dashboards, distributed tracing with Tempo, and centralized logging with Loki for full pipeline visibility.
 
-If you're interested in getting a glimpse of how Intel® AI for Enterprise RAG works, check out following demo.
+If you're interested in getting a glimpse of how Intel® AI for Enterprise RAG works, check out the following demo.
 
 <br/>
 <div align="center">
@@ -60,7 +60,7 @@ Document Summarization's pipeline architecture is available [here](./docs/images
      - [Deployment on Xeon + Gaudi Accelerator](#deployment-on-xeon--gaudi-accelerator)
 3. [Getting Started](#getting-started)
    - [Validate Hardware Requirements](#validate-hardware-requirements)
-   - [Intel Enterprise RAG Deployment - Standalone](#intel-enterprise-rag-deployment---standalone)
+   - [Intel AI Enterprise RAG Deployment - Standalone](#intel-ai-enterprise-rag-deployment---standalone)
      - [Install a Kubernetes cluster (optional - if you don't have one)](#install-a-kubernetes-cluster-optional---if-you-dont-have-one)
      - [Install infrastructure components (storage, operators, backup tools)](#install-infrastructure-components-storage-operators-backup-tools)
      - [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
@@ -96,7 +96,7 @@ Document Summarization's pipeline architecture is available [here](./docs/images
 ## Hardware Requirements
 
 These are minimal requirements to run Intel® AI for Enterprise RAG with default settings. In case of more(or less) resources available, feel free to adjust the parameters in the resource configuration files for your chosen pipeline:
-- ChatQA: [resources-reference-cpu.yaml](deployment/pipelines/chatqa/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/chatqa/resources-reference-hpu.yaml)
+- ChatQnA: [resources-reference-cpu.yaml](deployment/pipelines/chatqa/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/chatqa/resources-reference-hpu.yaml)
 - Docsum: [resources-reference-cpu.yaml](deployment/pipelines/docsum/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/docsum/resources-reference-hpu.yaml)
 
 ### Deployment on Xeon only
@@ -120,7 +120,7 @@ To deploy the solution on a platform with Gaudi® AI Accelerator you need to hav
 -  **RAM memory**: A minimum of `128GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
--  **Gaudi driver**: `1.23.0`
+-  **Gaudi driver**: `1.24.0`
 
 # Getting Started
 

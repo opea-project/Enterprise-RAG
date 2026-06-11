@@ -8,7 +8,7 @@
 # BUILD_INTEL_SVS_OPT=yes to unlock LeanVec and LVQ compression types.
 #
 # Build:
-#   cd src/comps/redis-svs-vamana
+#   cd src/comps/vectorstores/impl/redis/redis-svs-vamana
 #   docker build -t <registry>/erag/redis:8.2.2-svs .
 #   docker push <registry>/erag/redis:8.2.2-svs
 #

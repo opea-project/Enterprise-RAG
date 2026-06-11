@@ -1,10 +1,10 @@
 # Cluster Deployment Guide
 
-This document explains how to deploy a K8s cluster using Intel® AI for Enterprise RAG ansible automations.
+This document explains how to deploy a K8s cluster using Intel® AI for Enterprise RAG Ansible automations.
 
 All instructions need to be executed on your local machine from the `deployment` folder. 
 
-To deploy a K8s cluster, you need to fill the inventory.ini file that describes K8s node roles and gives ansible information on how to connect to the hosts. Make sure you are able to ssh from your local machine to the nodes on which you want to deploy K8s before provisioning the cluster. 
+To deploy a K8s cluster, you need to fill the inventory.ini file that describes K8s node roles and gives ansible information on how to connect to the hosts. Make sure you are able to ssh from your local machine to the nodes on which you want to deploy K8s before provisioning the cluster.
 
 **Prerequisites**: Ansible nodes need to have passwordless SSH connection from localhost to MACHINE_HOSTNAME. To check this, the command `ssh REMOTE_USER@MACHINE_IP` should work without asking for a password.
 
@@ -146,8 +146,8 @@ igk-0701 | SUCCESS => {
 2. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
    - Fill in the required values:
-     - `deploy_k8s`: `true` to install K8s cluster.
-     - `gaudi_operator`: `true` set value to true only if you are working with Gaudi nodes and want to install the Gaudi software stack via operator.
+     - `deploy_k8s`: `true` to install a Kubernetes cluster.
+     - `gaudi_operator`: set to `true` only if you are working with Habana Gaudi nodes and want to install the Gaudi software stack via operator.
      - `install_csi` - set one of the following options:
         - `local-path-provisioner` for single-node deployment.
         - `nfs` for multi-node deployment; when choosing this option, fill in the nfs section in config.yaml.

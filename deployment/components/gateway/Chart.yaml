@@ -5,7 +5,7 @@ apiVersion: v2
 name: erag-gateway
 description: Enterprise RAG Gateway API chart (GatewayClass + Gateway + HTTPRoutes)
 type: application
-version: 1.0.1
-appVersion: "2.2.0"
+version: 1.0.2
+appVersion: "2.3.0"
 annotations:
   app.kubernetes.io/part-of: ERAG

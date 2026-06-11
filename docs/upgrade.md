@@ -72,14 +72,14 @@ Extract and prepare the new version:
 
 ```bash
 # Extract target version
-tar -xzf erag-2.1.0.tar.gz
+tar -xzf erag-2.3.0.tar.gz
 
 # Copy configuration to target
 # The config can be placed in any of these locations:
 #   - deployment/inventory/<cluster>/config.yaml (recommended)
 #   - deployment/config.yaml
 cp deployment/inventory/test-cluster/config.yaml \
-  ../erag-2.1.0/deployment/inventory/test-cluster/config.yaml
+  ../erag-2.3.0/deployment/inventory/test-cluster/config.yaml
 ```
 
 > [!IMPORTANT]
@@ -97,7 +97,7 @@ From your **current deployment**, run the pre-upgrade assessment:
 cd deployment
 
 ansible-playbook playbooks/pre_upgrade.yaml \
-  -e target_config_path=/path/to/erag-2.1.0/deployment/inventory/test-cluster/config.yaml \
+  -e target_config_path=/path/to/erag-2.3.0/deployment/inventory/test-cluster/config.yaml \
   -e @inventory/test-cluster/config.yaml
 ```
 
@@ -119,7 +119,7 @@ For a more comprehensive check that also includes data consistency verification 
 Run the install from the **target deployment**:
 
 ```bash
-cd /path/to/erag-2.1.0/deployment
+cd /path/to/erag-2.3.0/deployment
 
 ansible-playbook playbooks/application.yaml --tags install \
   -e @inventory/test-cluster/config.yaml
@@ -168,7 +168,7 @@ If issues occur after upgrade:
 ### Step 1: Uninstall Target Deployment
 
 ```bash
-cd /path/to/erag-2.1.0/deployment
+cd /path/to/erag-2.3.0/deployment
 
 ansible-playbook playbooks/application.yaml --tags uninstall \
   -e @inventory/test-cluster/config.yaml
@@ -177,7 +177,7 @@ ansible-playbook playbooks/application.yaml --tags uninstall \
 ### Step 2: Reinstall Source Deployment
 
 ```bash
-cd /path/to/erag-2.0.1/deployment
+cd /path/to/erag-2.2.0/deployment
 
 ansible-playbook playbooks/application.yaml --tags install \
   -e @inventory/test-cluster/config.yaml
@@ -186,7 +186,7 @@ ansible-playbook playbooks/application.yaml --tags install \
 ### Step 3: Restore from Backup
 
 ```bash
-cd /path/to/erag-2.0.1/deployment
+cd /path/to/erag-2.2.0/deployment
 
 ansible-playbook playbooks/backup.yaml --tags restore,monitor_restore \
   -e @inventory/test-cluster/config.yaml \

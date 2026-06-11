@@ -31,12 +31,12 @@ This document describes configuration options available when deploying Intel® A
    4. [EDP Storage Types](#edp-storage-types)
    5. [Reverse Proxy for External S3 Storage (NetApp ONTAP)](#reverse-proxy-for-external-s3-storage-netapp-ontap)
    6. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
-   6. [Security Settings](#security-settings)
-   7. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
-   8. [Registry Configuration](#registry-configuration)
-   9. [Local Image Building](#local-image-building)
-   10. [Routing Mode](#routing-mode)
-   11. [Pipeline Language](#pipeline-language)
+   7. [Security Settings](#security-settings)
+   8. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
+   9. [Registry Configuration](#registry-configuration)
+   10. [Local Image Building](#local-image-building)
+   11. [Routing Mode](#routing-mode)
+   12. [Pipeline Language](#pipeline-language)
    12. [Node Pinning (namespace_node_selector)](#node-pinning-namespace_node_selector)
 
 ---
@@ -93,7 +93,7 @@ For Intel Gaudi AI accelerators:
 **ChatQA Pipeline:**
 ```yaml
 gaudi_operator: true              # Default: false
-habana_driver_version: "1.22.1-6"
+habana_driver_version: "1.24.0-1007"
 
 pipelines:
   - namespace: chatqa
@@ -106,7 +106,7 @@ pipelines:
 **Docsum Pipeline:**
 ```yaml
 gaudi_operator: true              # Default: false
-habana_driver_version: "1.22.1-6"
+habana_driver_version: "1.24.0-1007"
 
 pipelines:
   - namespace: docsum
@@ -129,7 +129,7 @@ pipelines:
     type: chatqa
 ```
 
-This requires additional configuration in `reference-external-endpoint.yaml` in llm step. I. e.
+This requires additional configuration in `reference-external-endpoint.yaml` in llm step. i.e.
 ```yaml
       - name: Llm
         data: $response
@@ -221,7 +221,7 @@ install_csi: "local-path-provisioner"  # Default
 
 **Default**: ReadWriteOnce
 
-If you are working on multi node cluster change accessMode to `ReadWriteMany`
+If you are working on a multi-node cluster change accessMode to `ReadWriteMany`
 
 ```yaml
 # Optional: Customize PVC settings
@@ -377,7 +377,7 @@ Node: localhost
   Reranking CPU Size: 4
 ```
   
-  Use this information to determine the optimal number of vLLM replicas and their CPU allocation. Your maximum pool avaliable for vLLM will be `VLLM Replicas` multiplied by  `VLLM CPU` Size. In this case it will be 32 vCPU.
+  Use this information to determine the optimal number of vLLM replicas and their CPU allocation. Your maximum pool available for vLLM will be `VLLM Replicas` multiplied by  `VLLM CPU` Size. In this case it will be 32 vCPU.
 
 2. **Deploy external vLLM first**: Deploy your external vLLM instances with the proper number of replicas before deploying Intel® AI for Enterprise RAG
 3. **Configure replicas appropriately**: Ensure vLLM replicas are distributed to allow each instance to fit within a single NUMA node
@@ -641,7 +641,7 @@ Only enable TDX if you have compatible Intel hardware and understand the experim
 ```yaml
 # Defaults
 registry: "docker.io/opea"          # Default: public OPEA registry
-tag: "1.5.0"                        # Default: current release tag
+tag: "2.3.0"                        # Default: current release tag
 local_registry: false               # Default: false (use public registry)
 ```
 

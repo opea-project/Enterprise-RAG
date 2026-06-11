@@ -122,7 +122,7 @@ After the application is installed, you can update its components (for example, 
 
 To update the application:
 
-1. Edit `config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings). Feel free to checkout [Advanced Configuration Guide](../docs/advanced_configuration.md) with tips on modifying the parameters.
+1. Edit `config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings). See the [Advanced Configuration Guide](../docs/advanced_configuration.md) with tips on modifying the parameters.
 2. Run:
 
 ```sh

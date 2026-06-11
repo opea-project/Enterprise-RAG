@@ -102,10 +102,10 @@ The default Redis 8.2.2 image supports SVS-VAMANA with basic 8-bit quantization 
 To use `LeanVec4x8` compression (recommended for better memory efficiency),
 you need to build a custom Redis image with Intel SVS optimizations enabled.
 
-1. Build the custom image using the Dockerfile in `src/comps/redis-svs-vamana/`:
+1. Build the custom image using the Dockerfile in `src/comps/vectorstores/impl/redis/redis-svs-vamana/`:
 
 ```bash
-cd src/comps/redis-svs-vamana
+cd src/comps/vectorstores/impl/redis/redis-svs-vamana
 docker build -t <registry>/erag/redis:8.2.2-svs .
 docker push <registry>/erag/redis:8.2.2-svs
 ```

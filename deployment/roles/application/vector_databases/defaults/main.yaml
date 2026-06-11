@@ -31,7 +31,7 @@ vector_databases:
     # Redis image configuration.
     # Override repository and tag to use a custom image, e.g. one built with
     # BUILD_INTEL_SVS_OPT=yes for SVS-VAMANA LeanVec/LVQ compression support.
-    # See src/comps/redis-svs-vamana/Dockerfile for build instructions.
+    # See src/comps/vectorstores/impl/redis/redis-svs-vamana for build instructions.
     image:
       repository: "redis"
       tag: "8.2.2"

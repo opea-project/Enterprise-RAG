@@ -19,7 +19,7 @@
 
 ---
 
-# Part 1 — Single Sign-On (SSO)
+# Part 1 - Single Sign-On (SSO)
 
 ## SSO Prerequisites
 
@@ -41,7 +41,7 @@
     | `client_secret` | **App registrations → [your app] → Certificates & secrets → Client secrets → New client secret** → copy the `Value` field immediately after creation (it is only shown once) |
     | `tenant_id` | **App registrations → [your app] → Overview** → `Directory (tenant) ID` |
 
-    The `alias` is a free-form identifier you choose yourself (e.g. `enterprise-sso`), but be sure to match the element of redirect URL inputed in App Registration.
+    The `alias` is a free-form identifier you choose yourself (e.g. `enterprise-sso`), but be sure to match the element of redirect URL entered in App Registration.
 
 3. App roles created for Enterprise RAG Admin, User, and Maintainer. Field `Value` should match `EnterpriseRAG.AdminAccess` for Admin role, `EnterpriseRAG.UserAccess` for User role, and `EnterpriseRAG.MaintainerAccess` for Maintainer role (any custom value changes require modifications in [keycloak_configurator.sh](../deployment/roles/application/keycloak/files/keycloak_configurator_job.sh)). Check out following instructions for more details: [here](https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-app-roles-in-apps#assign-users-and-groups-to-roles).
 4. Assignments created between the app and the groups based on appropriate app roles. Check out instructions from the previous point.
@@ -93,19 +93,19 @@ To configure Intel® AI for Enterprise RAG SSO using Azure Single Sign-On, follo
           - Field `Name` - type in your mapper name
           - Field `Sync mode override` - select `Force`
           - Field `Mapper type` - enter `Claim to Role`
-          - Filed `Claim` - enter `roles`
+          - Field `Claim` - enter `roles`
           - Field `Group` - select `ERAG-SSO-Admin`
      2. Add Identity Provider Mapper - for realm role `ERAG-SSO-User`:
           - Field `Name` - type in your mapper name
           - Field `Sync mode override` - select `Force`
           - Field `Mapper type` - enter `Claim to Role`
-          - Filed `Claim` - enter `roles`
+          - Field `Claim` - enter `roles`
           - Field `Group` - select `ERAG-SSO-User`
      3. Add Identity Provider Mapper - for realm role `ERAG-SSO-Maintainer`:
           - Field `Name` - type in your mapper name
           - Field `Sync mode override` - select `Force`
           - Field `Mapper type` - enter `Claim to Role`
-          - Filed `Claim` - enter `roles`
+          - Field `Claim` - enter `roles`
           - Field `Group` - select `ERAG-SSO-Maintainer`
 
 After this configuration, the Keycloak login page should have an additional link at the bottom of the login form - named `Enterprise SSO`. This should redirect you to the Azure login page.
@@ -114,7 +114,7 @@ Depending on users' group membership in Microsoft Entra ID (`erag-admins`, `erag
 
 ---
 
-# Part 2 — SharePoint Integration
+# Part 2 - SharePoint Integration
 
 ## SharePoint Integration Overview
 
@@ -172,7 +172,7 @@ If all three SharePoint environment variables (`SHAREPOINT_TENANT_ID`, `SHAREPOI
 
 Once Intel® AI for Enterprise RAG is deployed with SharePoint enabled, sites can be added via the UI or the API:
 
-```
+```http
 POST https://<FQDN>/api/v1/edp/sharepoint/sites
 {
   "site_url": "https://contoso.sharepoint.com/sites/my-team-site"
@@ -200,7 +200,7 @@ During synchronization, files are downloaded from SharePoint, processed, and ing
 Users can upload files directly to a tracked SharePoint site through the Intel® AI for Enterprise RAG UI or via the API. Files uploaded this way are stored in the SharePoint site's default document library (`Documents/`). A synchronization must be triggered separately for the uploaded file to appear in the knowledge base.
 
 **API request:**
-```
+```http
 POST https://<FQDN>/api/v1/edp/sharepoint/files?site_id=<graph_site_id>
 Content-Type: multipart/form-data
 Authorization: Bearer <token>
@@ -222,14 +222,14 @@ file: <binary>
 ```
 
 > [!NOTE]
-> This differs from S3 bucket uploads, which use presigned URLs. SharePoint file uploads go through the EDP backend, which forwards them to the Microsoft Graph API to handler any permission validation.
+> This differs from S3 bucket uploads, which use presigned URLs. SharePoint file uploads go through the EDP backend, which forwards them to the Microsoft Graph API to handle any permission validation.
 
 ### Fetching a File URL
 
 For files originating from SharePoint, the system provides a web URL that opens the file directly on the SharePoint site. The returned URL points to the file on the SharePoint site. Access control is handled by SharePoint itself — only users with appropriate permissions on the site can open the file.
 
 **API request:**
-```
+```http
 POST https://<FQDN>/api/v1/edp/sharepoint/file-url
 Content-Type: application/json
 Authorization: Bearer <token>
@@ -257,7 +257,7 @@ Authorization: Bearer <token>
 Deleting a SharePoint file via the UI or API removes it from both the vector knowledge base and the SharePoint site itself.
 
 **API request:**
-```
+```http
 DELETE https://<FQDN>/api/v1/edp/sharepoint/files
 Content-Type: application/json
 Authorization: Bearer <token>
@@ -273,7 +273,7 @@ Authorization: Bearer <token>
 Disconnecting a site from tracking:
 - Deletes all files from the knowledge base (vector database) that came from that site.
 - Removes the tracking record from the database.
-- **Does not** delete any files from the SharePoint site itself — the site remains intact.
+- **Does not** delete any files from the SharePoint site itself - the site remains intact.
 
 ## Scheduled Synchronization
 

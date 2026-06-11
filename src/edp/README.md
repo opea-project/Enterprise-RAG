@@ -1,6 +1,6 @@
 # Enterprise RAG Enhanced DataPrep Service
 
-The OPEA ERAG Enhanced Data Preparation (EDP) service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `SeaweedFS`, `AWS S3`, and `S3-compatible` endpoints.
+The Intel AI for Enterprise RAG Enhanced Data Preparation (EDP) service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `SeaweedFS`, `AWS S3`, and `S3-compatible` endpoints.
 
 ## Table of Contents
 
@@ -117,7 +117,7 @@ curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H 
 ```
 
 ## Storage Synchronization
-If the configured S3-compatible storage does not support bucket notifications, files uploaded to the storage will not be automatically registered in the EDP database, and they won't be visible in the ERAG UI.
+If the configured S3-compatible storage does not support bucket notifications, files uploaded to the storage will not be automatically registered in the EDP database, and they won't be visible in the Intel AI for Enterprise RAG UI.
 
 To address this limitation, Enterprise DataPrep provides a pull-based synchronization mechanism. When enabled, it periodically scans the configured storage and updates the internal database accordingly.
 
@@ -337,7 +337,7 @@ Remember to attach proper `.env` values for each container and ensure that you h
 
 ## Running on kubernetes
 
-Kubernetes helm chart is stored in [deployment/components/edp/helm](../../deployment/components/edp) directory. To deploy the application run:
+Kubernetes helm chart is stored in [deployment/components/edp](../../deployment/components/edp) directory. To deploy the application run:
 
 ```bash
 helm repository update
@@ -364,10 +364,10 @@ And proceed to the following url `http://localhost:1234/docs`
 If you are unable to use bucket notifications through the `seaweedfs-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart ([deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml)) by enabling it and configuring the synchronization period. See the [Storage Synchronization section](#storage-synchronization) for instructions.
 
 ### File upload certificate error
-If you deployed ERAG with self-signed certificates, you might also need to accept the external storage certificate. Web browsers require acceptance of certificates for each domain they encounter, even if these are self-signed wildcard certificates. Therefore, you must accept certificates for both your Web GUI and the S3 endpoint. For instance, if your GUI is running under myrag.example.com and the storage is configured at s3.myrag.example.com, you need to visit both domains directly and accept their self-signed certificates. Alternatively, you can upload the self-signed certificates to your browser's certificate store.
+If you deployed Intel AI for Enterprise RAG with self-signed certificates, you might also need to accept the external storage certificate. Web browsers require acceptance of certificates for each domain they encounter, even if these are self-signed wildcard certificates. Therefore, you must accept certificates for both your Web GUI and the S3 endpoint. For instance, if your GUI is running under myrag.example.com and the storage is configured at s3.myrag.example.com, you need to visit both domains directly and accept their self-signed certificates. Alternatively, you can upload the self-signed certificates to your browser's certificate store.
 
 ### Protocol mismatch
-If you encounter a protocol mismatch error, it may be because edpExternalUrl has different schema than ERAG schema. For example, if your ERAG is at https://myrag.example.com and you set edpExternalUrl to http://s3.example.com, this will generate a presigned URL with an HTTP schema, resulting in a protocol mismatch error on a https secured Web UI.
+If you encounter a protocol mismatch error, it may be because edpExternalUrl has different scheme than other services in the solution. For example, if your deployment is at https://myrag.example.com and you set edpExternalUrl to http://s3.example.com, this will generate a presigned URL with an HTTP scheme, resulting in a protocol mismatch error on a https secured Web UI.
 
 ### CORS related issues
 Your chosen S3 storage endpoint can be configured with special settings known as CORS (Cross-Origin Resource Sharing). When you upload a file using the EDP web GUI, your browser requests a presigned URL from the backend. This URL enables you to upload files to S3-compatible storage without needing to provide credentials. However, this URL will not match the current URL of the EDP GUI you are using. For instance, if your GUI is running under myrag.example.com and the storage is configured at storage.mycorp.internal, you will encounter a CORS error. This occurs because your browser and the storage endpoint do not permit requests from unapproved origins. To resolve this issue, ensure that the storage is properly configured to allow your origin. In the example above, the CORS configuration on your chosen storage should permit requests from myrag.example.com. For more details on CORS, please refer to the manufacturer's documentation.

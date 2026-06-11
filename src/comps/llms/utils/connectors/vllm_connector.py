@@ -135,6 +135,10 @@ class VLLMConnector(AbstractConnector):
                 chat_response = ""
                 async for chunk in generator:
                     text = chunk.choices[0].delta.content
+                    # Some servers (e.g. NAI) emit chunks with no content (role-only
+                    # or finish chunks where delta.content is None) - skip those.
+                    if not text:
+                        continue
                     chat_response += text
                 return GeneratedDoc(text=chat_response, prompt=user_prompt, stream=input.stream,
                                 output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
@@ -147,8 +151,9 @@ class VLLMConnector(AbstractConnector):
                 try:
                     async for chunk in generator:
                         text = chunk.choices[0].delta.content
-                        # vLLM might send chunk with only role provided, so we need to handle it
-                        if hasattr(chunk.choices[0].delta, "role") and chunk.choices[0].delta.role and not chunk.choices[0].delta.content:
+                        # Skip chunks without content: vLLM/NAI send role-only chunks
+                        # and finish chunks where delta.content is None.
+                        if not text:
                             continue
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text

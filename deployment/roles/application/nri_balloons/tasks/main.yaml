@@ -137,10 +137,15 @@
     - install
     - update-configuration
 
-- name: Get limits from vLLM
+- name: Get limits from custom external containers
   ansible.builtin.include_tasks:
     file: custom_vllm.yaml
-  when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
+  vars:
+    custom_balloons_restart: false
+  when: >-
+    (balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0) or
+    (balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0) or
+    (balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0)
   tags:
     - install
     - update-configuration
@@ -157,10 +162,15 @@
     - install
     - update-configuration
 
-- name: Process custom vLLM container
+- name: Process custom external containers
   ansible.builtin.include_tasks:
     file: custom_vllm.yaml
-  when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
+  vars:
+    custom_balloons_restart: true
+  when: >-
+    (balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0) or
+    (balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0) or
+    (balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0)
   tags:
     - install
     - update-configuration

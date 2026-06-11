@@ -344,3 +344,217 @@ func TestGetEnv(t *testing.T) {
 	defer os.Unsetenv(key)
 	assert.Equal(t, val, getEnv(key, def))
 }
+
+func TestParseLabelSelectors(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      string
+		expected map[string]map[string]struct{}
+	}{
+		{
+			name:     "empty string",
+			raw:      "",
+			expected: map[string]map[string]struct{}{},
+		},
+		{
+			name: "single selector",
+			raw:  "endpoint=bge-reranker-base",
+			expected: map[string]map[string]struct{}{
+				"endpoint": {"bge-reranker-base": {}},
+			},
+		},
+		{
+			name: "multiple values for same key",
+			raw:  "endpoint=meta-llama-3-1-8b-in,endpoint=bge-reranker-base,endpoint=bge-base-en-v1-5",
+			expected: map[string]map[string]struct{}{
+				"endpoint": {
+					"meta-llama-3-1-8b-in": {},
+					"bge-reranker-base":    {},
+					"bge-base-en-v1-5":     {},
+				},
+			},
+		},
+		{
+			name: "multiple keys",
+			raw:  "endpoint=foo,component=predictor",
+			expected: map[string]map[string]struct{}{
+				"endpoint":  {"foo": {}},
+				"component": {"predictor": {}},
+			},
+		},
+		{
+			name: "whitespace is trimmed",
+			raw:  " endpoint = foo , endpoint=bar ",
+			expected: map[string]map[string]struct{}{
+				"endpoint": {"foo": {}, "bar": {}},
+			},
+		},
+		{
+			name:     "malformed entries are skipped",
+			raw:      "noequalsign,=novalue,nokey=,,",
+			expected: map[string]map[string]struct{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseLabelSelectors(tt.raw)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestMatchesTargetLabels(t *testing.T) {
+	m := &PodMutator{}
+
+	tests := []struct {
+		name      string
+		podLabels map[string]string
+		selectors map[string]map[string]struct{}
+		expected  bool
+	}{
+		{
+			name:      "matching label value",
+			podLabels: map[string]string{"endpoint": "bge-reranker-base"},
+			selectors: map[string]map[string]struct{}{"endpoint": {"bge-reranker-base": {}}},
+			expected:  true,
+		},
+		{
+			name:      "matching one of several values",
+			podLabels: map[string]string{"endpoint": "bge-base-en-v1-5"},
+			selectors: map[string]map[string]struct{}{"endpoint": {"meta-llama-3-1-8b-in": {}, "bge-base-en-v1-5": {}}},
+			expected:  true,
+		},
+		{
+			name:      "label key present but value not accepted",
+			podLabels: map[string]string{"endpoint": "some-other-model"},
+			selectors: map[string]map[string]struct{}{"endpoint": {"bge-reranker-base": {}}},
+			expected:  false,
+		},
+		{
+			name:      "label key absent",
+			podLabels: map[string]string{"app": "foo"},
+			selectors: map[string]map[string]struct{}{"endpoint": {"bge-reranker-base": {}}},
+			expected:  false,
+		},
+		{
+			name:      "no labels on pod",
+			podLabels: nil,
+			selectors: map[string]map[string]struct{}{"endpoint": {"bge-reranker-base": {}}},
+			expected:  false,
+		},
+		{
+			name:      "empty selectors",
+			podLabels: map[string]string{"endpoint": "bge-reranker-base"},
+			selectors: map[string]map[string]struct{}{},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Labels: tt.podLabels},
+			}
+			assert.Equal(t, tt.expected, m.matchesTargetLabels(pod, tt.selectors))
+		})
+	}
+}
+
+func TestPodMutator_Handle_LabelMatching(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	_ = rbacv1.AddToScheme(scheme)
+	decoder := admission.NewDecoder(scheme)
+	logger := zap.New(zap.UseDevMode(true))
+
+	tests := []struct {
+		name          string
+		pod           *corev1.Pod
+		envVars       map[string]string
+		expectedPatch bool
+	}{
+		{
+			name: "pod matched by endpoint label gets init container",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bge-reranker-base-predictor-abc",
+					Namespace: "nai-admin",
+					Labels:    map[string]string{"endpoint": "bge-reranker-base"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "kserve-container", Image: "img"}},
+				},
+			},
+			envVars: map[string]string{
+				"TARGET_POD_LABELS": "endpoint=meta-llama-3-1-8b-in,endpoint=bge-reranker-base",
+			},
+			expectedPatch: true,
+		},
+		{
+			name: "pod with non-target endpoint label is skipped",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "other-predictor-abc",
+					Namespace: "nai-admin",
+					Labels:    map[string]string{"endpoint": "some-other-model"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "kserve-container", Image: "img"}},
+				},
+			},
+			envVars: map[string]string{
+				"TARGET_POD_LABELS": "endpoint=bge-reranker-base",
+			},
+			expectedPatch: false,
+		},
+		{
+			name: "container-name match still works alongside label config",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "vllm-pod",
+					Namespace: "chatqa",
+					Labels:    map[string]string{"app": "vllm"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "vllm", Image: "img"}},
+				},
+			},
+			envVars: map[string]string{
+				"TARGET_CONTAINER_NAME": "vllm",
+				"TARGET_POD_LABELS":     "endpoint=bge-reranker-base",
+			},
+			expectedPatch: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.envVars {
+				os.Setenv(k, v)
+				defer os.Unsetenv(k)
+			}
+			defer os.Unsetenv("TARGET_CONTAINER_NAME")
+			defer os.Unsetenv("TARGET_POD_LABELS")
+
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+			mutator := &PodMutator{Client: fakeClient, Log: logger, decoder: decoder}
+
+			podBytes, err := json.Marshal(tt.pod)
+			require.NoError(t, err)
+			req := admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					Object: runtime.RawExtension{Raw: podBytes},
+				},
+			}
+
+			resp := mutator.Handle(context.Background(), req)
+			assert.True(t, resp.Allowed)
+			if tt.expectedPatch {
+				assert.NotEmpty(t, resp.Patches, "expected init container patch")
+			} else {
+				assert.Empty(t, resp.Patches, "expected no patch")
+			}
+		})
+	}
+}

@@ -25,6 +25,7 @@ from comps import (
     sanitize_env,
     statistics_dict,
 )
+from comps.cores.mega.utils import get_access_token
 from comps.reranks.utils.opea_reranking import OPEAReranker
 
 # Define the unique service name for the microservice
@@ -37,12 +38,23 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "impl/microservice/.env"))
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
+# Get the token
+access_token = get_access_token(sanitize_env(os.getenv('RERANKING_VLLM_TOKEN_URL')), sanitize_env(os.getenv('RERANKING_VLLM_CLIENT_ID')), sanitize_env(os.getenv('RERANKING_VLLM_CLIENT_SECRET'))) if sanitize_env(os.getenv('RERANKING_VLLM_TOKEN_URL')) and sanitize_env(os.getenv('RERANKING_VLLM_CLIENT_ID')) and sanitize_env(os.getenv('RERANKING_VLLM_CLIENT_SECRET')) else None
+# If token is passed directly override it
+if os.getenv('RERANKING_VLLM_API_KEY'):
+    access_token = sanitize_env(os.getenv('RERANKING_VLLM_API_KEY'))
+
+headers = {}
+if access_token:
+    headers = {"Authorization": f"Bearer {access_token}"}
+
 # Initialize an instance of the OPEALlm class with environment variables.
 opea_reranker = OPEAReranker(
     service_endpoint=sanitize_env(os.getenv('RERANKING_SERVICE_ENDPOINT')),
     model_server=sanitize_env(os.getenv('RERANKING_MODEL_SERVER')),
     model_name=sanitize_env(os.getenv('RERANKING_MODEL_NAME')),
-    late_chunking_enabled=str(os.getenv('RERANKING_LATE_CHUNKING_ENABLED')).lower() in ['true', '1', 't', 'y', 'yes']
+    late_chunking_enabled=str(os.getenv('RERANKING_LATE_CHUNKING_ENABLED')).lower() in ['true', '1', 't', 'y', 'yes'],
+    headers=headers
 )
 
 # Register the microservice with the specified configuration.

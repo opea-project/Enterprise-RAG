@@ -334,7 +334,7 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 					if name == "endpoint" || name == "nodes" || name == "LLM_VLLM_API_KEY" {
 						continue
 					}
-					if name == "LLM_MODEL_SERVER_ENDPOINT" {
+					if name == "LLM_MODEL_SERVER_ENDPOINT" || name == "RERANKING_SERVICE_ENDPOINT" || name == "EMBEDDING_MODEL_SERVER_ENDPOINT" {
 						_, err = url.ParseRequestURI(value)
 						if err == nil {
 							itemEnvVar := corev1.EnvVar{
@@ -456,6 +456,17 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				for name, value := range *svcCfg {
 					if name == "endpoint" || name == "nodes" {
 						continue
+					}
+					if name == "LLM_MODEL_SERVER_ENDPOINT" || name == "RERANKING_SERVICE_ENDPOINT" || name == "EMBEDDING_MODEL_SERVER_ENDPOINT" {
+						_, err = url.ParseRequestURI(value)
+						if err == nil {
+							itemEnvVar := corev1.EnvVar{
+								Name:  name,
+								Value: value,
+							}
+							newEnvVars = append(newEnvVars, itemEnvVar)
+							continue
+						}
 					}
 
 					var endpoint, ns string

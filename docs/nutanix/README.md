@@ -174,7 +174,7 @@ chmod 700 get_helm.sh
 
 Refer to [Obtaining configuration from Nutanix AI LLM Endpoint](#obtaining-configuration-from-nutanix-ai-llm-endpoint) to obtain the configuration needed for this step.
 
-Edit `deployment/pipelines/<your-pipeline>/reference-external-endpoint.yaml` and configure the LLM settings:
+Edit `deployment/pipelines/<your-pipeline>/reference-external-endpoint.yaml` (LLM only) and configure the LLM settings. If you also want to serve embedding and reranking from NAI, use `reference-external-endpoint-embedding-reranking.yaml` instead (see [Reranking and embedding on NAI](#reranking-and-embedding-on-nai-optional) below):
 
 ```yaml
 config:
@@ -195,7 +195,7 @@ Or, to update an existing Intel® AI for Enterprise RAG deployment, see [Update 
 
 ### Inventory configuration
 
-Change pipeline file in inventory's `config.yaml` to use file, that you have recently changed
+Change pipeline file in inventory's `config.yaml` to use file, that you have recently changed. Use `reference-external-endpoint.yaml` for external LLM only, or `reference-external-endpoint-embedding-reranking.yaml` when embedding and reranking are also served by NAI.
 
 ```yaml
 pipelines:
@@ -208,12 +208,49 @@ pipelines:
 > [!NOTE] 
 > If application will be deployed behind the proxy user should adjust additionalNoProxy value in `config.yaml` accordingly.
 
+#### Reranking and embedding on NAI (optional)
+
+To serve embedding and reranking from NAI, use the `reference-external-endpoint-embedding-reranking.yaml` pipeline and configure the corresponding steps:
+
+```yaml
+- name: Embedding
+  internalService:
+    config:
+      EMBEDDING_MODEL_SERVER: "vllm"
+      EMBEDDING_MODEL_SERVER_ENDPOINT: "https://your-nai-endpoint.com/enterpriseai/v1"
+      EMBEDDING_MODEL_NAME: "bge-base-en-v1-5"
+      EMBEDDING_VLLM_API_KEY: "your-api-key-here"
+- name: Reranking
+  internalService:
+    config:
+      # NAI exposes a Cohere-style /rerank API, use the dedicated "nai" model server type
+      RERANKING_MODEL_SERVER: "nai"
+      RERANKING_SERVICE_ENDPOINT: "https://your-nai-endpoint.com/enterpriseai/v1"
+      RERANKING_MODEL_NAME: "bge-reranker-base"
+      RERANKING_VLLM_API_KEY: "your-api-key-here"
+```
+
+> [!NOTE]
+> NAI's embedding endpoint is OpenAI-compatible, so the embedding step uses the standard `vllm` model server type. NAI's reranking endpoint uses a Cohere-style `/rerank` API (different request/response schema than raw vLLM `/score`), so the reranking step must use the dedicated `nai` model server type.
+
  Additionally, if eRAG and NAI are on the same cluster, balloons needs to be configured:
 ```yaml
 balloons:
     ...
-    vllm_custom_name: "kserve-container" 
+    vllm_custom_name: "kserve-container"
+    # If NAI also serves reranking/embedding, pin those endpoints too. NAI deploys
+    # every model under the same container name ("kserve-container"), so match by the
+    # NAI `endpoint` pod label instead. The label value equals the NAI endpoint
+    # (model) name, i.e. the same value as RERANKING_MODEL_NAME / EMBEDDING_MODEL_NAME
+    # in the pipeline above.
+    # reranking_custom_name: "bge-reranker-base"   # == RERANKING_MODEL_NAME
+    # reranking_custom_match_by: "endpoint"
+    # embedding_custom_name: "bge-base-en-v1-5"     # == EMBEDDING_MODEL_NAME
+    # embedding_custom_match_by: "endpoint"
 ```
+
+> [!IMPORTANT]
+> Endpoint-label matching and container-name matching cannot be mixed on the same node: if any service uses `match_by: "endpoint"`, all balloon-pinned services on that node must also match by the `endpoint` label. This is because NRI balloons `preserve` expressions use OR semantics, so a container-name preserve expression would also preserve (and thus fail to pin) the endpoint pods. See [the balloons README](../../deployment/components/nri-plugin/README.md#configuration) for details.
 
 ---
 ## 4. Deploy Intel® AI for Enterprise RAG
@@ -277,6 +314,30 @@ kubectl patch secret vllm-api-key-secret \
 ```
 
 Replace `YOUR_NUTANIX_AI_API_KEY_HERE` with the actual API key from your Nutanix Enterprise AI endpoint.
+
+## Update the Balloons Policy (if pinning external reranking/embedding by endpoint label)
+
+If balloons pins an external reranking/embedding endpoint by its NAI `endpoint` label (`*_custom_match_by: "endpoint"`) and the endpoint/model name changed, repoint the balloon at the new name. The balloon name is fixed (`reranking-balloon` / `embedding-balloon`); only the matched label value changes. Patch each node's policy (replace `<node-name>` and the endpoint name):
+
+```bash
+# Reranking
+kubectl patch balloonspolicy node.<node-name> -n kube-system --type merge \
+  -p '{"spec":{"balloonTypes":[{"name":"reranking-balloon","matchExpressions":[{"key":"pod/labels/endpoint","operator":"In","values":["NEW_RERANKING_ENDPOINT_NAME"]}]}]}}'
+
+# Embedding
+kubectl patch balloonspolicy node.<node-name> -n kube-system --type merge \
+  -p '{"spec":{"balloonTypes":[{"name":"embedding-balloon","matchExpressions":[{"key":"pod/labels/endpoint","operator":"In","values":["NEW_EMBEDDING_ENDPOINT_NAME"]}]}]}}'
+```
+
+After patching, restart the affected endpoint pods so the policy is re-applied to them (use the `endpoint` label to target them):
+
+```bash
+kubectl delete pod -n nai-admin -l endpoint=NEW_RERANKING_ENDPOINT_NAME
+kubectl delete pod -n nai-admin -l endpoint=NEW_EMBEDDING_ENDPOINT_NAME
+```
+
+> [!NOTE]
+> Re-running the installer with the updated `*_custom_name` value regenerates the policy and restarts the pods automatically; the steps above are only for a manual in-place update.
 
 ## Verify the Configuration
 

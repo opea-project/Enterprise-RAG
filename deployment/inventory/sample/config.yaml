@@ -150,6 +150,10 @@ balloons:
   max_replicas_per_node: 10 # maximum number of each inference service replicas per node; helps to limit overloading nodes with too many pods
   allowed_numa_nodes: [] # restrict balloons to specific NUMA node IDs (e.g. [0] or [0, 1]); empty = use all; single-node deployments only
   vllm_custom_name: "" # Optional: Custom container name reference for vLLM balloon
+  reranking_custom_name: "" # Optional: Custom container/endpoint reference for external reranking balloon
+  reranking_custom_match_by: "container" # How reranking_custom_name is matched: "container" (container name) or "endpoint" (Nutanix Enterprise AI `endpoint` pod label, e.g. "bge-reranker-base")
+  embedding_custom_name: "" # Optional: Custom container/endpoint reference for external embedding balloon
+  embedding_custom_match_by: "container" # How embedding_custom_name is matched: "container" (container name) or "endpoint" (Nutanix Enterprise AI `endpoint` pod label, e.g. "bge-base-en-v1-5")
 
 # Pipeline configuration mode
 # Set to true to use upload-optimized pipeline (embedding + model server only)

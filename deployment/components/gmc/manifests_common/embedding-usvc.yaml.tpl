@@ -1,3 +1,5 @@
+{{- $envData := include "manifest.addEnvsAndEnvFile" (list .filename .) -}}
+{{- $filteredEnvData := regexReplaceAll "(?m)^EMBEDDING_VLLM_API_KEY:.*\n?" $envData "" -}}
 ---
 # Source: embedding-usvc/templates/configmap.yaml
 # Copyright (C) 2024-2026 Intel Corporation
@@ -10,7 +12,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
-  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  {{- $filteredEnvData | nindent 2 }}
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
@@ -95,6 +97,13 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: EMBEDDING_VLLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: embedding-vllm-api-key-secret
+                  key: EMBEDDING_VLLM_API_KEY
+                  optional: true
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "manifest.image" (list .filename .Values) }}

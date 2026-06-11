@@ -87,7 +87,12 @@
 
 - name: Find pods
   ansible.builtin.include_tasks:
-    file: find_custom_vllm_pods.yaml
+    file: find_custom_pods.yaml
+  vars:
+    custom_container_name: "{{ balloons.vllm_custom_name }}"
+    custom_pods_var: "vllm_custom_pods"
+    match_by: "{{ balloons.vllm_custom_match_by | default('container') }}"
+  when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
   tags:
     - install
 
@@ -125,6 +130,7 @@
       docs/advanced_configuration.md to fix this issue
   loop: "{{ pods_by_node | from_json | dict2items }}"
   when:
+    - vllm_custom_pods is defined
     - (item.value | int) >
       ((optimal_replicas[item.key].replicas | int) *
       (optimal_replicas[item.key].adjusted_vllm_size | int) * 1000)
@@ -136,7 +142,9 @@
     msg: >-
       No custom vLLM pods found. Expected vllm_custom_pods to be defined
       and not empty.
-  when: vllm_custom_pods is not defined or vllm_custom_pods | length == 0
+  when:
+    - balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
+    - vllm_custom_pods is not defined or vllm_custom_pods | length == 0
   tags:
     - install
 
@@ -149,13 +157,18 @@
     wait: false
     wait_timeout: 60
   loop: "{{ vllm_custom_pods }}"
-  when: vllm_custom_pods is defined and vllm_custom_pods | length > 0
+  when:
+    - custom_balloons_restart | default(true)
+    - vllm_custom_pods is defined and vllm_custom_pods | length > 0
   tags:
     - install
 
 - name: Set vllm_old_pods
   ansible.builtin.set_fact:
     vllm_old_pods: "{{ vllm_custom_pods | to_json }}"
+  when:
+    - custom_balloons_restart | default(true)
+    - vllm_custom_pods is defined and vllm_custom_pods | length > 0
   tags:
     - install
 
@@ -168,7 +181,11 @@
 
     - name: Find custom vLLM pods
       ansible.builtin.include_tasks:
-        file: find_custom_vllm_pods.yaml
+        file: find_custom_pods.yaml
+      vars:
+        custom_container_name: "{{ balloons.vllm_custom_name }}"
+        custom_pods_var: "vllm_custom_pods"
+        match_by: "{{ balloons.vllm_custom_match_by | default('container') }}"
 
     - name: Check if all pods are recreated
       ansible.builtin.assert:
@@ -185,6 +202,67 @@
     - debug:
         msg: "Pods were not recreated"
 
-    - include_tasks: find_custom_vllm_pods.yaml
+    - include_tasks: find_custom_pods.yaml
+      vars:
+        custom_container_name: "{{ balloons.vllm_custom_name }}"
+        custom_pods_var: "vllm_custom_pods"
+        match_by: "{{ balloons.vllm_custom_match_by | default('container') }}"
+  tags:
+    - install
+
+# Custom external reranking / embedding endpoints (e.g. Nutanix Enterprise AI).
+# Discovered for balloon CPU sizing, then restarted (after vLLM) so the balloons
+# policy is applied to them.
+- name: Discover custom reranking pods
+  ansible.builtin.include_tasks:
+    file: find_custom_pods.yaml
+  vars:
+    custom_container_name: "{{ balloons.reranking_custom_name }}"
+    custom_pods_var: "reranking_custom_pods"
+    match_by: "{{ balloons.reranking_custom_match_by | default('container') }}"
+  when: balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0
+  tags:
+    - install
+
+- name: Discover custom embedding pods
+  ansible.builtin.include_tasks:
+    file: find_custom_pods.yaml
+  vars:
+    custom_container_name: "{{ balloons.embedding_custom_name }}"
+    custom_pods_var: "embedding_custom_pods"
+    match_by: "{{ balloons.embedding_custom_match_by | default('container') }}"
+  when: balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0
+  tags:
+    - install
+
+- name: Restart custom reranking pods to apply balloons policy
+  kubernetes.core.k8s:
+    kind: Pod
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+    state: absent
+    wait: false
+    wait_timeout: 60
+  loop: "{{ reranking_custom_pods }}"
+  when:
+    - custom_balloons_restart | default(true)
+    - balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0
+    - reranking_custom_pods is defined and reranking_custom_pods | length > 0
+  tags:
+    - install
+
+- name: Restart custom embedding pods to apply balloons policy
+  kubernetes.core.k8s:
+    kind: Pod
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+    state: absent
+    wait: false
+    wait_timeout: 60
+  loop: "{{ embedding_custom_pods }}"
+  when:
+    - custom_balloons_restart | default(true)
+    - balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0
+    - embedding_custom_pods is defined and embedding_custom_pods | length > 0
   tags:
     - install

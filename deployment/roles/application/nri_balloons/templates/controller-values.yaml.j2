@@ -5,8 +5,20 @@ image:
   repository: {{ registry }}/erag-nri-balloons-controller
   tag: {{ tag }}
 
+{# Collect endpoint-label selectors for any custom service matched by the NAI `endpoint` label. #}
+{% set endpoint_labels = [] %}
+{% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 and (balloons.vllm_custom_match_by | default('container')) == 'endpoint' %}
+{% set _ = endpoint_labels.append('endpoint=' ~ balloons.vllm_custom_name) %}
+{% endif %}
+{% if balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0 and (balloons.reranking_custom_match_by | default('container')) == 'endpoint' %}
+{% set _ = endpoint_labels.append('endpoint=' ~ balloons.reranking_custom_name) %}
+{% endif %}
+{% if balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0 and (balloons.embedding_custom_match_by | default('container')) == 'endpoint' %}
+{% set _ = endpoint_labels.append('endpoint=' ~ balloons.embedding_custom_name) %}
+{% endif %}
 config:
-  targetContainerName: {{ balloons.vllm_custom_name }}
+  targetContainerName: {{ balloons.vllm_custom_name if (balloons.vllm_custom_match_by | default('container')) != 'endpoint' else '' }}
+  targetPodLabels: "{{ endpoint_labels | join(',') }}"
   initContainer:
     image: {{ registry }}/erag-init-container:{{ tag }}
     name: {{ balloons.controller.initContainer.name }}

@@ -22,6 +22,7 @@ from comps import (
     statistics_dict,
 )
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
+from comps.cores.mega.utils import get_access_token
 from comps.embeddings.utils.opea_embedding import OPEAEmbedding
 
 # Define the unique service name for the microservice
@@ -38,11 +39,22 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 if os.getenv("EMBEDDING_CONNECTOR"):
     logger.warning("EMBEDDING_CONNECTOR environment variable is deprecated and will be ignored.")
 
+# Get the token
+access_token = get_access_token(sanitize_env(os.getenv('EMBEDDING_VLLM_TOKEN_URL')), sanitize_env(os.getenv('EMBEDDING_VLLM_CLIENT_ID')), sanitize_env(os.getenv('EMBEDDING_VLLM_CLIENT_SECRET'))) if sanitize_env(os.getenv('EMBEDDING_VLLM_TOKEN_URL')) and sanitize_env(os.getenv('EMBEDDING_VLLM_CLIENT_ID')) and sanitize_env(os.getenv('EMBEDDING_VLLM_CLIENT_SECRET')) else None
+# If token is passed directly override it
+if os.getenv('EMBEDDING_VLLM_API_KEY'):
+    access_token = sanitize_env(os.getenv('EMBEDDING_VLLM_API_KEY'))
+
+headers = {}
+if access_token:
+    headers = {"Authorization": f"Bearer {access_token}"}
+
 # Initialize an instance of the OPEAEmbedding class with environment variables.
 opea_embedding = OPEAEmbedding(
     model_name=sanitize_env(os.getenv("EMBEDDING_MODEL_NAME")),
     model_server=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER")),
     endpoint=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER_ENDPOINT")),
+    headers=headers,
 )
 
 # Register the microservice with the specified configuration.

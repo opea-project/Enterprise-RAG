@@ -1,3 +1,5 @@
+{{- $envData := include "manifest.addEnvsAndEnvFile" (list .filename .) -}}
+{{- $filteredEnvData := regexReplaceAll "(?m)^RERANKING_VLLM_API_KEY:.*\n?" $envData "" -}}
 ---
 # Source: reranking-usvc/templates/configmap.yaml
 # Copyright (C) 2024-2026 Intel Corporation
@@ -10,7 +12,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
-  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  {{- $filteredEnvData | nindent 2 }}
   RERANKING_SERVICE_ENDPOINT: "http://reranking-usvc-teirerank"
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
@@ -83,6 +85,8 @@ spec:
             - |
                 if [ -z "$RERANKING_SERVICE_ENDPOINT" ]; then
                   echo "Environment variable RERANKING_SERVICE_ENDPOINT is not set. Skipping the init container.";
+                elif [ "$RERANKING_MODEL_SERVER" = "nai" ]; then
+                  echo "RERANKING_MODEL_SERVER is 'nai' (external endpoint). Skipping readiness check.";
                 elif [ -z "$RERANKING_MODEL_NAME" ]; then
                   echo "Environment variable RERANKING_MODEL_NAME is not set. Skipping torchserve check.";
                 elif [ "$RERANKING_MODEL_SERVER" = "torchserve" ]; then
@@ -111,6 +115,13 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: RERANKING_VLLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: reranking-vllm-api-key-secret
+                  key: RERANKING_VLLM_API_KEY
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

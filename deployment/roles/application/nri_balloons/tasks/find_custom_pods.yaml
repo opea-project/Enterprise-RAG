@@ -1,0 +1,52 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# Discovers pods that should be pinned to a custom balloon.
+# Parameters:
+#   custom_container_name : value to match against
+#   custom_pods_var       : name of the fact to store the result list in
+#   match_by              : "container" (default) matches the container name;
+#                           "endpoint" matches the Nutanix Enterprise AI
+#                           `endpoint` pod label (used when several services
+#                           share one container name, e.g. KServe's
+#                           "kserve-container").
+- name: "Find pods with custom {{ custom_container_name }} (match_by={{ match_by | default('container') }})"
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ item }}"
+  loop: "{{ query('kubernetes.core.k8s', kind='Namespace', kubeconfig=kubeconfig) | map(attribute='metadata.name') | list }}"
+  register: all_pods
+  tags:
+    - install
+
+- name: "Filter pods matching {{ custom_container_name }}"
+  ansible.builtin.set_fact:
+    "{{ custom_pods_var }}_json": |
+      {% set filtered_pods = [] %}
+      {% set match_by = match_by | default('container') %}
+      {% for result in all_pods.results | selectattr('resources', 'defined') %}
+        {% for pod in result.resources | selectattr('spec', 'defined') | selectattr('spec.containers', 'defined') %}
+          {% for container in pod.spec.containers %}
+            {% if (match_by == 'endpoint' and (pod.metadata.labels | default({})).get('endpoint', '') == custom_container_name) or (match_by != 'endpoint' and custom_container_name in container.name) %}
+              {% set _ = filtered_pods.append({
+                'name': pod.metadata.name,
+                'namespace': pod.metadata.namespace,
+                'node_name': pod.spec.nodeName | default('unscheduled'),
+                'cpu_limits': container.resources.limits.cpu | default('0')
+              }) %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% endfor %}
+      {{ filtered_pods | unique | to_json }}
+  when: all_pods.results is defined
+  tags:
+    - install
+
+- name: "Parse {{ custom_pods_var }} JSON"
+  ansible.builtin.set_fact:
+    "{{ custom_pods_var }}": "{{ lookup('vars', custom_pods_var + '_json') | from_json }}"
+  when: lookup('vars', custom_pods_var + '_json', default='') | length > 0
+  tags:
+    - install

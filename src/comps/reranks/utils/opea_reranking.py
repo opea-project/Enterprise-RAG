@@ -5,7 +5,7 @@ import asyncio
 import heapq
 import json
 from docarray import DocList
-from typing import List, TypedDict, Dict
+from typing import List, TypedDict, Dict, Optional
 import aiohttp
 
 from asyncio import TimeoutError
@@ -27,10 +27,10 @@ RerankScoreResponse = List[RerankScoreItem]
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-SUPPORTED_MODEL_SERVERS = ["torchserve", "tei", "vllm"]
+SUPPORTED_MODEL_SERVERS = ["torchserve", "tei", "vllm", "nai"]
 
 class OPEAReranker:
-    def __init__(self, service_endpoint: str, model_server: str, model_name: str = None, late_chunking_enabled: bool = True):
+    def __init__(self, service_endpoint: str, model_server: str, model_name: str = None, late_chunking_enabled: bool = True, headers: Optional[Dict[str, str]] = None):
         """
          Initialize the OPEAReranker instance with the given parameter
         Sets up the reranker.
@@ -40,6 +40,7 @@ class OPEAReranker:
             :param model_server: the model server type (e.g., 'torchserve', 'tei')
             :param model_name: the model name (required for torchserve)
             :param late_chunking_enabled: if True, bypass reranker and use vector distances
+            :param headers: optional HTTP headers (e.g. Authorization) sent with every request
 
         Raises:
             ValueError: If the required param is missing or empty.
@@ -48,6 +49,7 @@ class OPEAReranker:
         self._service_endpoint = service_endpoint
         self._model_server = model_server.lower()
         self.late_chunking_enabled = late_chunking_enabled
+        self._headers = headers if headers is not None else {}
         self._validate_config()
 
         if not self.late_chunking_enabled:
@@ -62,6 +64,14 @@ class OPEAReranker:
                     raise ValueError("The 'RERANKING_MODEL_NAME' cannot be empty when using 'vllm' as the model server.")
                 self._model_name = model_name
                 self._service_endpoint = self._service_endpoint.rstrip('/') + '/score'
+            elif self._model_server == "nai":
+                if not model_name:
+                    raise ValueError("The 'RERANKING_MODEL_NAME' cannot be empty when using 'nai' as the model server.")
+                self._model_name = model_name
+                # NAI exposes the Cohere-style rerank API under /v1/rerank. The configured
+                # endpoint is the API base (e.g. ".../enterpriseai"), matching the OpenAI
+                # convention used by the embedding/LLM services.
+                self._service_endpoint = self._service_endpoint.rstrip('/') + '/v1/rerank'
 
         self._validate()
 
@@ -235,11 +245,14 @@ class OPEAReranker:
             Exception: For any other exceptions that occur during the request.
         """
 
-        # vLLM exposes an OpenAI-compatible /v1/score endpoint that takes a
-        # different payload and wraps the scores in a {"data": [...]} object.
-        # torchserve/tei take {"query", "texts"} and return the bare list.
+        # Each model server expects a different request payload:
+        # - vLLM: OpenAI-compatible /v1/score, {"model", "text_1", "text_2"}, wraps scores in {"data": [...]}
+        # - nai:  Cohere-style /v1/rerank, {"model", "query", "documents": [{text}]}, returns {"results": [{index, relevance_score}]}
+        # - torchserve/tei: {"query", "texts"}, returns the bare [{index, score}] list.
         if self._model_server == "vllm":
             data = {"model": self._model_name, "text_1": user_prompt, "text_2": retrieved_docs}
+        elif self._model_server == "nai":
+            data = {"model": self._model_name, "query": user_prompt, "documents": [{"text": doc} for doc in retrieved_docs]}
         else:
             data = {"query": user_prompt, "texts": retrieved_docs}
 
@@ -248,11 +261,15 @@ class OPEAReranker:
                 async with session.post(
                     self._service_endpoint,
                     data=json.dumps(data),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", **self._headers},
                     timeout=180
                 ) as response:
                     response_data = await response.json(content_type=None)
                     response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
+                    # NAI returns {"results": [{index, relevance_score}]}; normalise to [{index, score}].
+                    if self._model_server == "nai":
+                        results = response_data.get("results", []) if isinstance(response_data, dict) else response_data
+                        return [{"index": item["index"], "score": item["relevance_score"]} for item in results]
                     # vLLM wraps the scores in {"data": [{index, score}, ...]}
                     if isinstance(response_data, dict):
                         return response_data.get("data", response_data)

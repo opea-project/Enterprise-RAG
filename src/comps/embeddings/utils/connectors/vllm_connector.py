@@ -4,7 +4,7 @@
 
 import aiohttp
 import asyncio
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from comps import get_opea_logger
 from comps.embeddings.utils.connectors.connector import EmbeddingConnector
@@ -26,10 +26,10 @@ class VLLMConnector(EmbeddingConnector):
 
     _instance = None
 
-    def __new__(cls, model_name: str, endpoint: str, timeout: int = 60, api_config: Optional[dict] = None):
+    def __new__(cls, model_name: str, endpoint: str, timeout: int = 60, api_config: Optional[dict] = None, headers: Optional[Dict[str, str]] = None):
         if cls._instance is None:
             cls._instance = super(VLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, endpoint, timeout, api_config)
+            cls._instance._initialize(model_name, endpoint, timeout, api_config, headers)
         else:
             if cls._instance._model_name != model_name:
                 logger.warning(
@@ -39,14 +39,14 @@ class VLLMConnector(EmbeddingConnector):
                 )
         return cls._instance
 
-    def __init__(self, model_name: str, endpoint: str, timeout: int = 60, api_config: Optional[dict] = None):
+    def __init__(self, model_name: str, endpoint: str, timeout: int = 60, api_config: Optional[dict] = None, headers: Optional[Dict[str, str]] = None):
         # Singleton pattern: all initialization is done once in __new__ -> _initialize.
         # This override prevents EmbeddingConnector.__init__ from being called on every
         # subsequent instantiation attempt, which would reset self._endpoint to the raw
         # URL (without the /v1/embeddings suffix).
         pass
 
-    def _initialize(self, model_name: str, endpoint: str, timeout: int = 60, api_config: Optional[dict] = None):
+    def _initialize(self, model_name: str, endpoint: str, timeout: int = 60, api_config: Optional[dict] = None, headers: Optional[Dict[str, str]] = None):
         """
         Initialize vLLM Embeddings connector.
 
@@ -55,11 +55,13 @@ class VLLMConnector(EmbeddingConnector):
             endpoint: Base URL of the vLLM server (e.g., 'http://localhost:8108')
             timeout: Timeout for API requests in seconds
             api_config: Additional configuration for the API
+            headers: Optional HTTP headers (e.g. Authorization) sent with every request
         """
         super().__init__(model_name, endpoint, api_config)
         self._endpoint = endpoint.rstrip('/') + '/v1/embeddings'
 
         self._timeout = timeout
+        self._headers = headers if headers is not None else {}
 
         if api_config is not None:
             self._set_api_config(api_config)
@@ -95,7 +97,7 @@ class VLLMConnector(EmbeddingConnector):
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     self._endpoint,
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", **self._headers},
                     json=input_data,
                     timeout=aiohttp.ClientTimeout(total=self._timeout)
                 ) as response:

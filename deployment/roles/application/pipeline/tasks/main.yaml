@@ -223,6 +223,48 @@
     - install
     - update-configuration
 
+- name: Extract RERANKING_VLLM_API_KEY from pipeline configuration
+  ansible.builtin.set_fact:
+    reranking_vllm_api_key: "{{ (lookup('file', pipelines_dir + effective_sample_path) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Reranking') | map(attribute='internalService.config.RERANKING_VLLM_API_KEY') | first | default('') }}"
+  when:
+    - effective_sample_path is defined
+    - (lookup('file', pipelines_dir + effective_sample_path) | from_yaml | default({})).spec.nodes.root.steps | selectattr('name', 'equalto', 'Reranking') | selectattr('internalService.config.RERANKING_VLLM_API_KEY', 'defined') | list | length > 0
+  tags:
+    - install
+    - update-configuration
+
+- name: Create reranking VLLM API key secret from template
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'reranking-vllm-api-key-secret.yaml.j2') | from_yaml }}"
+  when:
+    - reranking_vllm_api_key is defined
+    - reranking_vllm_api_key != ''
+  tags:
+    - install
+    - update-configuration
+
+- name: Extract EMBEDDING_VLLM_API_KEY from pipeline configuration
+  ansible.builtin.set_fact:
+    embedding_vllm_api_key: "{{ (lookup('file', pipelines_dir + effective_sample_path) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Embedding') | map(attribute='internalService.config.EMBEDDING_VLLM_API_KEY') | first | default('') }}"
+  when:
+    - effective_sample_path is defined
+    - (lookup('file', pipelines_dir + effective_sample_path) | from_yaml | default({})).spec.nodes.root.steps | selectattr('name', 'equalto', 'Embedding') | selectattr('internalService.config.EMBEDDING_VLLM_API_KEY', 'defined') | list | length > 0
+  tags:
+    - install
+    - update-configuration
+
+- name: Create embedding VLLM API key secret from template
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'embedding-vllm-api-key-secret.yaml.j2') | from_yaml }}"
+  when:
+    - embedding_vllm_api_key is defined
+    - embedding_vllm_api_key != ''
+  tags:
+    - install
+    - update-configuration
+
 - name: Apply pipeline
   kubernetes.core.k8s:
     state: present

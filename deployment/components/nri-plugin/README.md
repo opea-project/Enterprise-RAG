@@ -43,6 +43,10 @@ balloons:
   throughput_mode: true
   wait_timeout: 300
   # vllm_custom_name: "kserve-container" # Optional: Custom container name for external vLLM
+  # reranking_custom_name: "" # Optional: Custom container name or NAI endpoint for external reranking
+  # reranking_custom_match_by: "container" # "container" or "endpoint"
+  # embedding_custom_name: "" # Optional: Custom container name or NAI endpoint for external embedding
+  # embedding_custom_match_by: "container" # "container" or "endpoint"
 ```
 **Configuration Options:**
 - **`enabled`**: Set to `true` to activate topology-aware resource scheduling
@@ -50,6 +54,11 @@ balloons:
 - **`throughput_mode`**: Enable throughput optimization to maximize replica count (see [Calculation Algorithm](#calculation-algorithm))
 - **`wait_timeout`**: Maximum time in seconds NRI managed pods wait for plugin readiness
 - **`vllm_custom_name`**: (Optional) Custom container name to pin CPU cores to external vLLM instances running in the same Kubernetes cluster. To find the container name, describe the vLLM pod: `kubectl describe pod <vllm-pod-name>` and check `spec.containers[].name`
+- **`reranking_custom_name`** / **`embedding_custom_name`**: (Optional) Pin CPU cores to an external reranking/embedding service in the same cluster. By default matched against the container name. When `*_custom_match_by` is set to `endpoint`, the value is matched against the pod's `endpoint` label instead — used for Nutanix Enterprise AI, where every model shares the container name `kserve-container` and is distinguished only by the `endpoint` label (which equals the NAI endpoint/model name).
+- **`reranking_custom_match_by`** / **`embedding_custom_match_by`**: (Optional) How `*_custom_name` is matched: `container` (default, container name) or `endpoint` (NAI `endpoint` pod label).
+
+> [!IMPORTANT]
+> Endpoint-label matching and container-name matching **cannot be mixed on the same node**. If any service uses `match_by: endpoint`, then all balloon-pinned services on that node must also be matched by the `endpoint` label (you cannot, for example, pin the LLM by `endpoint` label while pinning reranking/embedding by container name on the same node). This is an inherent constraint of the NRI balloons `preserve.matchExpressions`, which use OR semantics: a container is left unpinned if it matches *any* expression. A container-name preserve expression (`name NotIn [...]`) would therefore also match — and thus preserve — the endpoint pods, preventing them from ever being pinned. For this reason, when any service matches by `endpoint`, the generated policy uses a single `pod/labels/endpoint NotIn [...]` preserve expression and drops the container-name expression entirely.
 
 ### Resource Requirements
 

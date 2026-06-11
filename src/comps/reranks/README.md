@@ -43,8 +43,16 @@ The configuration for the Reranking Microservice is specified in the [impl/micro
 |-----------------------------|----------------------------------------------------------------------------|
 | `RERANKING_USVC_PORT`       | The port of the microservice, by default 8000                              |
 | `RERANKING_SERVICE_ENDPOINT`     | The endpoint of the reranking service, e.g., "http://localhost:6060" |
-| `RERANKING_MODEL_SERVER`     | The name of model server chose, e.g. "torchserve" |
+| `RERANKING_MODEL_SERVER`     | The name of model server chose, e.g. "torchserve", "tei", "vllm", "nai" (Nutanix Enterprise AI rerank endpoint) |
 | `RERANKING_LATE_CHUNKING_ENABLED` | Flag informing if the late chunking is enabled. Default: False |
+
+Set below environment variables only for VLLM if remote model server is enabled with token based authentication (OAuth).
+| `RERANKING_VLLM_CLIENT_ID`                 | The client id in auth provider |
+| `RERANKING_VLLM_CLIENT_SECRET`             | The secret of the client in auth provider |
+| `RERANKING_VLLM_TOKEN_URL`                 | The token URL to get the access token |
+
+Alternatively, static API KEY can be provided. This will override OAuth settings.
+| `RERANKING_VLLM_API_KEY` | static API key for vllm endpoint |
 
 
 ## Getting started

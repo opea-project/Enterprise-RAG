@@ -59,6 +59,12 @@ config:
   configMapNamespace: default
   # Target container name to watch for (can be overridden in ConfigMap)
   targetContainerName: "kserve-container"
+  # Optional comma-separated list of "key=value" pod-label selectors. A pod is a
+  # target if it matches the container name above OR any of these labels. Useful
+  # when several services share one container name (e.g. KServe's "kserve-container")
+  # but are distinguished by a label such as the Nutanix Enterprise AI `endpoint` label.
+  # Example: "endpoint=meta-llama-3-1-8b-in,endpoint=bge-reranker-base"
+  targetPodLabels: ""
   # Init container configuration
   initContainer:
     image: erag-init-container

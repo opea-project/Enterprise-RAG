@@ -55,6 +55,14 @@ The configuration for the Embedding Microservice is specified in the [impl/micro
 | `EMBEDDING_MODEL_SERVER`            | Specifies the type of model server (e.g. "tei", "vllm", "ovms")    |
 | `EMBEDDING_MODEL_SERVER_ENDPOINT`   | URL of the model server endpoint, e.g., "http://localhost:8090"    |
 
+Set below environment variables only for VLLM if remote model server is enabled with token based authentication (OAuth).
+| `EMBEDDING_VLLM_CLIENT_ID`                 | The client id in auth provider |
+| `EMBEDDING_VLLM_CLIENT_SECRET`             | The secret of the client in auth provider |
+| `EMBEDDING_VLLM_TOKEN_URL`                 | The token URL to get the access token |
+
+Alternatively, static API KEY can be provided. This will override OAuth settings.
+| `EMBEDDING_VLLM_API_KEY` | static API key for vllm endpoint |
+
 
 ## Getting started
 

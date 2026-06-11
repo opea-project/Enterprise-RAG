@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -55,18 +56,25 @@ func (m *PodMutator) Handle(ctx context.Context, req admission.Request) admissio
 	}
 	log := m.Log.WithValues("pod", podName, "namespace", pod.Namespace)
 
-	// Get target container name from environment
+	// A pod is a target if it matches by container name OR by one of the
+	// configured pod labels. At least one of TARGET_CONTAINER_NAME or
+	// TARGET_POD_LABELS must be set.
 	targetContainerName := getEnv("TARGET_CONTAINER_NAME", "")
-	if targetContainerName == "" {
-		err := fmt.Errorf("TARGET_CONTAINER_NAME environment variable not set")
+	targetPodLabels := parseLabelSelectors(getEnv("TARGET_POD_LABELS", ""))
+
+	if targetContainerName == "" && len(targetPodLabels) == 0 {
+		err := fmt.Errorf("neither TARGET_CONTAINER_NAME nor TARGET_POD_LABELS environment variable set")
 		log.Error(err, "configuration error")
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	// Check if pod contains target container
-	if !m.containsTargetContainer(pod, targetContainerName) {
-		log.V(1).Info("pod does not contain target container, skipping", "targetContainer", targetContainerName)
-		return admission.Allowed("target container not found")
+	matchedByContainer := targetContainerName != "" && m.containsTargetContainer(pod, targetContainerName)
+	matchedByLabel := len(targetPodLabels) > 0 && m.matchesTargetLabels(pod, targetPodLabels)
+
+	if !matchedByContainer && !matchedByLabel {
+		log.V(1).Info("pod does not match target container or labels, skipping",
+			"targetContainer", targetContainerName, "targetPodLabels", targetPodLabels)
+		return admission.Allowed("pod is not a balloons target")
 	}
 
 	// Check if init container already exists
@@ -198,6 +206,47 @@ func (m *PodMutator) containsTargetContainer(pod *corev1.Pod, targetName string)
 	for _, container := range pod.Spec.Containers {
 		if container.Name == targetName {
 			return true
+		}
+	}
+	return false
+}
+
+// parseLabelSelectors parses a comma-separated list of "key=value" pairs into a map.
+// Example: "endpoint=bge-reranker-base,endpoint=bge-base-en-v1-5" -> map keyed by value.
+// Since several entries can share a key (e.g. multiple "endpoint" values), the result
+// is a map of key -> set of accepted values.
+func parseLabelSelectors(raw string) map[string]map[string]struct{} {
+	selectors := map[string]map[string]struct{}{}
+	for _, pair := range strings.Split(raw, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1])
+		if key == "" || value == "" {
+			continue
+		}
+		if _, ok := selectors[key]; !ok {
+			selectors[key] = map[string]struct{}{}
+		}
+		selectors[key][value] = struct{}{}
+	}
+	return selectors
+}
+
+// matchesTargetLabels checks if the pod has any label key whose value is in the
+// configured accepted values for that key.
+func (m *PodMutator) matchesTargetLabels(pod *corev1.Pod, selectors map[string]map[string]struct{}) bool {
+	for key, values := range selectors {
+		if podValue, ok := pod.Labels[key]; ok {
+			if _, match := values[podValue]; match {
+				return true
+			}
 		}
 	}
 	return false

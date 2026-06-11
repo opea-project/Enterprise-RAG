@@ -15,8 +15,30 @@ spec:
   agent:
     nodeResourceTopology: true
   allocatorTopologyBalancing: true
+{% set vllm_by_endpoint = balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 and (balloons.vllm_custom_match_by | default('container')) == 'endpoint' %}
+{% set reranking_by_endpoint = balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0 and (balloons.reranking_custom_match_by | default('container')) == 'endpoint' %}
+{% set embedding_by_endpoint = balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0 and (balloons.embedding_custom_match_by | default('container')) == 'endpoint' %}
   preserve:
     matchExpressions:
+{% if vllm_by_endpoint or reranking_by_endpoint or embedding_by_endpoint %}
+{# NRI preserve matchExpressions use OR semantics: a container is preserved if it
+   matches ANY expression. When any service is matched by the `endpoint` pod label
+   (e.g. Nutanix Enterprise AI, where all models share one container name), preserve
+   everything EXCEPT those endpoints with a single label expression. A `name NotIn`
+   expression cannot be combined here, as it would preserve the endpoint pods too. #}
+    - key: pod/labels/endpoint
+      operator: NotIn
+      values:
+{% if vllm_by_endpoint %}
+      - {{ balloons.vllm_custom_name }}
+{% endif %}
+{% if reranking_by_endpoint %}
+      - {{ balloons.reranking_custom_name }}
+{% endif %}
+{% if embedding_by_endpoint %}
+      - {{ balloons.embedding_custom_name }}
+{% endif %}
+{% else %}
     - key: name
       operator: NotIn
       values:
@@ -25,11 +47,20 @@ spec:
 {% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
       - {{ balloons.vllm_custom_name }}
 {% endif %}
+{% if balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0 %}
+      - {{ balloons.reranking_custom_name }}
+{% else %}
       - {{ reranking_service_type | default('torchserve_reranking') | replace('_', '-') }}
+{% endif %}
+{% if balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0 %}
+      - {{ balloons.embedding_custom_name }}
+{% else %}
       - {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}
+{% endif %}
 {% if audio is defined and audio.enabled %}
       - vllm-audio-cpu
       - tts-fastapi-model-server
+{% endif %}
 {% endif %}
   balloonTypes:
   - name: reserved
@@ -48,6 +79,12 @@ spec:
     loads:
     - llm-inference
     matchExpressions:
+{% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 and (balloons.vllm_custom_match_by | default('container')) == 'endpoint' %}
+    - key: pod/labels/endpoint
+      operator: In
+      values:
+      - {{ balloons.vllm_custom_name }}
+{% else %}
     - key: name
       operator: In
       values:
@@ -56,12 +93,16 @@ spec:
 {% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
       - {{ balloons.vllm_custom_name }}
 {% endif %}
-  - name: {{ reranking_service_type | default('torchserve_reranking') | replace('_', '-') }}-balloon
+{% endif %}
+  - name: {{ reranking_service_type | default('reranking') | replace('_', '-') }}-balloon
+{% if balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0 %}
+    minBalloons: 1
+{% endif %}
     minCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
     maxCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
-{% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
+{% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 and not (balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0) %}
     minBalloons: 0
-{% else %}
+{% elif not (balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0) %}
     minBalloons: {{ maxBalloonsReranker if (reranker_cpus | int) > 0 else 0 }}
 {% endif %}
     maxBalloons: {{ maxBalloonsReranker if (reranker_cpus | int) > 0 else 0 }}
@@ -70,16 +111,30 @@ spec:
     loads:
     - llm-inference
     matchExpressions:
+{% if balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0 and (balloons.reranking_custom_match_by | default('container')) == 'endpoint' %}
+    - key: pod/labels/endpoint
+      operator: In
+      values:
+      - {{ balloons.reranking_custom_name }}
+{% else %}
     - key: name
       operator: In
       values:
+{% if balloons.reranking_custom_name is defined and balloons.reranking_custom_name | length > 0 %}
+      - {{ balloons.reranking_custom_name }}
+{% else %}
       - {{ reranking_service_type | default('torchserve_reranking') | replace('_', '-') }}
-  - name: {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}-balloon
+{% endif %}
+{% endif %}
+  - name: {{ embedding_service_type | default('embedding') | replace('_', '-') }}-balloon
+{% if balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0 %}
+    minBalloons: 1
+{% endif %}
     minCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
     maxCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
-{% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
+{% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 and not (balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0) %}
     minBalloons: 0
-{% else %}
+{% elif not (balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0) %}
     minBalloons: {{ maxBalloonsEmbedding if (embedding_cpus | int) > 0 else 0 }}
 {% endif %}
     maxBalloons: {{ maxBalloonsEmbedding if (embedding_cpus | int) > 0 else 0 }}
@@ -88,10 +143,21 @@ spec:
     loads:
     - llm-inference
     matchExpressions:
+{% if balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0 and (balloons.embedding_custom_match_by | default('container')) == 'endpoint' %}
+    - key: pod/labels/endpoint
+      operator: In
+      values:
+      - {{ balloons.embedding_custom_name }}
+{% else %}
     - key: name
       operator: In
       values:
+{% if balloons.embedding_custom_name is defined and balloons.embedding_custom_name | length > 0 %}
+      - {{ balloons.embedding_custom_name }}
+{% else %}
       - {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}
+{% endif %}
+{% endif %}
   instrumentation:
     httpEndpoint: :8891
     metrics:

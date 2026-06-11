@@ -5,7 +5,7 @@ import asyncio
 import os
 import yaml
 
-from typing import Union
+from typing import Union, Optional, Dict
 
 from comps import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
@@ -33,11 +33,11 @@ class OPEAEmbedding:
 
     _instance = None
 
-    def __new__(cls, model_name: str, model_server: str, endpoint: str):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, headers: Optional[Dict[str, str]] = None):
 
         if cls._instance is None:
             cls._instance = super(OPEAEmbedding, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint)
+            cls._instance._initialize(model_name, model_server, endpoint, headers)
         else:
             if (cls._instance._model_name != model_name or
                 cls._instance._model_server != model_server):
@@ -47,7 +47,7 @@ class OPEAEmbedding:
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str) -> None:
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, headers: Optional[Dict[str, str]] = None) -> None:
         """
         Initializes the OPEAEmbedding instance.
 
@@ -55,10 +55,12 @@ class OPEAEmbedding:
             model_name (str): The full name of the model, which may include the repository ID (e.g., 'BAAI/bge-large-en-v1.5').
             model_server (str): The URL of the model server.
             endpoint (str): The endpoint for the model server.
+            headers (Optional[Dict[str, str]]): Optional HTTP headers (e.g. Authorization) for the model server.
         """
         self._model_name = model_name
         self._model_server = model_server.lower()
         self._endpoint = endpoint
+        self._headers = headers if headers is not None else {}
         self._APIs = []
 
         self.REQUEST_BATCH_SIZE = 16 # how many texts are in one request
@@ -91,6 +93,9 @@ class OPEAEmbedding:
             "endpoint": self._endpoint,
             "api_config": self._api_config
         }
+        # Only the vLLM connector supports authenticated (external) endpoints.
+        if self._model_server == "vllm":
+            kwargs["headers"] = self._headers
         return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
 

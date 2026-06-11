@@ -118,7 +118,12 @@ pipelines:
 
 ### Using external inference endpoint
 
-External inference endpoint with OpenAI compatible API can be also used:
+External inference endpoints with OpenAI compatible API can be used for LLM, embedding, and reranking services. Two reference pipelines are provided:
+
+- `reference-external-endpoint.yaml` — only the LLM is external; embedding and reranking are deployed locally.
+- `reference-external-endpoint-embedding-reranking.yaml` — LLM, embedding, and reranking are all external.
+
+Pick the one that matches your setup:
 
 ```yaml
 pipelines:
@@ -129,7 +134,11 @@ pipelines:
     type: chatqa
 ```
 
-This requires additional configuration in `reference-external-endpoint.yaml` in llm step. i.e.
+
+This requires additional configuration in the chosen pipeline file in llm step. i.e.
+
+**LLM external endpoint:**
+
 ```yaml
       - name: Llm
         data: $response
@@ -139,11 +148,43 @@ This requires additional configuration in `reference-external-endpoint.yaml` in 
           config:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
-            LLM_MODEL_SERVER_ENDPOINT: example.com
+            LLM_MODEL_SERVER_ENDPOINT: https://example.com
             LLM_MODEL_NAME: model-name
 ```
 
-This supports two types of authentication:
+**Embedding external endpoint:**
+```yaml
+      - name: Embedding
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            EMBEDDING_MODEL_SERVER_ENDPOINT: https://example.com
+            EMBEDDING_MODEL_SERVER: "vllm"
+```
+
+**Reranking external endpoint:**
+```yaml
+      - name: Reranking
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: reranking-svc
+          config:
+            endpoint: /v1/reranking
+            RERANKING_SERVICE_ENDPOINT: https://example.com
+            RERANKING_MODEL_SERVER: "vllm"
+            RERANKING_MODEL_NAME: "BAAI/bge-reranker-base"
+```
+
+For a reranking endpoint that exposes a Cohere-style `/rerank` API (e.g. Nutanix Enterprise AI) rather than the raw vLLM `/score` API, set `RERANKING_MODEL_SERVER: "nai"` instead of `"vllm"`.
+
+> [!NOTE]
+> When using an external endpoint, you do not need a downstream model server step (e.g., `VLLMEmbedding`, `VLLMReranking`) in the pipeline — it can be omitted.
+
+LLM authentication supports two types:
 - OAuth
 - Api key
 
@@ -324,6 +365,8 @@ balloons:
   throughput_mode: true # set to true to optimize for horizontal scaling
   memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested
   # vllm_custom_name: "kserve-container" # Optional: Custom container name for external vLLM
+  # reranking_custom_name: "" # Optional: Custom container name for external reranking
+  # embedding_custom_name: "" # Optional: Custom container name for external embedding
 ```
 
 **Benefits**:
@@ -332,20 +375,26 @@ balloons:
 - Reduced context switching
 - Better cache locality
 
-**External vLLM Support**:
+**External Service CPU Pinning**:
 
-The `vllm_custom_name` option allows you to pin CPU cores to external vLLM instances running within the same Kubernetes cluster. This is particularly useful when integrating with third-party AI platforms that deploy their own vLLM containers.
+The `vllm_custom_name`, `reranking_custom_name`, and `embedding_custom_name` options allow you to pin CPU cores to external service instances running within the same Kubernetes cluster. This is particularly useful when integrating with third-party AI platforms that deploy their own containers.
 
-For example, Nutanix AI uses the container name `kserve-container`. To find the correct container name for your external vLLM deployment:
+| Option | Purpose |
+|--------|---------|
+| `vllm_custom_name` | Pin CPUs for external vLLM (LLM inference) pods |
+| `reranking_custom_name` | Pin CPUs for external reranking model server pods |
+| `embedding_custom_name` | Pin CPUs for external embedding model server pods |
+
+For example, Nutanix AI uses the container name `kserve-container`. To find the correct container name for your external deployment:
 
 ```bash
-# Describe the pod running vLLM
-kubectl describe pod <vllm-pod-name> -n <namespace>
+# Describe the pod running the external service
+kubectl describe pod <pod-name> -n <namespace>
 
 # Look for the container name under spec.containers[].name
 ```
 
-When configured, the NRI balloons policy will manage CPU resources for external vLLM instances specified by `vllm_custom_name`.
+When configured, the NRI balloons policy will manage CPU resources for external instances specified by the custom name options.
 
 **Important Deployment Considerations**:
 

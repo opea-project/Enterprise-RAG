@@ -20,6 +20,10 @@
           'minio': edp.minio | default({}) | combine({
             'domainName': 'minio.' + FQDN | default(edp.minio.domainName),
             'apiDomainName': 's3.' + FQDN | default(edp.minio.apiDomainName)
+          }),
+          'seaweedfs': edp.seaweedfs | default({}) | combine({
+            'domainName': 'seaweedfs.' + FQDN | default(edp.seaweedfs.domainName | default('seaweedfs.' + FQDN)),
+            'apiDomainName': 's3.' + FQDN | default(edp.seaweedfs.apiDomainName | default('s3.' + FQDN))
           })
         })
       }}

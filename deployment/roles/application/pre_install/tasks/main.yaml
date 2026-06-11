@@ -72,6 +72,8 @@
         [] +
         ([ui.domainName] if ui.enabled | default(false) else []) +
         ([keycloak.domainName] if keycloak.enabled | default(false) else []) +
+        ([edp.seaweedfs.domainName] if (edp.enabled and edp.storageType == "seaweedfs") | default(false) else []) +
+        ([edp.seaweedfs.apiDomainName] if (edp.enabled and edp.storageType == "seaweedfs") | default(false) else []) +
         ([edp.minio.domainName] if (edp.enabled and edp.storageType == "minio") | default(false) else []) +
         ([edp.minio.apiDomainName] if (edp.enabled and edp.storageType == "minio") | default(false) else []) +
         ([telemetry.domainName] if telemetry.enabled | default(false) else [])

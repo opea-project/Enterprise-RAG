@@ -1,6 +1,6 @@
 ---
 dockerfile: "Dockerfile"
-docker_context: "../../../../"
+docker_context: "../../../"
 dependencies:
   - pip-uv
   - apt
@@ -15,12 +15,6 @@ manual:
 # Added because of manual copy from UV image in Dockerfile
     - name: astral-sh/uv
       origin: github
-      license: MIT
-    - name: curl
-      origin: apt
-      license: MIT
-    - name: msodbcsql18
-      origin: apt
       license: MIT
 # openssl, openssl-provider-legacy and libssl added due to manual security updates
     - name: openssl

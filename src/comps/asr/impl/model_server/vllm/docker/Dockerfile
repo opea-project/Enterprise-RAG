@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-ARG vllm_version=0.18.1
+ARG vllm_version=0.22.1
 
 FROM public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v${vllm_version}
 
@@ -18,6 +18,7 @@ RUN pip install --no-cache "vllm[audio]==${vllm_version}" && \
 
 # Fix known Python package CVEs
 RUN pip install --no-cache-dir --upgrade \
-    "setuptools==82.0.1"
+    "setuptools==82.0.1" \
+    "wheel==0.46.2"
 
 USER user

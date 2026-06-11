@@ -13,6 +13,7 @@ ARG python_version
 
 # Install system packages needed for building
 RUN apt-get update -y && \
+    apt-get install -y --only-upgrade openssl=3.5.6-1~deb13u2 libssl3t64=3.5.6-1~deb13u2 openssl-provider-legacy=3.5.6-1~deb13u2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl

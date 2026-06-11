@@ -77,7 +77,7 @@ RUN \
 
 # Fix known Python package CVEs
 RUN pip install --no-cache-dir --upgrade \
-    "urllib3==2.6.3" \
+    "urllib3==2.7.0" \
     "setuptools==82.0.1" \
     "wheel==0.46.2" \
     "xgrammar==0.1.32"

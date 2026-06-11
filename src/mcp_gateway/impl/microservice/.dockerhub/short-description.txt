@@ -1,0 +1,1 @@
+Intel® AI for Enterprise RAG MCP Gateway for exposing RAG capabilities via Model Context Protocol

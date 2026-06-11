@@ -11,6 +11,7 @@ ENV LANG=C.UTF-8
 ARG python_version
 
 RUN apt-get -y update && \
+    apt-get install -y --only-upgrade openssl=3.5.6-1~deb13u2 libssl3t64=3.5.6-1~deb13u2 openssl-provider-legacy=3.5.6-1~deb13u2 && \
     apt-get install --no-install-recommends --fix-missing -y asciidoctor nano libreoffice libgl1 tesseract-ocr tesseract-ocr-pol libmagic1 ca-certificates curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

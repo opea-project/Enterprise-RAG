@@ -14,6 +14,7 @@ ENV TEMP=/home/user/tmp
 ENV MKL_THREADING_LAYER=GNU
 
 RUN apt-get -y update                           \
+ && apt-get install -y --only-upgrade openssl=3.5.6-1~deb13u2 libssl3t64=3.5.6-1~deb13u2 openssl-provider-legacy=3.5.6-1~deb13u2 \
  && apt-get install -y                          \
     openjdk-21-jdk                              \
     numactl                                     \

@@ -21,3 +21,13 @@ manual:
     - name: astral-sh/uv
       origin: github
       license: MIT
+# openssl, openssl-provider-legacy and libssl added due to manual security updates
+    - name: openssl
+      origin: apt
+      license: Apache 2.0
+    - name: libssl
+      origin: apt
+      license: Apache 2.0
+    - name: openssl-provider-legacy
+      origin: apt
+      license: Apache 2.0

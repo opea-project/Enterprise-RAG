@@ -10,8 +10,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 ENV LANG=C.UTF-8
 ARG python_version
 
-RUN apt-get update -y
-RUN apt-get install -y --no-install-recommends --fix-missing \
+RUN apt-get update -y && \
+    apt-get install -y --only-upgrade openssl=3.5.6-1~deb13u2 libssl3t64=3.5.6-1~deb13u2 openssl-provider-legacy=3.5.6-1~deb13u2 && \
+    apt-get install -y --no-install-recommends --fix-missing \
     libgl1 \
     libjemalloc-dev \
     vim && \

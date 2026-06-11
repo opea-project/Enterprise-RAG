@@ -21,6 +21,10 @@
             namespace: "{{ namespace }}"
             labels: "{{ {managed_secret_label: 'true'} }}"
         merge_type: merge
+      register: label_secret_result
+      until: label_secret_result is succeeded
+      retries: 5
+      delay: 10
 
     - name: Create password mappings annotation value
       set_fact:
@@ -44,3 +48,7 @@
             annotations:
               meta.erag/password-mappings: "{{ password_mappings_annotation_value | trim }}"
         merge_type: merge
+      register: annotate_secret_result
+      until: annotate_secret_result is succeeded
+      retries: 5
+      delay: 10

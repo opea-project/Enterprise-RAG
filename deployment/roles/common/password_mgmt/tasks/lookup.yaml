@@ -13,28 +13,28 @@
         label_selectors:
           - "{{ managed_secret_label }}=true"
       register: managed_secrets
+      until: managed_secrets is succeeded
+      retries: 5
+      delay: 10
 
     - name: Initialize password_image
       set_fact:
         password_image: {}
 
-    - name: Parse password mappings from annotation
-      set_fact:
-        password_mappings: "{{ (item.metadata.annotations[password_mappings_annotation] | default('') | from_yaml) if item.metadata.annotations[password_mappings_annotation] is defined else [] }}"
-      loop: "{{ managed_secrets.resources }}"
-      vars:
-        item: "{{ current_secret }}"
-      register: password_mappings_results
-
     - name: Extract passwords from secret
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Secret
-        name: "{{ item.metadata.name }}"
-        namespace: "{{ item.metadata.namespace }}"
+        name: "{{ current_secret.metadata.name }}"
+        namespace: "{{ current_secret.metadata.namespace }}"
       loop: "{{ managed_secrets.resources }}"
-      when: item.metadata.annotations[password_mappings_annotation] is defined and item.metadata.annotations[password_mappings_annotation] != ""
+      loop_control:
+        loop_var: current_secret
+      when: current_secret.metadata.annotations[password_mappings_annotation] is defined and current_secret.metadata.annotations[password_mappings_annotation] != ""
       register: extracted_passwords
+      until: extracted_passwords is succeeded
+      retries: 5
+      delay: 10
 
     - name: Store extracted passwords in password_image
       set_fact:
@@ -42,8 +42,8 @@
       vars:
         secret_passwords: |
           {%- set result = {} -%}
-          {%- if item.resources and item.resources[0] -%}
-            {%- set secret = item.resources[0] -%}
+          {%- if extracted_secret_result.resources and extracted_secret_result.resources[0] -%}
+            {%- set secret = extracted_secret_result.resources[0] -%}
             {%- set mappings = (secret.metadata.annotations[password_mappings_annotation] | default('') | from_yaml) if secret.metadata.annotations[password_mappings_annotation] is defined else [] -%}
             {%- for mapping in mappings -%}
               {%- set parts = mapping.split('=') -%}
@@ -60,7 +60,9 @@
           {%- endif -%}
           {{ result }}
       loop: "{{ extracted_passwords.results }}"
-      when: item.resources is defined and item.resources | length > 0
+      loop_control:
+        loop_var: extracted_secret_result
+      when: extracted_secret_result.resources is defined and extracted_secret_result.resources | length > 0
 
     - name: Check if credentials file exists
       stat:

@@ -43,7 +43,10 @@ chatqa_endpoints = [
     "reranking-svc.chatqa.svc.cluster.local:8000",
     "retriever-svc.chatqa.svc.cluster.local:6620",
     "router-service.chatqa.svc.cluster.local:8080",
-    "torchserve-reranking-svc.chatqa.svc.cluster.local:8090",
+    # not deployed by default (HPU/torchserve pipeline only)
+    # "torchserve-reranking-svc.chatqa.svc.cluster.local:8090",
+    "vllm-embedding-svc.chatqa.svc.cluster.local:8108",
+    "vllm-reranking-svc.chatqa.svc.cluster.local:8109",
     # vllm endpoint name is different depending on the platform
     # "vllm-service-m.chatqa.svc.cluster.local:8000"
 ]
@@ -101,7 +104,9 @@ if cfg.get("telemetry", {}).get("enabled") and cfg.get("telemetry", {}).get("tra
 telemetry_endpoints = [
     "alertmanager-operated.monitoring.svc.cluster.local:9094",
     "loki-canary.monitoring.svc.cluster.local:3500",
-    "loki-memberlist.monitoring.svc.cluster.local:7946",
+    # loki-memberlist is a headless service; ready_pods() returns [] so ztunnel log lines
+    # can never be matched — verify_query_blocked always TIMEOUTs. The authz policy still protects it.
+    # "loki-memberlist.monitoring.svc.cluster.local:7946",
     # prometheus-adapter serves Kubernetes aggregated API called by kube-apiserver (not in mesh)
     # "prometheus-adapter.monitoring.svc.cluster.local:443",
     "prometheus-operated.monitoring.svc.cluster.local:9090",

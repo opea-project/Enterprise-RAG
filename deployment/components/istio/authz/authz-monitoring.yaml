@@ -252,6 +252,28 @@ spec:
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
+  name: monitoring-loki-memberlist
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/telemetry-logs-loki
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+    to:
+    - operation:
+        ports:
+        - "7946"
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
   name: monitoring-telemetry-prometheus-redis-exporter
   namespace: monitoring
 spec:

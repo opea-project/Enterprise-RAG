@@ -46,6 +46,17 @@ def test_edp_upload_file(edp_helper):
         edp_helper.wait_for_file_upload(file_basename, "ingested", timeout=60)
 
 
+@allure.testcase("IEASG-T627")
+def test_edp_file_contains_embedding_model_name(edp_helper):
+    """Upload a file, wait for ingestion, and verify that the file list response contains the embedding model name"""
+    file = edp_helper.upload_test_file(size=0.001, prefix=method_name(), status="ingested", timeout=60)
+    assert file.get("embedding_model"), (
+        f"Expected 'embedding_model' to be set for ingested file '{file.get('object_name')}', "
+        f"but got: {file.get('embedding_model')!r}"
+    )
+    logger.info(f"File '{file.get('object_name')}' has embedding_model: {file.get('embedding_model')}")
+
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T122")
 def test_edp_delete_file(edp_helper):

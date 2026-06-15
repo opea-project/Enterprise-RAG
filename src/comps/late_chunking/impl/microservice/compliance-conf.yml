@@ -5,6 +5,11 @@ dependencies:
   - pip-uv
   - apt
   - manual
+base-image:
+  override:
+    - python:3.11-slim-trixie
+apt:
+  base-image-override: python:3.11-slim-trixie
 manual:
   packages:
 # Added because of manual copy from UV image in Dockerfile

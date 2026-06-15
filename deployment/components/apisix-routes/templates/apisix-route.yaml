@@ -24,17 +24,15 @@ spec:
       - serviceName: {{ .backend_service }}
         servicePort: {{ .service_port }}
     plugins:
+    {{- if .service_regex }}
     - name: proxy-rewrite
       enable: true
       config:
-        {{- if .service_path }}
-        uri: {{ .service_path }}
-        {{- else if .service_regex }}
         regex_uri:
           {{- range .service_regex }}
           - {{ . }}
           {{- end }}
-        {{- end }}
+    {{- end }}
     - name: limit-count
       enable: true
       config:

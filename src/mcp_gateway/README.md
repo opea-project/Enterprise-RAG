@@ -46,7 +46,8 @@ Retrieves ranked document chunks from the knowledge base without running the ful
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `query` | string | required | Natural-language search phrase |
-| `top_n` | integer | `5` | Number of chunks to return |
+| `top_n` | integer | `5` | Number of ranked chunks to return if reranker is enabled. Ignored if reranker is false. |
+| `k` | integer | `32` | Number of candidates to retrieve from retriever. Must be >= top_n for correct retrieval. Higher k may improve recall but increases latency. |
 | `reranker` | boolean | `true` | Apply reranking; `false` for faster, less precise results |
 | `search_type` | string | `"similarity"` | `similarity`, `similarity_search_with_siblings`, or `similarity_distance_threshold` |
 
@@ -94,7 +95,7 @@ Check processing status of files and URLs in knowledge base. Query by bucket/fil
 
 Returns: `list[dict]` - file entries contain `id`, `bucket_name`, `object_name`, `status`, `chunks_total`, `chunks_processed`, `job_message`, `created_at`, `size`. Link entries contain `id`, `uri`, `status`, `chunks_total`, `chunks_processed`, `job_message`, `created_at`.
 
-Status values: `uploaded`, `processing`, `completed`, `error`, `deleting`, `canceled`.
+Status values: `uploaded`, `processing`, `ingested`, `error`, `deleting`, `canceled`.
 
 ---
 
@@ -108,7 +109,6 @@ Settings are read from environment variables. The `impl/microservice/.env` file 
 | `EDP_ENDPOINT` | Yes | (none) | Internal EDP backend URL. Required - MCP gateway exposes only EDP retrieval/ingestion tools. |
 | `MCP_SERVER_HOST` | No | `0.0.0.0` | Host address the server binds to |
 | `MCP_SERVER_PORT` | No | `8000` | Port the server listens on |
-| `MCP_ROOT_PATH` | No | `""` | ASGI root path, set to `/api/v1/mcp` when deployed behind APISIX |
 | `S3_TLS_VERIFY` | No | `true` | Set to `false` to disable TLS verification for S3 storage (dev only) |
 | `MCP_MAX_SESSIONS` | No | `100` | Maximum concurrent SSE sessions (DoS protection) |
 | `MCP_MAX_SESSIONS_PER_CLIENT` | No | `5` | Maximum sessions per client_id (per-client DoS protection) |
@@ -177,7 +177,7 @@ docker run -d --name="mcp-gateway" \
 #### Health Check
 
 ```bash
-curl http://localhost:8000/health \
+curl http://localhost:8000/api/v1/mcp/health \
   -X GET \
   -H 'Content-Type: application/json'
 ```
@@ -185,7 +185,7 @@ curl http://localhost:8000/health \
 #### List MCP Tools
 
 ```bash
-curl -N http://localhost:8000/sse \
+curl -N http://localhost:8000/api/v1/mcp/sse \
   -H "X-MCP-Client-ID: <client-id>" \
   -H "X-MCP-Client-Secret: <client-secret>"
 ```
@@ -197,7 +197,7 @@ curl -N http://localhost:8000/sse \
 Agents authenticate by sending their Keycloak client credentials as HTTP headers on the SSE connect request:
 
 ```
-GET /sse  (or /api/v1/mcp/sse when behind APISIX)
+GET /api/v1/mcp/sse
 X-MCP-Client-ID: <keycloak-client-id>
 X-MCP-Client-Secret: <keycloak-client-secret>
 ```

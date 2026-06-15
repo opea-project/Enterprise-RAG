@@ -67,11 +67,8 @@
           'path': '/api/v1/mcp/*',
           'backend_service': 'mcp-gateway-svc',
           'service_port': 8000,
+          'service_path': '/api/v1/mcp/',
           'rate_limit_count': 60,
-          'service_regex': [
-            '^/api/v1/mcp/(.*)$',
-            '/$1'
-          ],
           'skip_auth': true
         }]
       }}

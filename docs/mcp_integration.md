@@ -154,7 +154,8 @@ Retrieves ranked document chunks from the knowledge base without generating an L
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `query` | string | required | Natural-language search phrase |
-| `top_n` | integer | `5` | Number of chunks to return after reranking |
+| `top_n` | integer | `5` | Number of ranked chunks to return if reranker is enabled. Ignored if reranker is false. |
+| `k` | integer | `32` | Number of candidates to retrieve from retriever. Must be >= top_n for correct retrieval. Higher k may improve recall but increases latency. |
 | `reranker` | boolean | `true` | Apply reranking step; set `false` for faster but less precise results |
 | `search_type` | string | `"similarity"` | Vector search algorithm - see values below |
 
@@ -226,7 +227,7 @@ Check processing status of files and URLs in the knowledge base. Query by bucket
 
 Returns: `list[dict]` - file entries contain `id`, `bucket_name`, `object_name`, `status`, `chunks_total`, `chunks_processed`, `job_message`, `created_at`, and `size`. Link entries contain `id`, `uri`, `status`, `chunks_total`, `chunks_processed`, `job_message`, `created_at`.
 
-Status values: `uploaded`, `processing`, `completed`, `error`, `deleting`, `canceled`.
+Status values: `uploaded`, `processing`, `ingested`, `error`, `deleting`, `canceled`.
 
 ## Creating a Production Agent Client in Keycloak
 

@@ -10,6 +10,7 @@ import uvicorn
 import validators
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request as StarletteRequest
@@ -44,7 +45,26 @@ SESSION_INACTIVITY_TIMEOUT = int(os.getenv("MCP_SESSION_INACTIVITY_TIMEOUT", "60
 
 _S3_SSL_CONTEXT = build_ssl_context(S3_TLS_VERIFY)
 
-mcp = FastMCP("erag-mcp")
+# Configure transport security to allow requests from APISIX proxy
+# MCP SDK validates Host header to prevent DNS rebinding attacks
+transport_security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=True,
+    allowed_hosts=[
+        "127.0.0.1:*",
+        "localhost:*",
+        "[::1]:*",
+        "erag.com",
+        "*.erag.com",
+        "mcp-gateway-svc:*",
+        "mcp-gateway-svc.*:*",
+    ]
+)
+
+mcp = FastMCP(
+    "erag-mcp",
+    transport_security=transport_security,
+    message_path="/api/v1/mcp/messages/",
+)
 
 
 if EDP_ENDPOINT:
@@ -52,6 +72,7 @@ if EDP_ENDPOINT:
     async def retrieve_context(
         query: str,
         top_n: int = 5,
+        k: int = 32,
         reranker: bool = True,
         search_type: str = "similarity",
     ) -> list[dict]:
@@ -68,7 +89,9 @@ if EDP_ENDPOINT:
 
         Args:
             query: Natural-language question or search phrase.
-            top_n: Number of ranked chunks to return (default 5).
+            top_n: Number of ranked chunks to return (default 5) if reranker is enabled. Will be ignored if reranker is false.
+            k: Number of candidates to retrieve from retriever (default 32).
+               Must be >= top_n for correct retrieval. Higher k may improve recall but increases latency.
             reranker: Whether to apply the reranking step (default true).
                       Set false to skip reranking for faster but less precise results.
             search_type: Vector search algorithm. Supported values:
@@ -83,15 +106,18 @@ if EDP_ENDPOINT:
             List of document chunk dicts, ordered by relevance score descending.
         """
         try:
+            if not query or not query.strip():
+                raise ValueError("Query parameter cannot be empty")
+
             payload = {
                 "query": query,
                 "reranker": reranker,
                 "top_n": top_n,
                 "search_type": search_type,
-                "k": 32,
+                "k": k,
                 "score_threshold": 0.02,
             }
-            logger.info(f"Received retrieve_context request with query: {query}, top_n: {top_n}, reranker: {reranker}, search_type: {search_type}")
+            logger.info(f"Received retrieve_context request with query: {query}, k: {k}, top_n: {top_n}, reranker: {reranker}, search_type: {search_type}")
             token = await get_access_token(KEYCLOAK_TOKEN_ENDPOINT)
             async with httpx.AsyncClient(timeout=30) as client:
                 r = await client.post(
@@ -100,7 +126,21 @@ if EDP_ENDPOINT:
                     headers={"Authorization": f"Bearer {token}"},
                 )
             r.raise_for_status()
-            return r.json().get("docs", [])
+            result = r.json()
+            # Handle different response formats from EDP
+            if isinstance(result, list):
+                return result
+            elif isinstance(result, dict):
+                # Try common keys
+                docs = result.get("retrieved_docs") or result.get("docs") or result.get("documents")
+                if docs is not None:
+                    return docs if isinstance(docs, list) else [docs]
+                # If no known key, wrap the dict
+                return [result]
+            return []
+        except ValueError as exc:
+            logger.error(f"retrieve_context validation error: {exc}")
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         except RuntimeError as exc:
             logger.error(f"retrieve_context auth error: {exc}")
             raise HTTPException(status_code=401, detail=str(exc)) from exc
@@ -230,6 +270,9 @@ if EDP_ENDPOINT:
             except Exception as exc:
                 raise ValueError(f"content_base64 is not valid base64: {exc}") from exc
 
+            if len(file_bytes) == 0:
+                raise ValueError("content_base64 decodes to empty file (0 bytes)")
+
             logger.info(f"Received ingest_file request with bucket: {bucket}, filename: {filename}, content_type: {content_type}, content_size_bytes: {len(file_bytes)}")
             token = await get_access_token(KEYCLOAK_TOKEN_ENDPOINT)
             headers = {"Authorization": f"Bearer {token}"}
@@ -326,7 +369,7 @@ if EDP_ENDPOINT:
         Status values:
           - 'uploaded': item uploaded, queued for processing
           - 'processing': extraction/chunking/embedding in progress
-          - 'completed': ready for retrieval
+          - 'ingested': ready for retrieval
           - 'error': processing failed (check job_message for details)
           - 'deleting': deletion in progress
           - 'canceled': processing canceled by user
@@ -370,29 +413,53 @@ if EDP_ENDPOINT:
             files = []
             links = []
 
-            async with httpx.AsyncClient(timeout=30) as client:
-                tasks = []
-                if need_files:
-                    tasks.append(client.get(f"{EDP_ENDPOINT}/api/files", headers=headers))
-                else:
-                    tasks.append(None)
-                if need_links:
-                    tasks.append(client.get(f"{EDP_ENDPOINT}/api/links", headers=headers))
-                else:
-                    tasks.append(None)
+            # When querying a specific file by bucket+filename immediately after upload,
+            # retry briefly to account for S3 webhook propagation delay (typically 50-200ms).
+            # Only retry when filtering by specific file (not broad queries).
+            retry_on_empty = bool(filename and bucket and not all_none)
+            max_retries = 3 if retry_on_empty else 1
+            retry_delay = 0.1  # 100ms between retries
 
-                results = await asyncio.gather(*[t for t in tasks if t is not None])
+            for attempt in range(max_retries):
+                async with httpx.AsyncClient(timeout=30) as client:
+                    tasks = []
+                    if need_files:
+                        tasks.append(client.get(f"{EDP_ENDPOINT}/api/files", headers=headers))
+                    else:
+                        tasks.append(None)
+                    if need_links:
+                        tasks.append(client.get(f"{EDP_ENDPOINT}/api/links", headers=headers))
+                    else:
+                        tasks.append(None)
 
-                result_idx = 0
-                if need_files:
-                    files_r = results[result_idx]
-                    files_r.raise_for_status()
-                    files = files_r.json()
-                    result_idx += 1
-                if need_links:
-                    links_r = results[result_idx]
-                    links_r.raise_for_status()
-                    links = links_r.json()
+                    results = await asyncio.gather(*[t for t in tasks if t is not None])
+
+                    result_idx = 0
+                    if need_files:
+                        files_r = results[result_idx]
+                        files_r.raise_for_status()
+                        files = files_r.json()
+                        result_idx += 1
+                    if need_links:
+                        links_r = results[result_idx]
+                        links_r.raise_for_status()
+                        links = links_r.json()
+
+                # Filter files by bucket and/or filename if provided
+                filtered_files = files
+                if bucket:
+                    filtered_files = [f for f in filtered_files if f.get("bucket_name") == bucket]
+                if filename:
+                    filtered_files = [f for f in filtered_files if f.get("object_name") == filename]
+
+                # If we got results or this is the last attempt, break
+                if filtered_files or attempt == max_retries - 1:
+                    files = filtered_files
+                    break
+
+                # Retry: file just uploaded, webhook may not have fired yet
+                logger.debug(f"check_ingestion_status: file not found (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s")
+                await asyncio.sleep(retry_delay)
 
             # Check for ID uniqueness between files and links
             if files and links:
@@ -406,12 +473,6 @@ if EDP_ENDPOINT:
             if id:
                 files = [f for f in files if f.get("id") == id]
                 links = [link for link in links if link.get("id") == id]
-
-            # Filter files by bucket and/or filename if provided
-            if bucket:
-                files = [f for f in files if f.get("bucket_name") == bucket]
-            if filename:
-                files = [f for f in files if f.get("object_name") == filename]
 
             logger.info(files)
 
@@ -444,8 +505,8 @@ async def health(_: StarletteRequest) -> JSONResponse:
 
 _starlette_app = Starlette(
     routes=[
-        Route("/health", health),
-        Mount("/", app=mcp.sse_app()),
+        Route("/api/v1/mcp/health", health),
+        Mount("/api/v1/mcp", app=mcp.sse_app()),
     ]
 )
 app = CallerCredentialsMiddleware(
@@ -465,7 +526,7 @@ if __name__ == "__main__":
             app,
             host=os.getenv("MCP_SERVER_HOST", "0.0.0.0"),
             port=MCP_SERVER_PORT,
-            root_path=MCP_ROOT_PATH,
+            root_path="",
         )
         server = uvicorn.Server(config)
         try:

@@ -1,0 +1,10 @@
+Intel AI for Enterprise RAG - MCP Gateway Validation Document
+
+Retrieval-Augmented Generation (RAG) combines information retrieval with generative AI.
+RAG systems first retrieve relevant documents from a knowledge base using semantic search,
+then use those documents as context for generating accurate, grounded responses.
+This approach reduces hallucinations and enables AI systems to answer questions
+about specific enterprise knowledge.
+
+The MCP gateway exposes Enterprise RAG capabilities as tools that AI agents can invoke
+through the Model Context Protocol standard interface.

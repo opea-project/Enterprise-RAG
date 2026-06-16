@@ -12,3 +12,5 @@ sentence-transformers==5.4.1 # Apache 2.0
 rouge==1.0.1 # Apache 2.0
 sherpa-onnx==1.12.39 # Apache 2.0
 pydub==0.25.1 # MIT
+mcp==1.27.2 # MIT
+httpx==0.28.1 # BSD 3-Clause

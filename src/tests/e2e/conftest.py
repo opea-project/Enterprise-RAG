@@ -29,11 +29,12 @@ from tests.e2e.helpers.guard_helper import GuardHelper
 from tests.e2e.helpers.istio_helper import IstioHelper
 from tests.e2e.helpers.k8s_helper import K8sHelper
 from tests.e2e.helpers.keycloak_helper import KeycloakHelper
+from tests.e2e.helpers.mcp_helper import McpHelper
 from tests.e2e.helpers.sharepoint_helper import SharepointHelper
 
 # List of namespaces to fetch logs from
 NAMESPACES = ["auth", "auth-apisix", "chat-history", "chatqa", "docsum", "edp", "erag-gateway", "fingerprint",
-              "istio-system", "rag-ui", "seaweedfs", "system", "vdb"]
+              "istio-system", "mcp-gateway", "rag-ui", "seaweedfs", "system", "vdb"]
 TEST_LOGS_DIR = "test_logs"
 
 logger = logging.getLogger(__name__)
@@ -517,6 +518,15 @@ def generic_api_helper():
 @pytest.fixture(scope="session")
 def guard_helper(chatqa_api_helper, fingerprint_api_helper):
     return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
+
+
+@pytest.fixture(scope="session")
+def mcp_helper(request):
+    if not cfg.get("mcp", {}).get("enabled"):
+        pytest.skip("MCP gateway is not deployed")
+    helper = McpHelper(credentials_file=request.config.getoption("--credentials-file"))
+    yield helper
+    helper.close()
 
 
 @pytest.fixture(scope="function")

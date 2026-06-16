@@ -1,6 +1,8 @@
 # Notices for Intel® AI for Enterprise RAG
 # List of 3rd-party components used by this project
 
+# Kind: library
+
 * Component: @alloc/quick-lru
     * Origin: npm
     * License: mit
@@ -9054,3 +9056,485 @@
 * Component: zustand
     * Origin: npm
     * License: mit
+
+# Kind: AI model
+
+* Component: BAAI/bge-large-en
+    * Origin: hugging face
+    * License: mit
+
+* Component: Alibaba-NLP/gte-large-en-v1.5
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: Mixtral 8x22B (instruct)
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: Mixtral 8x7B (instruct)
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: mistralai/Mistral-7B-Instruct-v0.2
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: sentence-transformers/distiluse-base-multilingual-cased-v1
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: haoranxu/ALMA-13B-R
+    * Origin: hugging face
+    * License: mit
+
+* Component: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+    * Origin: hugging face
+    * License: mit
+
+* Component: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+    * Origin: hugging face
+    * License: mit
+
+* Component: deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
+    * Origin: hugging face
+    * License: mit
+
+* Component: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+    * Origin: hugging face
+    * License: mit
+
+* Component: CYFRAGOVPL/Llama-PLLuM-70B-instruct
+    * Origin: hugging face
+    * License: llama3.1
+
+* Component: CYFRAGOVPL/PLLuM-8x7B-instruct
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: CYFRAGOVPL/Llama-PLLuM-8B-instruct
+    * Origin: hugging face
+    * License: llama3.1
+
+* Component: tiiuae/Falcon3-10B-Instruct
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-10B-Instruct-GPTQ-Int4
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-10B-Instruct-GPTQ-Int8
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-10B-Instruct-AWQ
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-7B-Instruct
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-7B-Instruct-GPTQ-Int4
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-7B-Instruct-GPTQ-Int8
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-7B-Instruct-AWQ
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: tiiuae/Falcon3-Mamba-7B-Instruct
+    * Origin: hugging face
+    * License: falcon-llm-license
+
+* Component: intfloat/multilingual-e5-large-instruct
+    * Origin: hugging face
+    * License: mit
+
+* Component: intfloat/multilingual-e5-base
+    * Origin: hugging face
+    * License: mit
+
+* Component: Lajavaness/bilingual-embedding-large
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: microsoft/Phi-4-multimodal-instruct
+    * Origin: hugging face
+    * License: mit
+
+* Component: curiousmind147/microsoft-phi-4-AWQ-4bit-GEMM
+    * Origin: hugging face
+    * License: mit
+
+* Component: microsoft/phi-4
+    * Origin: hugging face
+    * License: mit
+
+* Component: stelterlab/phi-4-AWQ
+    * Origin: hugging face
+    * License: mit
+
+* Component: openai/whisper-large
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: openai/whisper-large-v3
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: openai/whisper-tiny
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: openai/whisper-small
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: openai/whisper-base
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: microsoft/speecht5_tts
+    * Origin: hugging face
+    * License: mit
+
+* Component: suno/bark
+    * Origin: hugging face
+    * License: mit
+
+* Component: TheBloke/Mistral-7B-Instruct-v0.2-AWQ
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: BAAI/bge-m3
+    * Origin: hugging face
+    * License: mit
+
+* Component: sesame/csm-1b
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: Qwen/Qwen2.5-Omni-7B
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: BAAI/bge-reranker-large
+    * Origin: hugging face
+    * License: mit
+
+* Component: Mistral-7B-Instruct-v0.1
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: speakleash/Bielik-1.5B-v3.0-Instruct
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: speakleash/Bielik-4.5B-v3.0-Instruct
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: speakleash/Bielik-11B-v3.0-Instruct
+    * Origin: hugging face
+    * License: apache 2.0
+
+# Kind: datasets
+
+* Component: Truthful_QA
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: explodinggradients/prompt-engineering-guide-papers
+    * Origin: hugging face
+    * License: apache 2.0
+
+* Component: explodinggradients/fiqa
+    * Origin: hugging face
+    * License: creative commons 4.0
+
+* Component: PatronusAI/financebench
+    * Origin: hugging face
+    * License: creative commons 4.0
+
+* Component: KG-RAG-datasets
+    * Origin: github
+    * License: mit license
+
+* Component: squad_v2
+    * Origin: hugging face
+    * License: creative commons 4.0
+
+* Component: lmsys/mt_bench_human_judgments
+    * Origin: hugging face
+    * License: creative commons 4.0
+
+# Kind: helm charts
+
+* Component: base
+    * Origin: istio-release.storage.googleapis.com
+    * License: apache 2.0
+
+* Component: istiod
+    * Origin: istio-release.storage.googleapis.com
+    * License: apache 2.0
+
+* Component: cni
+    * Origin: istio-release.storage.googleapis.com
+    * License: apache 2.0
+
+* Component: ztunnel
+    * Origin: istio-release.storage.googleapis.com
+    * License: apache 2.0
+
+* Component: loki
+    * Origin: grafana.github.io
+    * License: apache 2.0
+
+* Component: opentelemetry-collector
+    * Origin: open-telemetry.github.io
+    * License: apache 2.0
+
+* Component: tempo
+    * Origin: grafana.github.io
+    * License: apache 2.0
+
+* Component: opentelemetry-operator
+    * Origin: open-telemetry.github.io
+    * License: apache 2.0
+
+* Component: kube-prometheus-stack
+    * Origin: prometheus-community.github.io
+    * License: apache 2.0
+
+* Component: prometheus-redis-exporter
+    * Origin: prometheus-community.github.io
+    * License: apache 2.0
+
+* Component: keycloakx
+    * Origin: codecentric.github.io
+    * License: apache 2.0
+
+* Component: minio
+    * Origin: charts.bitnami.com
+    * License: gnu agpl v3.0
+
+* Component: velero
+    * Origin: vmware-tanzu.github.io
+    * License: apache 2.0
+
+* Component: ingress-nginx
+    * Origin: kubernetes.github.io
+    * License: apache 2.0
+
+* Component: apisix
+    * Origin: charts.apiseven.com
+    * License: apache 2.0
+
+# Kind: external image
+
+* Component: alpine/curl
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: apache/apisix
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: apache/apisix-ingress-controller
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: bats/bats
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: bitnamilegacy/minio
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: busybox
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: grafana/grafana
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: grafana/loki
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: grafana/loki-canary
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: grafana/loki-helm-test
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: grafana/tempo
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: istio/install-cni
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: istio/pilot
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: istio/ztunnel
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: kiwigrid/k8s-sidecar
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: memcached
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: nginxinc/nginx-unprivileged
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: oliver006/redis_exporter
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: otel/opentelemetry-collector-contrib
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: pgvector/pgvector
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: postgres
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: prom/memcached-exporter
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: redis
+    * Origin: dockerhub
+    * License: collection of licenses
+
+* Component: ferretdb/ferretdb
+    * Origin: ghcr.io
+    * License: collection of licenses
+
+* Component: ferretdb/postgres-documentdb
+    * Origin: ghcr.io
+    * License: collection of licenses
+
+* Component: open-telemetry/opentelemetry-operator/opentelemetry-operator
+    * Origin: ghcr.io
+    * License: collection of licenses
+
+* Component: coreos/etcd
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: keycloak/keycloak
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: kiwigrid/k8s-sidecar
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: minio/mc
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: minio/minio
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: prometheus-operator/prometheus-operator
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: prometheus/alertmanager
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: prometheus/node-exporter
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: prometheus/prometheus
+    * Origin: quay.io
+    * License: collection of licenses
+
+* Component: ingress-nginx/kube-webhook-certgen
+    * Origin: registry.k8s.io
+    * License: collection of licenses
+
+* Component: kube-state-metrics/kube-state-metrics
+    * Origin: registry.k8s.io
+    * License: collection of licenses
+
+# Kind: deployment prepare
+
+* Component: ansible
+    * Origin: pypi
+    * License: gpl-3.0-or-later
+
+* Component: kubernetes
+    * Origin: pypi
+    * License: apache 2.0
+
+* Component: cryptography
+    * Origin: pypi
+    * License: apache-2.0 or bsd-3-clause
+
+* Component: jmespath
+    * Origin: pypi
+    * License: mit
+
+* Component: netaddr
+    * Origin: pypi
+    * License: bsd license
+
+* Component: distlib
+    * Origin: pypi
+    * License: python software foundation license (psf-2.0)
+
+* Component: community.general
+    * Origin: ansible galaxy
+    * License: gpl-3.0-or-later
+
+* Component: kubernetes.core
+    * Origin: ansible galaxy
+    * License: gpl-3.0-or-later
+
+* Component: kubernetes-sigs/kubespray
+    * Origin: github
+    * License: apache 2.0
+
+* Component: ansible.utils
+    * Origin: ansible galaxy
+    * License: gpl-3.0

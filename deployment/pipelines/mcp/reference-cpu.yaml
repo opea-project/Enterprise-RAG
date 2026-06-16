@@ -69,7 +69,6 @@ spec:
             endpoint: /v1/reranking
             RERANKING_SERVICE_ENDPOINT: vllm-reranking-svc
             RERANKING_MODEL_SERVER: "vllm"
-            RERANKING_MODEL_NAME: "BAAI/bge-reranker-base"
       - name: VLLMReranking
         dependency: Hard
         internalService:

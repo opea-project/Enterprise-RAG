@@ -14,8 +14,7 @@ FROM ${DOCKER_URL}/${VERSION}/${BASE_NAME}/${REPO_TYPE}/pytorch-${TORCH_TYPE_SUF
 
 # Parameterize commit/branch for vllm-project & vllm-gaudi checkout
 ARG VLLM_GAUDI_COMMIT=v0.21.0
-# leave empty to use last-good-commit-for-vllm-gaudi
-ARG VLLM_PROJECT_COMMIT=
+ARG VLLM_PROJECT_COMMIT=v0.21.0
 ENV OMPI_MCA_btl_vader_single_copy_mechanism=none
 
 # There's already a non-root user in the base image
@@ -81,6 +80,9 @@ RUN pip install --no-cache-dir --upgrade \
     "setuptools==82.0.1" \
     "wheel==0.46.2" \
     "xgrammar==0.1.32"
+
+RUN pip install --no-cache-dir \
+    "fastapi<0.137"
 
 # Allow non-root user to list /root so pip's legacy-editable scan doesn't fail
 # with PermissionError (habana base image installs leave .pth refs under /root)

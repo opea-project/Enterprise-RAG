@@ -13,7 +13,7 @@ dependencies = [
     "fastapi==0.136.3",
     "uvicorn==0.30.1",
     "shortuuid==1.0.13",
-    "starlette==1.0.1",
+    "starlette>=1.0.1,<2.0.0",
     "qwen_tts==0.0.5",
     "torch==2.10.0",
     "torchaudio==2.10.0",

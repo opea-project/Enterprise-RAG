@@ -8,7 +8,7 @@ requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "uvicorn==0.31.1",
-    "starlette==1.0.1",
+    "starlette>=1.0.1,<2.0.0",
     "httpx==0.28.1",
     "certifi>=2024.8.30",
     "mcp==1.27.2",

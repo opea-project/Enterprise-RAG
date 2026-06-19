@@ -60,7 +60,7 @@ class Crawler:
                     verify=True,
                     allow_redirects=True,
                     stream=True,
-                    timeout=(10, self.timeout) # Tuple timeout: (connect, read)
+                    timeout=(30, self.timeout) # Tuple timeout: (connect, read)
                 )
                 logger.debug("--------------------------------")
                 logger.debug(f"Request Headers for {urlunparse(url)}:")

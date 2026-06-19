@@ -50,7 +50,7 @@ dependencies = [
     "torchvision==0.23.0",
     "h11==0.16.0",
     "transformers==4.53.0",
-    "markitdown==0.1.2",
+    "markitdown==0.1.6",
     "setuptools == 80.10.2",     # security update
     "requests == 2.33.1",
     "urllib3>=2.6.3,<3.0.0",

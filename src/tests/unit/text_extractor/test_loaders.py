@@ -142,3 +142,41 @@ def test_load_with_markitdown():
         text = loader.extract_text()
         assert text is not None
         assert len(text) > 0
+
+def test_utf8_encoding_beyond_4kb():
+    """
+    Test for encoding bug fix - special UTF-8 chars beyond first 4KB.
+
+    Bug: markitdown detects charset from first 4KB only. When UTF-8 special chars
+    (e.g., macramé) appear beyond 4KB in mostly-ASCII file, charset detection
+    returns ASCII, then decode() throws UnicodeDecodeError.
+
+    Without fix: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3
+    With fix: Falls back to full-file charset detection, succeeds
+    """
+    import tempfile
+
+    # Create file matching bug report: mostly ASCII with UTF-8 chars late in file
+    content = "hello world test " * 1000  # ~18KB of ASCII
+    content += "macramé café résumé naïve"  # UTF-8 chars beyond 4KB detection window
+    content += " more data" * 5000  # More content
+
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
+        f.write(content)
+        temp_path = f.name
+
+    try:
+        loader = LoadWithMarkitdown(temp_path)
+        text = loader.extract_text()
+
+        # Verify file processed without UnicodeDecodeError
+        assert text is not None
+        assert len(text) > 0
+
+        # Verify special UTF-8 characters preserved
+        assert "macramé" in text, "UTF-8 char é not found"
+        assert "café" in text, "UTF-8 char é not found"
+        assert "résumé" in text, "UTF-8 char é not found"
+        assert "naïve" in text, "UTF-8 char ï not found"
+    finally:
+        os.unlink(temp_path)

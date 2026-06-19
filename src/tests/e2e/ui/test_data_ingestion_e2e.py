@@ -529,14 +529,28 @@ async def test_delete_ingested_file_via_ui(chat_ui_helper):
     # Delete via the table
     await _delete_row_via_table(chat_ui_helper, file_name)
 
-    # Verify: file should no longer be in the table
-    await chat_ui_helper.click_by_testid("refresh-button")
-    await page.wait_for_timeout(2000)
-
+    # Wait for deletion to complete - row may show "deleting" status before disappearing
+    deletion_timeout_ms = 20_000
+    elapsed = 0
     row = page.locator(f'tr:has-text("{file_name}")')
+
+    while elapsed < deletion_timeout_ms:
+        await chat_ui_helper.click_by_testid("refresh-button")
+        await page.wait_for_timeout(POLL_INTERVAL_MS)
+        elapsed += POLL_INTERVAL_MS
+
+        if await row.count() == 0:
+            logger.info(f"File '{file_name}' removed from table after ~{elapsed / 1000:.0f}s")
+            break
+
+        row_text = await row.first.text_content()
+        if "deleting" in row_text.lower():
+            logger.debug(f"Row '{file_name}' in 'deleting' status")
+
     remaining = await row.count()
     assert remaining == 0, \
-        f"File '{file_name}' still appears in table after deletion ({remaining} rows)"
+        f"File '{file_name}' still in table after {deletion_timeout_ms / 1000:.0f}s ({remaining} rows)"
+
     logger.info(f"Assert: File '{file_name}' removed from table")
 
     logger.info("Test completed: File deletion via UI validated")
@@ -577,14 +591,28 @@ async def test_delete_ingested_link_via_ui(chat_ui_helper):
     # Delete via the table
     await _delete_row_via_table(chat_ui_helper, test_link, delete_testid="delete-link-button")
 
-    # Verify: link should no longer be in the table
-    await chat_ui_helper.click_by_testid("refresh-button")
-    await page.wait_for_timeout(2000)
-
+    # Wait for deletion to complete - row may show "deleting" status before disappearing
+    deletion_timeout_ms = 20_000
+    elapsed = 0
     row = page.locator(f'tr:has-text("{test_link}")')
+
+    while elapsed < deletion_timeout_ms:
+        await chat_ui_helper.click_by_testid("refresh-button")
+        await page.wait_for_timeout(POLL_INTERVAL_MS)
+        elapsed += POLL_INTERVAL_MS
+
+        if await row.count() == 0:
+            logger.info(f"Link '{test_link}' removed from table after ~{elapsed / 1000:.0f}s")
+            break
+
+        row_text = await row.first.text_content()
+        if "deleting" in row_text.lower():
+            logger.debug(f"Row '{test_link}' in 'deleting' status")
+
     remaining = await row.count()
     assert remaining == 0, \
-        f"Link '{test_link}' still appears in table after deletion ({remaining} rows)"
+        f"Link '{test_link}' still in table after {deletion_timeout_ms / 1000:.0f}s ({remaining} rows)"
+
     logger.info(f"Assert: Link '{test_link}' removed from table")
 
     logger.info("Test completed: Link deletion via UI validated")

@@ -32,6 +32,18 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 AVAILABLE_LANGUAGES = ["eng", "pol"]  # expects 3-letter ISO 639-2 code
 
+# Maximum safe dimension in pixels at any DPI - prevents pymupdf OCR crashes on very tall/wide pages
+# Set to 8000 based on practical pymupdf/tesseract limits (crashes occur around 10000px)
+MAX_OCR_DIMENSION = 8000
+# Minimum DPI for acceptable OCR quality - below this, text becomes too degraded for accurate recognition
+# (industry standard for document scanning is 300 DPI; 150 is half, minimum for readable text)
+MIN_QUALITY_DPI = 150
+# Default OCR resolution - standard DPI for document processing that balances quality and performance
+DEFAULT_OCR_DPI = 300
+# Minimum DPI for pymupdf OCR - values below 70 trigger a warning and are automatically
+# adjusted to 70 by the pdfocr_tobytes() function (enforced by tesseract OCR layer)
+PYMUPDF_MIN_DPI = 70
+
 # Pre-resolve the pymupdf4llm OCR function once to avoid repeated
 # prints that the selection outputs.
 _PYMUPDF_OCR_FUNCTION = pymupdf4llm_dl.select_ocr_function()
@@ -261,8 +273,19 @@ def _parse_to_text(
 
                         # fallback 2: use textline fallback
                         if box.textlines:
-                            table_text = pymupdf4llm_dl.fallback_text_to_text(
-                                box.textlines, ignore_code=ignore_code or page.full_ocred, clip=clip)
+                            try:
+                                table_text = pymupdf4llm_dl.fallback_text_to_text(
+                                    box.textlines, ignore_code=ignore_code or page.full_ocred, clip=clip)
+                            except (AttributeError, TypeError) as te:
+                                # fallback_text_to_text can fail with non-string values in span["text"]
+                                # Use plain text extraction as fallback
+                                logger.warning(f"fallback_text_to_text failed for table on page {page_num + 1}: {te}. Using plain text fallback.")
+                                text_parts = []
+                                for tl in box.textlines:
+                                    line_text = " ".join(str(span.get("text", "")) for span in tl.get("spans", []))
+                                    if line_text.strip():
+                                        text_parts.append(line_text.strip())
+                                table_text = "\n".join(text_parts) + "\n\n" if text_parts else ""
 
 
                 # to avoid None concatenation
@@ -282,6 +305,54 @@ def _parse_to_text(
     return _remove_pymupdf4llm_markers(output_buffer)
 
 
+def _calculate_ocr_params(page, page_num, log_identifier=""):
+    """
+    Calculate optimal OCR parameters based on page dimensions.
+
+    pymupdf OCR has practical limits on image dimensions (~10000 pixels per side).
+    For very tall or wide pages, reduce DPI or disable parse_document OCR entirely
+    to prevent crashes or poor quality output.
+
+    Args:
+        page: pymupdf Page object
+        page_num: Page number (0-indexed) for logging
+        log_identifier: Optional log prefix for messages
+
+    Returns:
+        tuple: (ocr_dpi, use_ocr) - adjusted DPI and whether to enable OCR
+    """
+    page_rect = page.rect
+
+    # Calculate dimensions at default DPI
+    # Divide by 72 to convert from points (PDF coordinate system at 72 points per inch) to inches
+    # then multiply by DPI to get pixel dimensions
+    width_at_dpi = int(page_rect.width * DEFAULT_OCR_DPI / 72)
+    height_at_dpi = int(page_rect.height * DEFAULT_OCR_DPI / 72)
+    max_dimension = max(width_at_dpi, height_at_dpi)
+
+    if max_dimension <= MAX_OCR_DIMENSION:
+        return (DEFAULT_OCR_DPI, True)
+
+    # Scale down DPI proportionally
+    adjusted_dpi = int((MAX_OCR_DIMENSION / max_dimension) * DEFAULT_OCR_DPI)
+    adjusted_dpi = max(PYMUPDF_MIN_DPI, adjusted_dpi)
+
+    # If DPI too low, disable parse_document OCR - rely on image extraction instead
+    if adjusted_dpi < MIN_QUALITY_DPI:
+        logger.info(
+            f"[{log_identifier}] Page {page_num + 1} dimensions {width_at_dpi}x{height_at_dpi} "
+            f"at {DEFAULT_OCR_DPI} DPI exceed limits. DPI {adjusted_dpi} too low for quality - "
+            f"disabling parse_document OCR, using image extraction OCR instead."
+        )
+        return (adjusted_dpi, False)
+
+    logger.info(
+        f"[{log_identifier}] Page {page_num + 1} dimensions {width_at_dpi}x{height_at_dpi} "
+        f"at {DEFAULT_OCR_DPI} DPI exceed limits. Reducing OCR DPI to {adjusted_dpi}."
+    )
+    return (adjusted_dpi, True)
+
+
 def _extract_page(doc, page_num, log_identifier=""):
     """
     Extract text from a single page using an already opened document.
@@ -298,7 +369,19 @@ def _extract_page(doc, page_num, log_identifier=""):
     page = doc.load_page(page_num)
     result = ""
 
-    result = _parse_to_text(doc, page_num, header=False, footer=False, use_ocr=True, force_text=True, ocr_language="+".join(AVAILABLE_LANGUAGES), ocr_function=_PYMUPDF_OCR_FUNCTION)
+    # Calculate optimal OCR parameters based on page dimensions
+    ocr_dpi, use_ocr = _calculate_ocr_params(page, page_num, log_identifier)
+
+    result = _parse_to_text(
+        doc, page_num,
+        header=False,
+        footer=False,
+        use_ocr=use_ocr,
+        force_text=True,
+        ocr_dpi=ocr_dpi,
+        ocr_language="+".join(AVAILABLE_LANGUAGES),
+        ocr_function=_PYMUPDF_OCR_FUNCTION
+    )
 
     # https://pymupdf.readthedocs.io/en/latest/page.html#description-of-get-links-entries
     for link in page.links():

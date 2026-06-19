@@ -21,12 +21,21 @@
       set_fact:
         password_image: {}
 
+    - name: Parse password mappings from annotation
+      set_fact:
+        password_mappings: "{{ (item.metadata.annotations[password_mappings_annotation] | default('') | from_yaml) if item.metadata.annotations[password_mappings_annotation] is defined else [] }}"
+      loop: "{{ managed_secrets.resources }}"
+      vars:
+        item: "{{ current_secret }}"
+      register: password_mappings_results
+
     - name: Extract passwords from secret
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Secret
         name: "{{ current_secret.metadata.name }}"
         namespace: "{{ current_secret.metadata.namespace }}"
+        kubeconfig: "{{ kubeconfig }}"
       loop: "{{ managed_secrets.resources }}"
       loop_control:
         loop_var: current_secret

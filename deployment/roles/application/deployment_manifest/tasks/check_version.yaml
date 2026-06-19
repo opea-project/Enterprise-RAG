@@ -6,6 +6,60 @@
     - install
     - pre-upgrade
   block:
+    - name: Build kubeconfig candidate list for deployment manifest tasks
+      ansible.builtin.set_fact:
+        deployment_manifest_kubeconfig_candidates: >-
+          {{
+            (
+              [
+                kubeconfig | default(''),
+                lookup('ansible.builtin.env', 'KUBECONFIG') | default(''),
+                (ansible_env.HOME | default('')) ~ '/.kube/config'
+              ]
+              +
+              ([inventory_dir ~ '/artifacts/admin.conf']
+               if (inventory_dir is defined and (inventory_dir | length > 0))
+               else [])
+              +
+              ([playbook_dir ~ '/../inventory/localhost/artifacts/admin.conf']
+               if (playbook_dir is defined and (playbook_dir | length > 0))
+               else [])
+            )
+            | reject('equalto', '')
+            | unique
+            | list
+          }}
+
+    - name: Probe kubeconfig candidates
+      become: true
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ deployment_manifest_kubeconfig_candidates }}"
+      register: deployment_manifest_kubeconfig_probe
+      failed_when: false
+
+    - name: Resolve kubeconfig path for deployment manifest tasks
+      ansible.builtin.set_fact:
+        deployment_manifest_kubeconfig: >-
+          {{
+            (
+              deployment_manifest_kubeconfig_probe.results
+              | selectattr('stat', 'defined')
+              | selectattr('stat.exists', 'defined')
+              | selectattr('stat.exists', 'equalto', true)
+              | map(attribute='item')
+              | list
+              | first
+            ) | default('')
+          }}
+
+    - name: Fail when no usable kubeconfig is found for deployment manifest tasks
+      ansible.builtin.fail:
+        msg: >-
+          No usable kubeconfig found for deployment manifest tasks.
+          Checked candidates: {{ deployment_manifest_kubeconfig_candidates | join(', ') }}
+      when: deployment_manifest_kubeconfig | length == 0
+
     - name: Check for existing deployment manifest
       kubernetes.core.k8s_info:
         kind: ConfigMap
@@ -15,10 +69,15 @@
       register: existing_manifests
       failed_when: false
 
+    - name: Ensure manifest lookup has default empty resources list
+      set_fact:
+        existing_manifests: "{{ existing_manifests | combine({'resources': []}, recursive=True) }}"
+      when: existing_manifests.resources is not defined
+
     - name: Parse existing deployment manifest
       set_fact:
-        existing_deployment: "{{ (existing_manifests.resources[0].data['manifest.yaml'] | from_yaml) if existing_manifests.resources | length > 0 else {} }}"
-        manifest_exists: "{{ existing_manifests.resources | length > 0 }}"
+        existing_deployment: "{{ ((existing_manifests.resources | default([]))[0].data['manifest.yaml'] | from_yaml) if (existing_manifests.resources | default([]) | length) > 0 else {} }}"
+        manifest_exists: "{{ (existing_manifests.resources | default([]) | length) > 0 }}"
 
     - name: Fresh install detected
       debug:

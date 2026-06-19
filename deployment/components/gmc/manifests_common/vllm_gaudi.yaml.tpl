@@ -3,7 +3,8 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 {{- $modelName := required "Please specify a valid llm_model_gaudi name in your Helm chart values" .Values.llm_model_gaudi }}
-{{- $modelChatTemplate := (index (default dict .Values.modelConfigs) $modelName).modelChatTemplate | default .Values.defaultModelConfigs.modelChatTemplate }}
+{{- $defaultModelConfigs := (index .Values "defaultModelConfigs" | default dict) }}
+{{- $modelChatTemplate := (index (default dict .Values.modelConfigs) $modelName).modelChatTemplate | default $defaultModelConfigs.modelChatTemplate }}
 {{- $port := "8000" }}
 
 apiVersion: v1
@@ -14,7 +15,7 @@ metadata:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
-  {{- $configMapValues := (index (default dict .Values.modelConfigs) $modelName).configMapValues | default ((index .Values).defaultModelConfigs).configMapValues }}
+  {{- $configMapValues := (index (default dict .Values.modelConfigs) $modelName).configMapValues | default $defaultModelConfigs.configMapValues }}
   {{- if $configMapValues }}
     {{- range $key, $value := $configMapValues }}
       {{- printf "%s: %s" $key ($value | quote) | nindent 2 }}
@@ -115,13 +116,13 @@ spec:
             {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
             {{- $resourceLimits := include "manifest.getResource" (list .filename $defaultValues .Values) | fromYaml }}
             - name: VLLM_TP_SIZE
-              {{- $tppSize := (index (default dict .Values.modelConfigs) $modelName).tensor_parallel_size | default ((index .Values).defaultModelConfigs).tensor_parallel_size | default 1 }}
+              {{- $tppSize := (index (default dict .Values.modelConfigs) $modelName).tensor_parallel_size | default $defaultModelConfigs.tensor_parallel_size | default 1 }}
               value: {{ $tppSize | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "manifest.image" (list .filename .Values) }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
-          {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
+          {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default $defaultModelConfigs.extraCmdArgs }}
           {{- if $modelArgs }}
             {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
             {{- if $modelChatTemplate }}

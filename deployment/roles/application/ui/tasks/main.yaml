@@ -160,6 +160,7 @@
     wait_timeout: "300s"
   tags:
     - uninstall
+    - delete
 
 - name: Delete namespace
   kubernetes.core.k8s:
@@ -171,3 +172,4 @@
         name: "{{ ui.namespace }}"
   tags:
     - uninstall
+    - delete

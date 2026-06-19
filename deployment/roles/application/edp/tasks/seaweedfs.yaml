@@ -283,6 +283,7 @@
     state: absent
   tags:
     - uninstall
+    - delete
 
 - name: Delete SeaweedFS namespace
   kubernetes.core.k8s:
@@ -292,3 +293,4 @@
     name: "{{ seaweedfs.namespace | default('seaweedfs') }}"
   tags:
     - uninstall
+    - delete

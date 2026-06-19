@@ -1,6 +1,9 @@
 # Intel® AI for Enterprise RAG deployment guide
 
-This document details the deployment of Intel® AI for Enterprise RAG. By default, the guide assumes a Xeon deployment. If your hardware stack contains Gaudi, modify configuration values accordingly to deployment instructions.
+This document details the deployment of Intel® AI for Enterprise RAG. By default, the guide assumes a Xeon deployment. If your hardware stack contains Gaudi or Intel® Arc™ B-Series (XPU), modify configuration values accordingly to deployment instructions.
+
+> [!WARNING]
+> **Intel® Arc™ B-Series (XPU/Battlemage) support is experimental** and intended for testing and evaluation purposes only. Not recommended for production use.
 
 ## Table of Contents
 
@@ -65,6 +68,7 @@ Minimum hardware requirements:
 |---|---|---|---|
 | **CPU only (Xeon)** | 60 logical cores | 128 GB | 200 GB |
 | **CPU + HPU (Gaudi)** | 48 logical cores | 128 GB | 500 GB |
+| **CPU + XPU (Intel® Arc™ B-Series)** ⚠️ Experimental | 48 logical cores | 128 GB | 500 GB |
 
 > [!NOTE]
 > A limited single-user deployment is also possible on **32 logical cores / 64 GB RAM**.
@@ -76,12 +80,18 @@ Once you have created the inventory.ini file, you can validate your hardware res
 ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-cluster/inventory.ini
 ```
 
+
+
+
 > [!NOTE]
 > If this is a Gaudi deployment, add the additional flag `-e is_gaudi_platform=true`
+> If this is an Intel® Arc™ B-Series (XPU) deployment, add the additional flag `-e is_bmg_platform=true` (experimental, for testing purposes only)
 
 ## Install a Kubernetes cluster (optional - if you don't have one)
 
 Intel® AI for Enterprise RAG offers ansible automation for creating a K8s cluster. If you want to set up a K8s cluster, follow the [Cluster Deployment Guide](../docs/cluster_deployment_guide.md).
+
+For Intel® Arc™ B-Series deployments (experimental, testing purposes only), use `-e is_bmg_platform=true` with infrastructure playbooks.
 
 ## Install infrastructure components (storage, operators, backup tools)
 
@@ -93,12 +103,81 @@ The Intel® AI for Enterprise RAG repository offers installation of additional i
 
 If your K8s cluster requires installing any of these tools, follow the [Infrastructure Components Guide](../docs/infrastructure_components_guide.md).
 
+### Intel Arc B-Series (XPU) Infrastructure Notes
+
+> [!WARNING]
+> **Experimental Feature:** Intel® Arc™ B-Series (XPU/Battlemage) support is experimental and intended for testing and evaluation purposes only.
+
+For Intel® Arc™ B-Series deployments, use the following configuration and execution model:
+
+- Set `is_bmg_platform_enable: true` in your config file.
+- If your cluster does not already include Intel GPU device plugins, set:
+   - `intel_gpu_plugin: true`
+   - `intel_gpu_plugin_version: <required-version>`
+- Kubernetes installation is optional:
+   - If you need cluster provisioning, keep `deploy_k8s: true` and run infrastructure with `--tags configure,install`.
+   - If your cluster already exists, set `deploy_k8s: false` and run infrastructure component installation only (`--tags post-install`).
+
+Example (existing cluster, install missing infrastructure components including Intel device plugin):
+
+```sh
+ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml -e is_bmg_platform=true
+```
+
 > [!NOTE]
 > The `pre-install` tag automatically preconfigures system limits (such as file descriptors, process limits, and kernel parameters) on cluster nodes to ensure optimal performance for Enterprise RAG workloads. These configurations are applied before the main installation process.
 
 ## Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
 
 Once you have a K8s cluster with all infrastructure components installed, you can install the Intel® AI for Enterprise RAG application on top of it. Follow the [Application Deployment Guide](../docs/application_deployment_guide.md).
+
+### Intel Arc B-Series (XPU) Application Notes
+
+> [!WARNING]
+> **Experimental Feature:** Intel® Arc™ B-Series (XPU/Battlemage) support is experimental and intended for testing and evaluation purposes only.
+
+For Intel® Arc™ B-Series deployments, start from an existing config (e.g. `config_minimal.yaml`) and apply the following changes:
+
+1. Enable the XPU platform:
+   ```yaml
+   is_bmg_platform_enable: true
+   ```
+
+2. Set the XPU-compatible LLM model:
+   ```yaml
+   llm_model_xpu: "casperhansen/llama-3-8b-instruct-awq"
+   ```
+
+3. Point the pipeline at the XPU references. For **ChatQA**:
+   ```yaml
+   pipelines:
+     - namespace: chatqa
+       samplePath: chatqa/reference-xpu.yaml
+       resourcesPath: chatqa/resources-reference-xpu.yaml
+       modelConfigPath: chatqa/resources-model-xpu.yaml
+       type: chatqa
+   ```
+   For **Docsum**:
+   ```yaml
+   pipelines:
+     - namespace: docsum
+       samplePath: docsum/reference-xpu.yaml
+       resourcesPath: docsum/resources-reference-xpu.yaml
+       modelConfigPath: chatqa/resources-model-xpu.yaml
+       type: docsum
+   ```
+
+4. Optionally, for reduced-resource single-user environments (32 logical cores / 64 GB RAM), set `minimal_configuration: true`.
+
+Then run with `-e is_bmg_platform=true`:
+
+```sh
+# ChatQA on Intel Arc B-Series
+ansible-playbook playbooks/application.yaml --tags install -i inventory/localhost/inventory.ini -e @inventory/localhost/config_minimal.yaml -e is_bmg_platform=true
+
+# Docsum on Intel Arc B-Series
+ansible-playbook playbooks/application.yaml --tags install -i inventory/localhost/inventory.ini -e @inventory/localhost/config_minimal.yaml -e is_bmg_platform=true
+```
 
 ### Upload-Optimized Pipeline Deployment
 

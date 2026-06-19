@@ -4,6 +4,9 @@ SPDX-License-Identifier: Apache-2.0
 #}
 
 namespace: {{ item.namespace }}
+{% set bmg_enabled = (is_bmg_platform_enable | default(is_bmg_platform | default(false)) | bool) or (application_bmg_pipeline_detected | default(false) | bool) %}
+is_bmg_platform_enable: {{ bmg_enabled }}
+is_bmg_platform: {{ bmg_enabled }}
 
 proxy:
   httpProxy: {{ httpProxy }}
@@ -30,6 +33,7 @@ alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
 llm_model: &cpu_model {{ llm_model }}
+llm_model_xpu: &xpu_model {{ llm_model_xpu | default(llm_model) }}
 llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 reranking_model_name: &reranking_model_name {{ reranking_model_name }}
@@ -244,6 +248,12 @@ images:
     tag: *tag
     envs:
       LLM_VLLM_MODEL_NAME: *cpu_model
+  vllm_xpu:
+    image: "vllm"
+    repository: "intel"
+    tag: "0.14.1-xpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *xpu_model
   langdtct-usvc:
     image: "erag-language-detection"
     repository: *repo

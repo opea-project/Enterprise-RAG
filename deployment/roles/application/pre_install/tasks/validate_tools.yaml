@@ -106,6 +106,7 @@
     - validate-tools
 
 - name: Validate if kubeconfig file exists
+  become: true
   ansible.builtin.stat:
     path: "{{ kubeconfig }}"
   register: kubeconfig_file
@@ -117,20 +118,25 @@
 
 - name: Add kubeconfig file validation issue
   ansible.builtin.set_fact:
-    validation_issues: "{{ validation_issues + ['The kubeconfig file \"' + kubeconfig + '\" does not exist.'] }}"
-  when: not kubeconfig_file.stat.exists
+    validation_issues: "{{ validation_issues + ['The kubeconfig file \"' + kubeconfig + '\" does not exist or is not accessible (permission denied).'] }}"
+  when: >-
+    (kubeconfig_file.stat is not defined) or
+    (not kubeconfig_file.stat.exists)
   tags:
     - install
     - validate-tools
     - uninstall
 
 - name: Validate if kubeconfig can connect to the cluster
+  become: true
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Node
   register: kubeconfig_connection
   ignore_errors: true
-  when: kubeconfig_file.stat.exists
+  when: >-
+    (kubeconfig_file.stat is defined) and
+    (kubeconfig_file.stat.exists)
   tags:
     - install
     - validate-tools
@@ -140,6 +146,7 @@
   ansible.builtin.set_fact:
     validation_issues: "{{ validation_issues + ['Failed to connect to the Kubernetes cluster using the provided kubeconfig. Ensure the kubeconfig file \"' + kubeconfig + '\" is valid and the cluster is reachable.'] }}"
   when:
+    - kubeconfig_file.stat is defined
     - kubeconfig_file.stat.exists
     - kubeconfig_connection is failed
   tags:

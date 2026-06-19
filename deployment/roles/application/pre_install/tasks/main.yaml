@@ -34,7 +34,7 @@
 
 - name: Validate configuration
   ansible.builtin.include_role:
-    name: common/validate_config
+    name: validate_config
   tags:
     - install
     - pre-upgrade
@@ -79,7 +79,7 @@
         ([telemetry.domainName] if telemetry.enabled | default(false) else [])
       }}
   ansible.builtin.include_role:
-    name: common/certs
+    name: certs
   tags:
     - install
 

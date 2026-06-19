@@ -121,6 +121,35 @@ sudo sysctl --system
 
      For more details about AudioQnA configuration, see the [Advanced Configuration Guide](./advanced_configuration.md#audioqna-solution).
 
+    - If you are deploying on `Intel® Arc™ B-Series (XPU)`, use XPU pipeline references and ensure these config settings are present:
+    
+       > [!WARNING]
+       > **Intel® Arc™ B-Series (XPU/Battlemage) support is experimental** and intended for testing and evaluation purposes only. Not recommended for production use.
+       
+       - `is_bmg_platform_enable: true`
+       - `intel_gpu_plugin: true` (if plugin is not already installed in cluster)
+       - `minimal_configuration: true` for constrained single-user setups (32 logical cores / 64 GB RAM)
+
+       **For ChatQA pipeline on XPU:**
+       ```yaml
+       pipelines:
+          - namespace: chatqa
+             samplePath: chatqa/reference-xpu.yaml
+             resourcesPath: chatqa/resources-reference-xpu.yaml
+             modelConfigPath: chatqa/resources-model-xpu.yaml
+             type: chatqa
+       ```
+
+       **For Docsum pipeline on XPU:**
+       ```yaml
+       pipelines:
+          - namespace: docsum
+             samplePath: docsum/reference-xpu.yaml
+             resourcesPath: docsum/resources-reference-xpu.yaml
+             modelConfigPath: chatqa/resources-model-xpu.yaml
+             type: docsum
+       ```
+
 > [!Note]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
 > This model is publicly available. However, if you choose to change the model to the gated/restricted one, remember to adjust `huggingToken` field.
@@ -139,3 +168,18 @@ sudo sysctl --system
    ```bash
    ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -e @<path to chosen config.yaml>
    ```
+
+   For Intel® Arc™ B-Series deployments (experimental, testing purposes only), append:
+
+   ```bash
+   -e is_bmg_platform=true
+   ```
+
+   Example:
+
+   ```bash
+   ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -i inventory/localhost/inventory.ini -e @inventory/localhost/config_minimal.yaml -e is_bmg_platform=true
+   ```
+
+   > [!NOTE]
+   > For XPU deployments, ensure your config sets `is_bmg_platform_enable: true`, `llm_model_xpu`, and the appropriate XPU pipeline references. See [deployment/README.md](../deployment/README.md) for the full list of required changes.

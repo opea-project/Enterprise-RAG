@@ -17,12 +17,15 @@ tokens:
 
 alternateTagging: false
 namespace: chatqa
+is_bmg_platform_enable: false
+is_bmg_platform: false
 
 # Common tag & repository for all images. Override if needed for specific images.
 common_tag: &tag "latest"
 common_registry: &repo "docker.io/opea"
 
 llm_model: &cpu_model "casperhansen/llama-3-8b-instruct-awq"
+llm_model_xpu: &xpu_model "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
 # Query Rewrite model
@@ -292,6 +295,13 @@ images:
     pullPolicy: Always
     envs:
       LLM_VLLM_MODEL_NAME: *cpu_model
+  vllm_xpu:
+    image: "vllm"
+    repository: "intel"
+    tag: "0.14.1-xpu"
+    pullPolicy: Always
+    envs:
+      LLM_VLLM_MODEL_NAME: *xpu_model
   vllm_query_rewrite:
     image: "erag-vllm-cpu"
     repository: *repo

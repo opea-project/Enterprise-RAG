@@ -1,0 +1,14 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# Intel GPU Plugin defaults
+intel_gpu_plugin_namespace: kube-node-lease
+intel_gpu_plugin_daemonset_name: intel-gpu-plugin
+intel_gpu_plugin_manifest_url: "{{ 'https://raw.githubusercontent.com/intel/intel-device-plugins-for-kubernetes/' + (intel_gpu_plugin_version if (intel_gpu_plugin_version | regex_search('^v')) else ('v' + intel_gpu_plugin_version)) + '/deployments/gpu_plugin/base/intel-gpu-plugin.yaml' }}"
+intel_gpu_plugin_helm_repo_url: https://intel.github.io/helm-charts
+intel_gpu_plugin_helm_repo_name: intel
+intel_gpu_plugin_chart_name: intel-device-plugins-gpu
+intel_gpu_plugin_node_feature_rule: false
+intel_gpu_plugin_install_crd: true
+intel_gpu_plugin_remove_crd_on_remove: false

@@ -25,6 +25,20 @@
     - pre-upgrade
     - update-configuration
 
+- name: Detect whether any pipeline iteration requires XPU/BMG resources
+  ansible.builtin.set_fact:
+    application_bmg_pipeline_detected: >-
+      {{
+        (application_bmg_pipeline_detected | default(false) | bool)
+        or ('xpu' in (effective_sample_path | default('') | lower))
+        or ('xpu' in (effective_resources_path | default('') | lower))
+        or ('xpu' in (item.modelConfigPath | default('') | lower))
+      }}
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
 - name: Debug pipeline item configuration
   debug:
     msg: |
@@ -347,6 +361,7 @@
   ignore_errors: true
   tags:
     - uninstall
+    - delete
 
 - name: Wait for pipeline workload pods to terminate before deleting namespace
   kubernetes.core.k8s_info:
@@ -358,6 +373,7 @@
   delay: 10
   tags:
     - uninstall
+    - delete
 
 - name: Remove pipeline namespace
   kubernetes.core.k8s:
@@ -369,6 +385,7 @@
         name: "{{ item.namespace }}"
   tags:
     - uninstall
+    - delete
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
@@ -379,6 +396,7 @@
     wait_timeout: "300s"
   tags:
     - uninstall
+    - delete
 
 - name: Delete GMC namespace
   kubernetes.core.k8s:
@@ -390,3 +408,4 @@
         name: "{{ gmc.namespace }}"
   tags:
     - uninstall
+    - delete

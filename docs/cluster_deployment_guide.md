@@ -175,6 +175,7 @@ igk-0701 | SUCCESS => {
 
 > [!NOTE]
 > If this is a Gaudi deployment, add the additional flag `-e is_gaudi_platform=true`.
+> If this is an Intel® Arc™ B-Series (XPU) deployment, add the additional flag `-e is_bmg_platform=true` (experimental, for testing purposes only).
 
 4. **Deploy K8s cluster:**
 
@@ -188,4 +189,25 @@ To remove the K8s cluster, run:
 
 ```sh
 ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+```
+
+> [!IMPORTANT]
+> Validate your config file before deletion:
+> - `kubeconfig` must be a valid absolute path (not `FILL_HERE`).
+> - Set `deploy_k8s: true` when the intent is full cluster reset via Kubespray.
+> - Set `intel_gpu_plugin: true` when you want Intel GPU plugin teardown tasks to run.
+
+> [!NOTE]
+> Seeing resources in `kube-system` or `local-path-storage` after running delete does not by itself indicate Intel GPU plugin leftovers. Verify Intel-specific cleanup explicitly:
+
+```sh
+sudo helm list -A | grep -i intel-gpu-plugin || echo "intel-gpu-plugin release not present"
+sudo kubectl get all -A | grep -Ei "intel|gpu" || echo "no intel/gpu workloads found"
+sudo kubectl get crd | grep -i gpudeviceplugins || echo "gpudeviceplugins CRD not present"
+```
+
+If you want CRD cleanup as part of teardown, include:
+
+```sh
+-e intel_gpu_plugin_remove_crd_on_remove=true
 ```

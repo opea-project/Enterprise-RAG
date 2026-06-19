@@ -246,7 +246,7 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 	svc := stepCfg.InternalService.ServiceName
 	svcCfg := &stepCfg.InternalService.Config
 
-	yamlFile, err := r.getTemplateBytes(ctx, stepCfg.StepName)
+	yamlFile, err := r.getTemplateBytes(ctx, stepCfg.StepName, stepCfg.InternalService.ServiceName)
 	if err != nil {
 		_log.Error(err, "Failed to get template bytes for", "step", stepCfg.StepName)
 		return nil, err
@@ -1043,7 +1043,16 @@ func recordResource(graph *mcv1alpha3.GMConnector, nodeName string, stepIdx int,
 	return nil
 }
 
-func (r *GMConnectorReconciler) getTemplateBytes(ctx context.Context, resourceType string) ([]byte, error) {
+func resolveTemplatePath(resourceType string, serviceName string) string {
+	// XPU pipelines currently use step name "VLLM" with service "vllm-xpu-svc".
+	// Route that combination to vllm_xpu.yaml instead of the default cpu vllm.yaml.
+	if resourceType == VLLM && strings.Contains(serviceName, "xpu") {
+		return yaml_dir + "vllm_xpu.yaml"
+	}
+	return lookupManifestDir(resourceType)
+}
+
+func (r *GMConnectorReconciler) getTemplateBytes(ctx context.Context, resourceType string, serviceName string) ([]byte, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -1069,7 +1078,7 @@ func (r *GMConnectorReconciler) getTemplateBytes(ctx context.Context, resourceTy
 		return nil, err
 	}
 
-	tmpltFile := lookupManifestDir(resourceType)
+	tmpltFile := resolveTemplatePath(resourceType, serviceName)
 	if tmpltFile == "" {
 		return nil, errors.New("unexpected target")
 	}
@@ -1126,7 +1135,7 @@ func (r *GMConnectorReconciler) reconcileRouterService(ctx context.Context, grap
 	configForRouter["svcName"] = routerServiceName
 	configForRouter["dplymntName"] = routerDeploymentName
 
-	templateBytes, err := r.getTemplateBytes(ctx, Router)
+	templateBytes, err := r.getTemplateBytes(ctx, Router, "")
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get template bytes for %s", Router)
 	}

@@ -22,6 +22,14 @@
     cmd: helm list --all-namespaces --output json
   environment:
     KUBECONFIG: "{{ kubeconfig }}"
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   register: helm_list_result
   changed_when: false
   tags:
@@ -40,6 +48,15 @@
   kubernetes.core.helm_repository:
     name: jetstack
     repo_url: "https://charts.jetstack.io"
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   when: not cert_manager_installed
   tags:
     - install
@@ -55,6 +72,15 @@
       installCRDs: true
     state: present
     wait: true
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   when: not cert_manager_installed
   tags:
     - install
@@ -82,6 +108,15 @@
       - "{{ nri_balloons_controller_override_values_path }}"
     state: present
     wait: true
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   tags:
     - install
 

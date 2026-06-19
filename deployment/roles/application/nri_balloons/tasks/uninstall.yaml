@@ -43,6 +43,15 @@
     name: "{{ balloons.helm.release_name }}"
     namespace: "{{ balloons.namespace }}"
     state: absent
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   tags:
     - always
 
@@ -51,6 +60,15 @@
     name: "nri-balloons-controller"
     namespace: "{{ balloons.controller.namespace }}"
     state: absent
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   tags:
     - always
 
@@ -135,6 +153,15 @@
     release_namespace: cert-manager
     state: absent
     wait: true
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   when:
     - cert_manager_ns.resources | length > 0
     - cert_manager_ns.resources[0].metadata.labels['installed-by'] is defined

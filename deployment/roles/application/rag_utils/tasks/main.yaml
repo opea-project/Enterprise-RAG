@@ -52,3 +52,4 @@
     wait_timeout: "300s"
   tags:
     - uninstall
+    - delete

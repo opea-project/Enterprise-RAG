@@ -36,6 +36,8 @@ gmc:
 solution_language: "auto"
 
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
+llm_model_xpu: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 embedding_model_name: "nomic-ai/nomic-embed-text-v1"
 reranking_model_name: "BAAI/bge-reranker-base"
+is_bmg_platform_enable: false

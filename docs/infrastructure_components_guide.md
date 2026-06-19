@@ -4,7 +4,7 @@ This document describes how to install infrastructure components on a K8s cluste
 
 All instructions need to be executed on your local machine from the `deployment` folder.
 
-If you are using your own custom Kubernetes cluster, you may need to install additional infrastructure components before deploying Intel® AI for Enterprise RAG application. These include the NFS server for shared storage, the Gaudi operator (for Habana Gaudi AI accelerator support), Velero, local registry, or other supported services.
+If you are using your own custom Kubernetes cluster, you may need to install additional infrastructure components before deploying Intel® AI for Enterprise RAG application. These include the NFS server for shared storage, the Gaudi operator (for Habana Gaudi AI accelerator support), Intel GPU device plugin (for Intel® Arc™ B-Series experimental support), Velero, local registry, or other supported services.
 
 To install additional infrastructure components to your cluster:
 
@@ -13,6 +13,9 @@ To install additional infrastructure components to your cluster:
    - Fill in the required values:
      - `deploy_k8s`: `false`
      - `gaudi_operator`: `true` set to true only if you are working with Gaudi nodes and want to install the Gaudi software stack via operator.
+   - `is_bmg_platform_enable`: `true` for Intel® Arc™ B-Series deployments (experimental, testing purposes only).
+   - `intel_gpu_plugin`: `true` when Intel GPU plugin should be installed/updated on the cluster.
+   - `intel_gpu_plugin_version`: set required Intel GPU plugin version for your environment.
      - `install_csi` - set one of the following options:
         - `local-path-provisioner` for single-node deployment
         - `nfs` for multi-node deployment; when choosing this option, fill in the nfs section in config.yaml
@@ -37,6 +40,9 @@ To install additional infrastructure components to your cluster:
 > [!NOTE]
 > If this is a Gaudi deployment, add the flag `-e is_gaudi_platform=true`.
 
+> [!NOTE]
+> If this is an Intel® Arc™ B-Series deployment, add the flag `-e is_bmg_platform=true` (experimental, for testing purposes only).
+
 3. **Configure system limits (recommended before installation):**
 
    ```sh
@@ -50,6 +56,14 @@ To install additional infrastructure components to your cluster:
    ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
    This will install and configure the NFS server, Gaudi operator, local registry, or Velero as specified in your configuration.
+
+For Intel® Arc™ B-Series deployments (experimental, testing purposes only), append `-e is_bmg_platform=true`.
+
+If you also need to provision Kubernetes (optional), run infrastructure with full install tags instead of component-only mode:
+
+```sh
+ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml -e is_bmg_platform=true
+```
 
 > [!NOTE]
 > You can enable several components in the same run if multiple components are needed. Additional components may be supported via post-install in the future.

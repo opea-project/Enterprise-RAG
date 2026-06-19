@@ -1,0 +1,69 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+# User-configurable parameters (can be set via --set during helm install)
+accelDevice: "xpu"
+
+d_type: "float16"
+max_model_len: 2048
+
+image:
+  repository: intel/vllm
+  tag: "0.14.1-xpu"
+  pullPolicy: IfNotPresent
+
+# Generic Model Configuration
+runtime: "xpu"
+VLLM_NO_USAGE_STATS: 1
+DO_NOT_TRACK: 1
+
+LLM_MODEL_ID: ""
+
+modelConfigs:
+  # Qwen/Qwen2.5-7B-Instruct
+  "Qwen/Qwen2.5-7B-Instruct":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "4"
+    extraCmdArgs: ["--dtype", "float16", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"
+
+  # Qwen/Qwen2.5-14B-Instruct
+  "Qwen/Qwen2.5-14B-Instruct":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "8"
+    extraCmdArgs: ["--dtype", "float16", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"
+
+  # meta-llama/Meta-Llama-3.1-8B-Instruct
+  "meta-llama/Meta-Llama-3.1-8B-Instruct":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "4"
+    extraCmdArgs: ["--dtype", "float16", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"
+
+  # meta-llama/Llama-3.1-70B-Instruct
+  "meta-llama/Llama-3.1-70B-Instruct":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "32"
+    extraCmdArgs: ["--dtype", "float16", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"
+
+  # mistralai/Mistral-7B-Instruct-v0.2
+  "mistralai/Mistral-7B-Instruct-v0.2":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "4"
+    extraCmdArgs: ["--dtype", "float16", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"
+
+  # mistralai/Mistral-7B-Instruct-v0.1
+  "mistralai/Mistral-7B-Instruct-v0.1":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "4"
+    extraCmdArgs: ["--dtype", "float16", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"
+
+  # casperhansen/llama-3-8b-instruct-awq
+  "casperhansen/llama-3-8b-instruct-awq":
+    configMapValues:
+      VLLM_CPU_KVCACHE_SPACE: "2"
+    extraCmdArgs: ["--dtype", "float16", "--quantization", "awq", "--max-model-len", "2048"]
+    tensor_parallel_size: "1"

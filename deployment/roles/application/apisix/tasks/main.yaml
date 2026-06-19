@@ -141,6 +141,7 @@
     wait_timeout: "300s"
   tags:
     - uninstall
+    - delete
 
 - name: Delete namespace
   kubernetes.core.k8s:
@@ -152,3 +153,4 @@
         name: "{{ apisix.namespace }}"
   tags:
     - uninstall
+    - delete

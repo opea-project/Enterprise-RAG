@@ -393,6 +393,7 @@
     wait_timeout: "300s"
   tags:
     - uninstall
+    - delete
 
 - name: Delete namespace
   kubernetes.core.k8s:
@@ -404,3 +405,4 @@
         name: "{{ vector_databases.namespace }}"
   tags:
     - uninstall
+    - delete

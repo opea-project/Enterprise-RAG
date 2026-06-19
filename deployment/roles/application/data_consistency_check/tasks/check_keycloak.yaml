@@ -68,6 +68,7 @@
           when:
             - keycloak_pod is defined
             - keycloak_admin_password is defined
+            - keycloak_port_forward_ready | default(false)
 
     - name: Parse Keycloak counts
       ansible.builtin.set_fact:

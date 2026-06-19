@@ -296,6 +296,7 @@
     state: absent
   tags:
     - uninstall
+    - delete
 
 - name: Remove namespace
   kubernetes.core.k8s:
@@ -307,6 +308,7 @@
     state: absent
   tags:
     - uninstall
+    - delete
 
 - name: Remove reverse proxy storage resources
   kubernetes.core.k8s:
@@ -326,3 +328,4 @@
   when: reverse_proxy_storage | default(false) | bool
   tags:
     - uninstall
+    - delete

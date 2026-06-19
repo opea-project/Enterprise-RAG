@@ -83,8 +83,8 @@ Document Summarization's pipeline architecture is available [here](./docs/images
 
 | Category            | Details                                                                                                           |
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
-| Operating System    | Ubuntu 22.04/24.04                                                                                                |
-| Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
+| Operating System    | Ubuntu 22.04/24.04<br>Ubuntu 25.10 (for Intel® Arc™ B-Series XPU preliminary evaluation)                        |
+| Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator<br>**Experimental:** Intel® Arc™ Pro B-Series GPU (Battlemage) |
 | Kubernetes Version  | 1.32.9 <br> 1.33.5                                                                  |
 | Helm Version        | 3.17.0: required for SeaweedFS (default) <br> 3.16.1: supported for other S3-compatible backends <br> **Note:** Helm v4 is not supported |
 | Python              | 3.11                                                                                                              |
@@ -122,6 +122,22 @@ To deploy the solution on a platform with Gaudi® AI Accelerator you need to hav
 -  **Gaudi cards**: `8`
 -  **Gaudi driver**: `1.24.0`
 
+### Deployment on Xeon + Intel® Arc™ B-Series GPU (Experimental)
+
+> [!WARNING]
+> **Experimental Support:** Intel® Arc™ Pro B-Series GPU (Battlemage/XPU) support is experimental and recommended for evaluation purposes only.
+
+To deploy the solution on a platform with Intel® Arc™ B-Series GPU (XPU) you need to have access to an instance with minimal requirements:
+
+-  **logical cores**: A minimum of `48` logical cores
+-  **RAM memory**: A minimum of `128GB` of RAM
+-  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size
+-  **Operating System**: Ubuntu 25.10 (Plucky) for preliminary evaluation
+
+> [!NOTE]
+> A limited single-user deployment is also possible on **32 logical cores / 64 GB RAM** with `minimal_configuration: true`.
+> See [deployment/README.md](deployment/README.md) for XPU-specific configuration details.
+
 # Getting Started
 
 Install the prerequisites.
@@ -149,6 +165,7 @@ ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-clust
 
 > [!NOTE]
 > If this is a Gaudi deployment, add the additional flag `-e is_gaudi_platform=true`
+> If this is an Intel® Arc™ B-Series (XPU) deployment, add the additional flag `-e is_bmg_platform=true`
 
 ## Intel AI Enterprise RAG Deployment - Standalone
 
@@ -160,10 +177,14 @@ Intel® AI for Enterprise RAG offers ansible automation for creating a K8s clust
 
 The Intel® AI for Enterprise RAG repository offers installation of additional infrastructure components on the deployed K8s cluster:
 - **Gaudi_operator** - dedicated for K8s clusters with nodes that use Gaudi AI accelerators
+- **Intel GPU device plugins** - for Intel® Arc™ B-Series (XPU) deployments
 - **CSI drivers** - need to dynamically provision storage for PODs
 - **Velero** - installing Velero backup tool
 
 If your K8s cluster requires installing any of these tools, please follow the [Infrastructure Components Guide](docs/infrastructure_components_guide.md).
+
+> [!NOTE]
+> For Intel® Arc™ B-Series (XPU) deployments, use `-e is_bmg_platform=true` with infrastructure and application playbooks. See [deployment/README.md](deployment/README.md) for detailed XPU configuration instructions.
 
 ### Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
 

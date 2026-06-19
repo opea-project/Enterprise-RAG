@@ -18,7 +18,7 @@
   block:
     - name: Run resolve_vector_dims script
       ansible.builtin.shell: |
-        python3 {{ playbook_dir }}/../scripts/resolve_vector_dims.py \
+        python3 "{{ playbook_dir }}/../scripts/resolve_vector_dims.py" \
           --embedding-model-name '{{ embedding_model_name }}' \
           {% if offline_model | default(false) | bool %}
           --offline \

@@ -1,0 +1,463 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Deploy Intel GPU Plugin
+  become: false
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    infrastructure_controller_user: >-
+      {{ lookup('env', 'SUDO_USER') | default('', true) | trim | default(lookup('env', 'USER'), true) }}
+    infrastructure_kubeconfig_path: >-
+      {{
+        (
+          kubeconfig
+          if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+          else lookup('env', 'KUBECONFIG')
+        )
+        | trim
+        | regex_replace('^"|"$', '')
+        | regex_replace("^'|'$", '')
+      }}
+  block:
+    - name: Validate kubeconfig path for Intel GPU Plugin
+      ansible.builtin.assert:
+        that:
+          - infrastructure_kubeconfig_path | length > 0
+          - infrastructure_kubeconfig_path != 'FILL_HERE'
+        fail_msg: >-
+          kubeconfig is not set. Provide a valid kubeconfig path in config.yaml
+          or export KUBECONFIG before running post-install tasks.
+      tags:
+        - install
+        - post-install
+
+    - name: Validate Intel GPU Plugin version is provided by inventory configuration
+      ansible.builtin.assert:
+        that:
+          - intel_gpu_plugin_version is defined
+          - (intel_gpu_plugin_version | string | trim | length) > 0
+        fail_msg: >-
+          intel_gpu_plugin_version must be defined in the inventory configuration,
+          for example in inventory/*/config_minimal.yaml.
+      tags:
+        - install
+        - post-install
+
+    - name: Check kubeconfig existence with elevated privileges
+      become: true
+      ansible.builtin.stat:
+        path: "{{ infrastructure_kubeconfig_path }}"
+      register: infrastructure_kubeconfig_root_stat
+      tags:
+        - install
+        - post-install
+
+    - name: Validate kubeconfig file exists
+      ansible.builtin.assert:
+        that:
+          - infrastructure_kubeconfig_root_stat.stat.exists | default(false)
+        fail_msg: "kubeconfig file not found: {{ infrastructure_kubeconfig_path }}"
+      tags:
+        - install
+        - post-install
+
+    - name: Set runtime kubeconfig path for Intel GPU Plugin
+      ansible.builtin.set_fact:
+        infrastructure_kubeconfig_runtime_path: >-
+          {{ '/tmp/intel-gpu-plugin-kubeconfig-' + infrastructure_controller_user + '.yaml' }}
+      tags:
+        - install
+        - post-install
+
+    - name: Remove stale runtime kubeconfig copy for Intel GPU Plugin
+      become: true
+      ansible.builtin.file:
+        path: "{{ infrastructure_kubeconfig_runtime_path }}"
+        state: absent
+      tags:
+        - install
+        - post-install
+
+    - name: Create readable kubeconfig copy for Intel GPU Plugin
+      become: true
+      ansible.builtin.copy:
+        src: "{{ infrastructure_kubeconfig_path }}"
+        dest: "{{ infrastructure_kubeconfig_runtime_path }}"
+        remote_src: true
+        owner: "{{ infrastructure_controller_user }}"
+        group: "{{ infrastructure_controller_user }}"
+        mode: '0600'
+      tags:
+        - install
+        - post-install
+
+    - name: Create namespace for Intel GPU Plugin
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ intel_gpu_plugin_namespace }}"
+        state: present
+        kubeconfig: "{{ infrastructure_kubeconfig_runtime_path }}"
+      tags:
+        - install
+        - post-install
+
+    - name: Label namespace with pod security policies
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ intel_gpu_plugin_namespace }}"
+        kubeconfig: "{{ infrastructure_kubeconfig_runtime_path }}"
+        definition:
+          metadata:
+            labels:
+              pod-security.kubernetes.io/enforce: privileged
+              pod-security.kubernetes.io/audit: privileged
+              pod-security.kubernetes.io/warn: privileged
+      tags:
+        - install
+        - post-install
+
+    - name: Resolve kubectl binary path for Intel GPU Plugin
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      ansible.builtin.shell: |
+        command -v kubectl || which kubectl
+      register: infrastructure_kubectl_path
+      changed_when: false
+      failed_when: >-
+        infrastructure_kubectl_path.rc != 0 or
+        (infrastructure_kubectl_path.stdout | trim | length == 0)
+      tags:
+        - install
+        - post-install
+
+    - name: Apply Intel GPU plugin DaemonSet manifest from upstream
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      ansible.builtin.shell: |
+        "{{ infrastructure_kubectl_path.stdout | trim }}" apply -n "{{ intel_gpu_plugin_namespace }}" -f "{{ intel_gpu_plugin_manifest_url }}"
+      register: infrastructure_gpu_plugin_apply
+      changed_when: >-
+        'created' in (infrastructure_gpu_plugin_apply.stdout | lower) or
+        'configured' in (infrastructure_gpu_plugin_apply.stdout | lower)
+      tags:
+        - install
+        - post-install
+
+    - name: Wait for Intel GPU plugin DaemonSet rollout
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      ansible.builtin.shell: |
+        "{{ infrastructure_kubectl_path.stdout | trim }}" rollout status daemonset/{{ intel_gpu_plugin_daemonset_name }} \
+          -n "{{ intel_gpu_plugin_namespace }}" \
+          --timeout={{ helm_timeout }}
+      register: infrastructure_gpu_plugin_rollout
+      changed_when: false
+      tags:
+        - install
+        - post-install
+
+    - name: Collect Intel GPU Plugin DaemonSet status
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: DaemonSet
+        name: "{{ intel_gpu_plugin_daemonset_name }}"
+        namespace: "{{ intel_gpu_plugin_namespace }}"
+        kubeconfig: "{{ infrastructure_kubeconfig_runtime_path }}"
+      register: infrastructure_gpu_plugin_daemonset
+      tags:
+        - install
+        - post-install
+
+    - name: Verify Intel GPU Plugin DaemonSet is ready
+      ansible.builtin.assert:
+        that:
+          - infrastructure_gpu_plugin_daemonset.resources is defined
+          - infrastructure_gpu_plugin_daemonset.resources | length > 0
+          - (infrastructure_gpu_plugin_daemonset.resources[0].status.numberReady | default(0) | int) > 0
+        fail_msg: >-
+          Intel GPU Plugin DaemonSet was applied but no ready pod was observed in namespace
+          {{ intel_gpu_plugin_namespace }}. Check node eligibility, GPU drivers, and kubelet device-plugin registration.
+      tags:
+        - install
+        - post-install
+
+    - name: Display Intel GPU Plugin installation status
+      ansible.builtin.debug:
+        msg: |
+          Intel GPU Plugin has been successfully installed (DaemonSet mode).
+          Namespace: {{ intel_gpu_plugin_namespace }}
+          Version: {{ intel_gpu_plugin_version }}
+          DaemonSet: {{ infrastructure_gpu_plugin_daemonset.resources[0].metadata.name | default(intel_gpu_plugin_daemonset_name) }}
+          Ready/Desired: {{ infrastructure_gpu_plugin_daemonset.resources[0].status.numberReady | default(0) }}/{{ infrastructure_gpu_plugin_daemonset.resources[0].status.desiredNumberScheduled | default(0) }}
+      when:
+        - infrastructure_gpu_plugin_daemonset.resources is defined
+        - infrastructure_gpu_plugin_daemonset.resources | length > 0
+      tags:
+        - install
+        - post-install
+
+- name: Remove Intel GPU Plugin
+  become: false
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    infrastructure_controller_user: >-
+      {{ lookup('env', 'SUDO_USER') | default('', true) | trim | default(lookup('env', 'USER'), true) }}
+    infrastructure_kubeconfig_path: >-
+      {{
+        (
+          kubeconfig
+          if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+          else lookup('env', 'KUBECONFIG')
+        )
+        | trim
+        | regex_replace('^"|"$', '')
+        | regex_replace("^'|'$", '')
+      }}
+  block:
+    - name: Validate kubeconfig path for Intel GPU Plugin removal
+      ansible.builtin.assert:
+        that:
+          - infrastructure_kubeconfig_path | length > 0
+          - infrastructure_kubeconfig_path != 'FILL_HERE'
+        fail_msg: >-
+          kubeconfig is not set. Provide a valid kubeconfig path in config.yaml
+          or export KUBECONFIG before running remove tasks.
+      tags:
+        - remove
+
+    - name: Check kubeconfig existence with elevated privileges for removal
+      become: true
+      ansible.builtin.stat:
+        path: "{{ infrastructure_kubeconfig_path }}"
+      register: infrastructure_kubeconfig_root_stat_remove
+      tags:
+        - remove
+
+    - name: Validate kubeconfig file exists for removal
+      ansible.builtin.assert:
+        that:
+          - infrastructure_kubeconfig_root_stat_remove.stat.exists | default(false)
+        fail_msg: "kubeconfig file not found: {{ infrastructure_kubeconfig_path }}"
+      tags:
+        - remove
+
+    - name: Set runtime kubeconfig path for Intel GPU Plugin removal
+      ansible.builtin.set_fact:
+        infrastructure_kubeconfig_runtime_path: >-
+          {{ '/tmp/intel-gpu-plugin-kubeconfig-' + infrastructure_controller_user + '.yaml' }}
+      tags:
+        - remove
+
+    - name: Remove stale runtime kubeconfig copy for Intel GPU Plugin removal
+      become: true
+      ansible.builtin.file:
+        path: "{{ infrastructure_kubeconfig_runtime_path }}"
+        state: absent
+      tags:
+        - remove
+
+    - name: Create readable kubeconfig copy for Intel GPU Plugin removal
+      become: true
+      ansible.builtin.copy:
+        src: "{{ infrastructure_kubeconfig_path }}"
+        dest: "{{ infrastructure_kubeconfig_runtime_path }}"
+        remote_src: true
+        owner: "{{ infrastructure_controller_user }}"
+        group: "{{ infrastructure_controller_user }}"
+        mode: '0600'
+      tags:
+        - remove
+
+    - name: Resolve helm binary path for Intel GPU Plugin removal
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      ansible.builtin.shell: |
+        command -v helm || which helm
+      register: infrastructure_helm_path_remove
+      changed_when: false
+      failed_when: false
+      tags:
+        - remove
+
+    - name: Resolve kubectl binary path for Intel GPU Plugin removal
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      ansible.builtin.shell: |
+        command -v kubectl || which kubectl
+      register: infrastructure_kubectl_path_remove
+      changed_when: false
+      failed_when: >-
+        infrastructure_kubectl_path_remove.rc != 0 or
+        (infrastructure_kubectl_path_remove.stdout | trim | length == 0)
+      tags:
+        - remove
+
+    - name: Delete Intel GPU Plugin DaemonSet manifest
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      ansible.builtin.shell: |
+        "{{ infrastructure_kubectl_path_remove.stdout | trim }}" delete -n "{{ intel_gpu_plugin_namespace }}" -f "{{ intel_gpu_plugin_manifest_url }}" --ignore-not-found=true
+      register: infrastructure_gpu_plugin_manifest_delete
+      failed_when: false
+      changed_when: >-
+        'deleted' in (infrastructure_gpu_plugin_manifest_delete.stdout | default('') | lower)
+      tags:
+        - remove
+
+    - name: Remove legacy Intel GPU Plugin Helm release when present
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      ansible.builtin.shell: |
+        "{{ infrastructure_helm_path_remove.stdout | trim }}" uninstall intel-gpu-plugin \
+          --namespace "{{ intel_gpu_plugin_namespace }}" \
+          --wait \
+          --timeout "{{ helm_timeout }}"
+      register: infrastructure_gpu_plugin_uninstall
+      failed_when: >-
+        infrastructure_gpu_plugin_uninstall.rc != 0 and
+        ('release: not found' not in (infrastructure_gpu_plugin_uninstall.stderr | default('') | lower))
+      changed_when: >-
+        infrastructure_gpu_plugin_uninstall.rc == 0 and
+        ('release: not found' not in (infrastructure_gpu_plugin_uninstall.stderr | default('') | lower))
+      when: infrastructure_helm_path_remove.rc == 0 and (infrastructure_helm_path_remove.stdout | trim | length > 0)
+      tags:
+        - remove
+
+    - name: Remove legacy Intel GPU Plugin custom resource when present
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      ansible.builtin.shell: |
+        "{{ infrastructure_kubectl_path_remove.stdout | trim }}" delete gpudeviceplugin gpudeviceplugin-sample \
+          -n "{{ intel_gpu_plugin_namespace }}" \
+          --ignore-not-found=true
+      failed_when: false
+      tags:
+        - remove
+
+    - name: Remove Intel GPU Plugin namespace
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ intel_gpu_plugin_namespace }}"
+        state: absent
+        kubeconfig: "{{ infrastructure_kubeconfig_runtime_path }}"
+      tags:
+        - remove
+
+    - name: Remove Intel GPU plugin CRD when enabled
+      become: true
+      become_user: "{{ infrastructure_controller_user }}"
+      environment:
+        KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        K8S_AUTH_KUBECONFIG: "{{ infrastructure_kubeconfig_runtime_path }}"
+        HTTP_PROXY: "{{ httpProxy | default('') }}"
+        HTTPS_PROXY: "{{ httpsProxy | default('') }}"
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+        NO_PROXY: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+        no_proxy: "{{ noProxy | default('') }},10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,localhost,127.0.0.1"
+      ansible.builtin.shell: |
+        "{{ infrastructure_kubectl_path_remove.stdout | trim }}" delete crd gpudeviceplugins.deviceplugin.intel.com --ignore-not-found=true
+      when: intel_gpu_plugin_remove_crd_on_remove | bool
+      tags:
+        - remove
+
+    - name: Remove runtime kubeconfig copy for Intel GPU Plugin removal
+      become: true
+      ansible.builtin.file:
+        path: "{{ infrastructure_kubeconfig_runtime_path }}"
+        state: absent
+      tags:
+        - remove

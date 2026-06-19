@@ -16,7 +16,7 @@ alternateTagging: {{ use_alternate_tagging }}
 
 balloonsEnabled: {{ balloons.enabled | default(false) }}
 {% if (minimal_configuration is defined and minimal_configuration) or (edp.minimal_configuration is defined and edp.minimal_configuration) %}
-{% if "cpu" in pipelines[0].samplePath %}
+{% if "cpu" in pipelines[0].samplePath or "xpu" in pipelines[0].samplePath %}
 minimalConfiguration: true
 celery:
   resources:
@@ -30,6 +30,7 @@ textExtractor:
 {% endif %}
 
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
+{% set pipeline_namespace = chatqa_namespace | default((pipelines[0].namespace if (pipelines | default([]) | length) > 0 else 'chatqa')) %}
 
 {% set fqdn = FQDN | default('erag.com') %}
 {% set s3_prefix = edp.s3DomainPrefix if edp.s3DomainPrefix is defined else 's3' %}

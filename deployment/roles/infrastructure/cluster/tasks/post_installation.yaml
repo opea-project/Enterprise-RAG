@@ -25,6 +25,15 @@
     - post-install
     - delete
 
+- name: Intel GPU Plugin role
+  ansible.builtin.include_role:
+    name: intel_gpu_plugin
+  when: intel_gpu_plugin and (is_bmg_platform_enable | default(is_bmg_platform | default(false)))
+  tags:
+    - install
+    - post-install
+    - delete
+
 - name: Local registry role
   ansible.builtin.include_role:
     name: k8s_local_registry
@@ -68,7 +77,7 @@
 
 - name: Configure system limits
   ansible.builtin.include_role:
-    name: common/system_limits
+    name: system_limits
   tags:
     - install
     - post-install

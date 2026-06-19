@@ -2,15 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Remove docker.list from sources.list
+- name: Remove Docker repository sources (DEB822 and legacy formats)
   become: true
   ansible.builtin.file:
-    path: /etc/apt/sources.list.d/docker.list
+    path: "{{ item }}"
     state: absent
+  loop:
+    - /etc/apt/sources.list.d/docker.list
+    - /etc/apt/sources.list.d/docker.sources
   tags:
     - configure
+    - remove
 
-- name: Make sure that older versions of docker are not present
+- name: Uninstall Docker packages
   become: true
   ansible.builtin.apt:
     name:
@@ -22,15 +26,30 @@
       - docker.io
       - runc
       - containerd
+      - docker-buildx-plugin
+    state: absent
+    autoremove: yes
+  tags:
+    - configure
+    - remove
+
+- name: Remove Docker GPG key
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/docker.asc
     state: absent
   tags:
     - configure
+    - remove
 
-- name: Add Docker’s official GPG key
+- name: Install prerequisites for Docker repository
   become: true
-  ansible.builtin.apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
     state: present
+    update_cache: true
   environment:
     http_proxy: "{{ httpProxy | default('') }}"
     https_proxy: "{{ httpsProxy | default('') }}"
@@ -38,29 +57,63 @@
   tags:
     - configure
 
-- name: Add Docker APT repository
+- name: Create keyrings directory
   become: true
-  ansible.builtin.apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu {{ ansible_facts['lsb']['codename'] }} stable
-    state: present
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  tags:
+    - configure
+
+- name: Download Docker GPG key
+  become: true
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+    force: true
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
+  tags:
+    - configure
+
+- name: Add Docker repository (DEB822 format)
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.sources
+    mode: '0644'
+    content: |
+      Types: deb
+      URIs: https://download.docker.com/linux/ubuntu
+      Suites: {{ ansible_distribution_release }}
+      Components: stable
+      Architectures: {{ ansible_architecture | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }}
+      Signed-By: /etc/apt/keyrings/docker.asc
   tags:
     - configure
 
 - name: Install Docker Engine
   become: true
-  vars:
-    full_docker_version: "5:{{ docker_version }}-1~ubuntu.{{ansible_distribution_version}}~{{ ansible_facts['lsb']['codename'] }}"
   ansible.builtin.apt:
     name:
-      - docker-ce={{ full_docker_version }}
+      - docker-ce
       - docker-ce-cli
       - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
     state: present
     update_cache: true
   retries: 3
   delay: 30
   register: result
   until: result is succeeded
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
   tags:
     - configure
 
@@ -74,30 +127,30 @@
     - configure
 
 - name: "Create directory for docker config"
-  file:
+  ansible.builtin.file:
     path: "~/.docker/"
     state: directory
-    mode: 0777
+    mode: '0755'
   when: httpProxy != "" or httpsProxy != ""
   tags:
     - configure
 
 - name: "Create docker proxy file"
-  template:
+  ansible.builtin.template:
     src: templates/config.json.j2
     dest: "~/.docker/config.json"
-    mode: 0777
+    mode: '0644'
   when: httpProxy != "" or httpsProxy != ""
   tags:
     - configure
 
 - name: Check if Docker daemon.json exists
-  stat:
+  ansible.builtin.stat:
     path: /etc/docker/daemon.json
   register: docker_daemon_json
 
 - name: Backup existing Docker daemon.json
-  copy:
+  ansible.builtin.copy:
     src: /etc/docker/daemon.json
     dest: /etc/docker/daemon.json.bak
     remote_src: true

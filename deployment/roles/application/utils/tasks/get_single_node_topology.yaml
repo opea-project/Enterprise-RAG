@@ -4,6 +4,15 @@
     container: debian
     namespace: default
     command: lscpu -p=NODE,CPU
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
   register: cpu_numa_mapping
   tags:
     - install
@@ -80,6 +89,15 @@
     container: debian
     namespace: default
     command: bash -c "lscpu | grep -i amx"
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
   register: amx_check
   ignore_errors: true
   tags:
@@ -92,6 +110,15 @@
     kind: Pod
     field_selectors:
       - spec.nodeName={{ node_name }}
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
   register: pods_info
   tags:
     - install
@@ -118,6 +145,15 @@
     container: debian
     namespace: default
     command: bash -c "grep MemTotal /proc/meminfo | awk '{print int($2/1024/1024)}'"
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
   register: total_memory_GiB
   tags:
     - install
@@ -130,6 +166,15 @@
     container: debian
     namespace: default
     command: bash -c "lscpu | grep 'Thread(s) per core' | awk '{print $NF}'"
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,.svc,.svc.cluster.local,.cluster.local"
   register: threads_per_core_result
   tags:
     - install

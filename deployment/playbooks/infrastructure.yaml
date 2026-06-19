@@ -54,7 +54,7 @@
   tasks:
     - name: Apply system limits for Enterprise RAG
       ansible.builtin.include_role:
-        name: common/system_limits
+        name: system_limits
 
 - name: Configure containerd registry mirrors
   hosts: k8s_cluster
@@ -110,7 +110,7 @@
 
     - name: Configure system limits
       ansible.builtin.include_role:
-        name: common/system_limits
+        name: system_limits
 
 - name: Install Kubernetes cluster
   tags:

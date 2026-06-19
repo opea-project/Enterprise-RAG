@@ -7,6 +7,15 @@
     name: "{{ balloons.helm.repo_name }}"
     repo_url: "{{ balloons.helm.repo_url }}"
     state: present
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   tags:
     - install
     - pre-upgrade
@@ -109,6 +118,15 @@
     state: present
     wait: true
     timeout: "{{ helm_timeout }}"
+  environment:
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+    ALL_PROXY: ""
+    http_proxy: ""
+    https_proxy: ""
+    all_proxy: ""
+    NO_PROXY: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
+    no_proxy: "127.0.0.1,localhost,::1,10.233.0.1,10.80.55.45,.svc,.svc.cluster.local,.cluster.local"
   register: helm_repo_add_result
   until: helm_repo_add_result is succeeded
   retries: 3

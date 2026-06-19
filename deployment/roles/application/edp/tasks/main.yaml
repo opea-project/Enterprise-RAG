@@ -192,6 +192,45 @@
     - install
     - pre-upgrade
     - uninstall
+    - delete
+
+- name: Check ChatQA embedding deployment readiness before EDP install
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ chatqa_namespace }}"
+    name: embedding-svc-deployment
+  register: chatqa_embedding_deployment
+  until: >
+    (chatqa_embedding_deployment.resources | length > 0)
+    and
+    ((chatqa_embedding_deployment.resources[0].status.availableReplicas | default(0) | int) > 0)
+  retries: 20
+  delay: 15
+  failed_when: false
+  changed_when: false
+  when:
+    - (edp | default({})).enabled | default(false)
+    - (chatqa_pipelines | default([]) | length) > 0
+  tags:
+    - install
+    - update-configuration
+
+- name: Fail early when ChatQA embedding deployment is not ready
+  ansible.builtin.fail:
+    msg: >-
+      EDP depends on ChatQA embedding service, but deployment 'embedding-svc-deployment'
+      in namespace '{{ chatqa_namespace }}' is not ready (availableReplicas=0).
+      Check pipeline model-server pods (torchserve/vllm embedding backends) in that namespace.
+      Run: kubectl get pods -n {{ chatqa_namespace }} && kubectl get deploy -n {{ chatqa_namespace }}
+  when:
+    - (edp | default({})).enabled | default(false)
+    - chatqa_embedding_deployment is defined
+    - ((chatqa_embedding_deployment.resources | default([]) | length) == 0) or (((chatqa_embedding_deployment.resources | default([]) | first | default({})).status | default({})).availableReplicas | default(0) | int == 0)
+    - (chatqa_pipelines | default([]) | length) > 0
+  tags:
+    - install
+    - update-configuration
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
@@ -354,9 +393,10 @@
     state: absent
     wait: true
     wait_timeout: "300s"
-  when: edp.enabled
+  when: (edp | default({})).enabled | default(false) or "delete" in ansible_run_tags
   tags:
     - uninstall
+    - delete
 
 - name: Delete EDP namespace
   kubernetes.core.k8s:
@@ -364,6 +404,7 @@
     api_version: v1
     kind: Namespace
     name: "{{ edp.namespace }}"
-  when: edp.enabled
+  when: (edp | default({})).enabled | default(false) or "delete" in ansible_run_tags
   tags:
     - uninstall
+    - delete

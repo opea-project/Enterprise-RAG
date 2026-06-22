@@ -16,7 +16,10 @@ import {
 } from "@intel-enterprise-rag-ui/control-plane";
 import { useDebug } from "@intel-enterprise-rag-ui/utils";
 
-import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
+import {
+  useChangeArgumentsMutation,
+  usePostRetrieverQueryMutation,
+} from "@/features/admin-panel/control-plane/api";
 import {
   audioQnAGraphNodesSelector,
   audioQnAGraphSelectedServiceNodeSelector,
@@ -25,15 +28,8 @@ import { useAppSelector } from "@/store/hooks";
 import { getAudioQnAAppEnv } from "@/utils";
 import { getErrorMessage } from "@/utils/api";
 
-type ChangeArgumentsFunction = (
-  request: { name: string; data: unknown }[],
-) => void;
-
-interface ServiceCardProps {
-  changeArguments: ChangeArgumentsFunction;
-}
-
-const ServiceCard = ({ changeArguments }: ServiceCardProps) => {
+const ServiceCard = () => {
+  const [changeArguments] = useChangeArgumentsMutation();
   const selectedServiceNode = useAppSelector(
     audioQnAGraphSelectedServiceNodeSelector,
   );

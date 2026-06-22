@@ -101,7 +101,10 @@ export const useInitialChat = (config: UseInitialChatConfig) => {
         setChatTurns((prevTurns) =>
           prevTurns.map((turn) =>
             turn.id === conversationTurnId
-              ? { ...turn, sources: parsedSources.length > 0 ? parsedSources : [] }
+              ? {
+                  ...turn,
+                  sources: parsedSources.length > 0 ? parsedSources : [],
+                }
               : turn,
           ),
         );

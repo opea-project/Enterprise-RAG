@@ -5,9 +5,9 @@ import "./DataIngestionTab.scss";
 
 import { InfoIcon } from "@intel-enterprise-rag-ui/icons";
 
-import EmbeddingModelMigrationBanner from "@/features/admin-panel/data-ingestion/components/EmbeddingModelMigrationBanner/EmbeddingModelMigrationBanner";
 import BucketSynchronizationDialog from "@/features/admin-panel/data-ingestion/components/BucketSynchronizationDialog/BucketSynchronizationDialog";
 import DataIngestionSettingsDialog from "@/features/admin-panel/data-ingestion/components/DataIngestionSettingsDialog/DataIngestionSettingsDialog";
+import EmbeddingModelMigrationBanner from "@/features/admin-panel/data-ingestion/components/EmbeddingModelMigrationBanner/EmbeddingModelMigrationBanner";
 import FilesDataTable from "@/features/admin-panel/data-ingestion/components/FilesDataTable/FilesDataTable";
 import LinksDataTable from "@/features/admin-panel/data-ingestion/components/LinksDataTable/LinksDataTable";
 import RefreshButton from "@/features/admin-panel/data-ingestion/components/RefreshButton/RefreshButton";

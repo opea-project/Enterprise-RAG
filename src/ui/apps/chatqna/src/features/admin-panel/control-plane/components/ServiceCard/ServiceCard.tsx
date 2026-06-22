@@ -16,7 +16,10 @@ import {
 } from "@intel-enterprise-rag-ui/control-plane";
 import { useDebug } from "@intel-enterprise-rag-ui/utils";
 
-import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
+import {
+  useChangeArgumentsMutation,
+  usePostRetrieverQueryMutation,
+} from "@/features/admin-panel/control-plane/api";
 import {
   chatQnAGraphNodesSelector,
   chatQnAGraphSelectedServiceNodeSelector,
@@ -26,15 +29,8 @@ import { getChatQnAAppEnv } from "@/utils";
 import { getErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
 
-type ChangeArgumentsFunction = (
-  request: { name: string; data: unknown }[],
-) => void;
-
-interface ServiceCardProps {
-  changeArguments: ChangeArgumentsFunction;
-}
-
-const ServiceCard = ({ changeArguments }: ServiceCardProps) => {
+const ServiceCard = () => {
+  const [changeArguments] = useChangeArgumentsMutation();
   const selectedServiceNode = useAppSelector(
     chatQnAGraphSelectedServiceNodeSelector,
   );

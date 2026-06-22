@@ -12,7 +12,6 @@ import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
 
 import {
-  useChangeArgumentsMutation,
   useGetServicesDataQuery,
   useLazyGetServicesDataQuery,
 } from "@/features/admin-panel/control-plane/api";
@@ -42,7 +41,6 @@ const ControlPlaneTab = () => {
   );
 
   const [getServicesData, { isFetching }] = useLazyGetServicesDataQuery();
-  const [changeArguments] = useChangeArgumentsMutation();
 
   const handleAutorefreshChange = useCallback(
     (enabled: boolean) => {
@@ -62,7 +60,7 @@ const ControlPlaneTab = () => {
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={ChatQnAGraph}
-      ConfigPanel={() => <ServiceCard changeArguments={changeArguments} />}
+      ConfigPanel={ServiceCard}
       isAutorefreshEnabled={isAutorefreshEnabled}
       onAutorefreshChange={handleAutorefreshChange}
       onRefresh={handleRefresh}

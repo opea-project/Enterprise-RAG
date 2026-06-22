@@ -21,7 +21,7 @@ import { WarningIcon } from "@intel-enterprise-rag-ui/icons";
 import { getAudioQnAAppEnv } from "@/utils";
 
 interface EmbeddingModelIndicatorProps {
-//  please use itemEmbeddingModel isntead of fileEmbeddingModel.
+  //  please use itemEmbeddingModel isntead of fileEmbeddingModel.
   itemEmbeddingModel: string | null;
 }
 
@@ -52,7 +52,7 @@ const EmbeddingModelIndicator = ({
 
   const indicator = (
     <span
-      className="mr-2 inline-flex items-center justify-center text-amber-600 dark:text-amber-400 cursor-help"
+      className="mr-2 inline-flex cursor-help items-center justify-center text-amber-600 dark:text-amber-400"
       aria-label="Re-ingestion Required"
     >
       <WarningIcon className="h-4 w-4" />

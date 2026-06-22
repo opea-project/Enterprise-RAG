@@ -150,7 +150,9 @@ const EmbeddingModelMigrationBanner = () => {
               title="Refresh migration status"
               aria-label="Refresh migration status"
             >
-              <RefreshIcon className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshIcon
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
           <p className="mb-2">

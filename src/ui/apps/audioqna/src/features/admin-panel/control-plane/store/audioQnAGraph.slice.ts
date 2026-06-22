@@ -104,31 +104,49 @@ export const audioQnAGraphSlice = createSlice({
       action: PayloadAction<FetchedServicesData>,
     ) => {
       const fetchedServicesData = action.payload;
-      state.nodes = updateNodes(
+      const newNodes = updateNodes(
         graphNodes,
         fetchedServicesData,
         llmNodePositionNoGuards,
         llmModelServerNodePositionNoGuards,
       ) as typeof state.nodes;
+
+      if (state.selectedServiceNode) {
+        const selectedId = state.selectedServiceNode.id;
+        state.nodes = newNodes.map((node) =>
+          node.id === selectedId
+            ? {
+                ...node,
+                selected: true,
+                data: { ...node.data, selected: true },
+              }
+            : node,
+        ) as typeof state.nodes;
+      } else {
+        state.nodes = newNodes;
+      }
     },
     setAudioQnAGraphSelectedServiceNode: (
       state,
       action: PayloadAction<Node<ServiceData>[]>,
     ) => {
       const nodes = action.payload;
-      if (nodes.length && nodes[0] !== state.selectedServiceNode) {
-        state.selectedServiceNode =
-          nodes[0] as typeof state.selectedServiceNode;
+      if (nodes.length) {
+        const incomingNode = nodes[0] as typeof state.selectedServiceNode;
+        if (incomingNode?.id !== state.selectedServiceNode?.id) {
+          state.selectedServiceNode = incomingNode;
+        }
+        // same id: keep existing selectedServiceNode to preserve unsaved form state
       } else {
         state.selectedServiceNode = null;
       }
+      const selectedId = state.selectedServiceNode?.id ?? null;
       state.nodes = [...state.nodes].map((node) => ({
         ...node,
+        selected: selectedId ? node.id === selectedId : false,
         data: {
           ...node.data,
-          selected: state.selectedServiceNode
-            ? node.id === state.selectedServiceNode.id
-            : false,
+          selected: selectedId ? node.id === selectedId : false,
         },
       }));
     },

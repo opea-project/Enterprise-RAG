@@ -1,0 +1,5 @@
+.bearer
+results/
+docs/*.txt
+docs/*.jsonl
+__pycache__/

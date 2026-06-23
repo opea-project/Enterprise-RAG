@@ -9,7 +9,7 @@ import {
   useControlPlanePolling,
 } from "@intel-enterprise-rag-ui/control-plane";
 import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import {
   useGetServicesDataQuery,
@@ -54,6 +54,12 @@ const ControlPlaneTab = () => {
   }, [getServicesData]);
 
   useControlPlanePolling(handleRefresh, isAutorefreshEnabled);
+
+  useEffect(() => {
+    return () => {
+      dispatch(setChatQnAGraphSelectedServiceNode([]));
+    };
+  }, [dispatch]);
 
   return (
     <ControlPlanePanel

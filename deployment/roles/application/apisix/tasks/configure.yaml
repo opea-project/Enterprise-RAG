@@ -203,8 +203,8 @@
           'path': '/api/v1/audio/status',
           'backend_service': 'namespace-status-watcher-svc',
           'service_port': 9010,
-          'service_path': '/v1/audio/status',
           'rate_limit_count': 30,
+          'service_regex': ['^/api/v1/audio/status$', '/v1/audio/status'],
           'permissions': ['admin#admin-access', 'maintainer#maintainer-access']
         }]
       }}

@@ -27,6 +27,7 @@ import {
 import { useAppSelector } from "@/store/hooks";
 import { getAudioQnAAppEnv } from "@/utils";
 import { getErrorMessage } from "@/utils/api";
+import { keycloakService } from "@/utils/auth";
 
 const ServiceCard = () => {
   const [changeArguments] = useChangeArgumentsMutation();
@@ -51,6 +52,9 @@ const ServiceCard = () => {
       return getErrorMessage(error, defaultMessage);
     };
 
+  const isReadOnly =
+    keycloakService.isMaintainerUser() && !keycloakService.isAdminUser();
+
   if (selectedServiceNode === null) {
     return <NoServiceSelectedCard />;
   }
@@ -66,23 +70,45 @@ const ServiceCard = () => {
         rerankerArgs={rerankerNode?.data?.rerankerArgs}
         onPostRetrieverQuery={handlePostRetrieverQuery}
         onGetErrorMessage={handleGetErrorMessage}
+        isReadOnly={isReadOnly}
         nerEnabled={getAudioQnAAppEnv("NER_ENABLED") === "true"}
       />
     ),
-    reranker: <RerankerCard data={data} changeArguments={changeArguments} />,
+    reranker: (
+      <RerankerCard
+        data={data}
+        changeArguments={changeArguments}
+        isReadOnly={isReadOnly}
+      />
+    ),
     prompt_template: (
       <PromptTemplateCard
         data={data}
         changeArguments={changeArguments}
         validatePromptTemplateForm={validatePromptTemplateForm}
+        isReadOnly={isReadOnly}
       />
     ),
     input_guard: (
-      <LLMInputGuardCard data={data} changeArguments={changeArguments} />
+      <LLMInputGuardCard
+        data={data}
+        changeArguments={changeArguments}
+        isReadOnly={isReadOnly}
+      />
     ),
-    llm: <LLMCard data={data} changeArguments={changeArguments} />,
+    llm: (
+      <LLMCard
+        data={data}
+        changeArguments={changeArguments}
+        isReadOnly={isReadOnly}
+      />
+    ),
     output_guard: (
-      <LLMOutputGuardCard data={data} changeArguments={changeArguments} />
+      <LLMOutputGuardCard
+        data={data}
+        changeArguments={changeArguments}
+        isReadOnly={isReadOnly}
+      />
     ),
   };
 

@@ -7,7 +7,10 @@
 import csv
 import json
 import os
+import subprocess  # nosec B404 - invoked with a fixed argument list only; URL is validated to match https scheme before use
 import sys
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 
@@ -34,13 +37,16 @@ def download_pubmed():
             print("Error: pubmed.jsonl URL not found in documents.csv", file=sys.stderr)
             sys.exit(1)
 
+    if urllib.parse.urlparse(url).scheme != "https":
+        print(f"Error: URL scheme expected to be https, got: {url[:80]}", file=sys.stderr)
+        sys.exit(1)
+
     dest = DOCS_DIR / "pubmed.jsonl"
     if dest.exists() and dest.stat().st_size > 1_000_000:
         print(f"  pubmed.jsonl already present ({dest.stat().st_size // 1_000_000}MB)")
         return dest
 
     print(f"  Downloading pubmed.jsonl from {url[:80]}...")
-    import subprocess
     os.makedirs(DOCS_DIR, exist_ok=True)
 
     try:
@@ -50,9 +56,8 @@ def download_pubmed():
         )
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
         print(f"  curl failed ({e}), falling back to urllib...", file=sys.stderr)
-        import urllib.request
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=300) as resp, open(dest, "wb") as out:
+        with urllib.request.urlopen(req, timeout=300) as resp, open(dest, "wb") as out:  # nosec B310 - scheme validated to match https
             total = 0
             while True:
                 chunk = resp.read(1024 * 1024)

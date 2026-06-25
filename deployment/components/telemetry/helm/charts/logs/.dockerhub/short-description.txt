@@ -1,1 +1,0 @@
-OpenTelemetry collector for Intel® AI for Enterprise RAG system logs

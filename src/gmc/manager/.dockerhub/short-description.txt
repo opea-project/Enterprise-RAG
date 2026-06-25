@@ -1,1 +1,0 @@
-Management service for Intel® AI for Enterprise RAG services orchestration

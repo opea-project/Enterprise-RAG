@@ -4,7 +4,7 @@
 > 📣 **Intel® AI for Enterprise RAG** is moving to a new home!
 > Version 2.3.0 is the final release published from this repository. Starting with the next release, Intel® AI for Enterprise RAG will continue its development in a new repository - details will be shared soon.
 >
-> The project isn't going anywhere - it's growing. The team, the roadmap, and our commitment to production-grade enterprise > RAG remain fully in place. The move sets us up for the next phase of the project and a stronger foundation for what's ahead.
+> The project isn't going anywhere - it's growing. The team, the roadmap, and our commitment to production-grade enterprise RAG remain fully in place. The move sets us up for the next phase of the project and a stronger foundation for what's ahead.
 >
 > Stay tuned:
 > - Watch this repository for the announcement of the new location

@@ -1,5 +1,14 @@
 # Intel® AI for Enterprise RAG
 
+> [!IMPORTANT]
+> 📣 Intel® AI for Enterprise RAG is moving to a new home
+> Version 2.3.0 is the final release published from this repository. Starting with the next release, Intel® AI for Enterprise RAG will continue its development in a new repository - details will be shared soon.
+> The project isn't going anywhere - it's growing. The team, the roadmap, and our commitment to production-grade enterprise > RAG remain fully in place. The move sets us up for the next phase of the project and a stronger foundation for what's ahead.
+> Stay tuned:
+> - Watch this repository for the announcement of the new location
+> - Continue using 2.3.0 with confidence - it's a stable, supported release
+> - Issues and discussions remain open here until the transition is complete
+
 Intel® AI for Enterprise RAG simplifies transforming your enterprise data into actionable insights. Powered by Intel® Xeon® processors and Intel® Gaudi® AI accelerators, it integrates components from industry partners to offer a streamlined approach to deploying enterprise solutions.
 
 ## Why use Intel® AI for Enterprise RAG?

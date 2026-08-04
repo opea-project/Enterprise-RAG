@@ -22,13 +22,13 @@
 | Requirement | Specification | Notes |
 |---|---|---|
 | BIOS Configuration | Intel AMX must be Enabled | Check "Intel AMX" or "Advanced Matrix Extensions" in BIOS |
-| Minimum ESXi Version | 7.0 Update 3 or later (8.x preferred) | Required for AMX instruction support |
+| Minimum ESXi Version | 8.0 or later (8.x preferred) | Required for VMware Hardware Version 20, which is needed for AMX instruction support |
 | VM Hardware Compatibility | Version 20 (introduced with vSphere 8.0) | Older versions mask AMX features |
 | EVC Mode | Must be set to Sapphire Rapids or higher or Disabled | If set to older generations (Ice Lake, Cascade Lake), AMX will be masked |
 
 **Pre-deployment Checklist:**
 - Is Intel AMX enabled in the host BIOS?
-- Are hosts running ESXi 7.0 U3 or later?
+- Are hosts running ESXi 8.0 or later?
 - Is VM hardware version set to v20?
 - Is cluster EVC baseline set to Sapphire Rapids or disabled?
 

@@ -26,6 +26,7 @@ Support for specific vector databases:
 | -------------------| :---------: |
 | [REDIS](#redis)    | &#x2713; |
 | [REDIS-CLUSTER](#redis-cluster) | &#x2713;  |
+| [QDRANT](#qdrant) | Experimental |
 | [MSSQL](#microsoft-sql-server) | Experimental |
 | [PGVECTOR](#pgvector) | Deployment only |
 
@@ -51,6 +52,12 @@ To configure VectorStore to use Redis, please refer to [ConnectorRedis](#Connect
 #### Redis Cluster
 
 Configuration is exactly the same as for Redis.
+
+#### Qdrant
+
+For more information on this database, refer to https://qdrant.tech/documentation/
+
+To configure VectorStore to use Qdrant, please refer to [ConnectorQdrant](#connectorqdrant).
 
 #### Microsoft SQL Server
 
@@ -90,6 +97,51 @@ Or use more specific configuration for endpoint URL:
 | REDIS_SSL            | false         | Schema to use, if `true` is passed, `rediss://` schema is used              |
 | REDIS_USERNAME       | Not set       | Database username (Optional)                                                |
 | REDIS_PASSWORD       | Not set       | Database password (Optional)                                                |
+
+#### ConnectorQdrant
+
+> [!IMPORTANT]
+> Qdrant support is EXPERIMENTAL. Backup and restore are not covered.
+
+Configure the full endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| QDRANT_URL           | Not set       | Full URL for the Qdrant endpoint, takes precedence over QDRANT_HOST/QDRANT_HTTPS |
+
+Or use more specific configuration for endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| QDRANT_HOST          | localhost     | Hostname or IP Address of the Qdrant endpoint                                |
+| QDRANT_PORT          | 6333          | REST port of the Qdrant endpoint                                             |
+| QDRANT_GRPC_PORT     | 6334          | gRPC port of the Qdrant endpoint                                             |
+| QDRANT_PREFER_GRPC   | false         | Use gRPC instead of REST where the client supports it                        |
+| QDRANT_HTTPS         | false         | Use `https` instead of `http`                                                |
+| QDRANT_TIMEOUT       | Not set       | Client timeout in seconds (Optional)                                         |
+| QDRANT_API_KEY       | Not set       | The only API key the connector reads, must be provided through a Secret. The deployment decides which privilege level a pod gets: writers receive the read-write key, the retriever receives the read-only key under this same name |
+
+Collection and storage settings:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| QDRANT_COLLECTION_NAME | Not set     | Collection name. When not set, it is derived from `EMBEDDING_MODEL_NAME`, `VECTOR_ALGORITHM`, `VECTOR_DATATYPE`, `VECTOR_DISTANCE_METRIC` and `VECTOR_DIMS` |
+| QDRANT_ON_DISK_VECTORS | true        | Keep dense vectors on disk instead of prefaulting them into the page cache   |
+| QDRANT_ON_DISK_PAYLOAD | true        | Keep payloads on disk                                                        |
+| QDRANT_HNSW_ON_DISK  | false         | Keep the HNSW graph on disk. Not recommended, graph traversal is random access |
+| QDRANT_QUANTIZATION  | none          | `none` or `int8` |
+| QDRANT_QUANTIZATION_QUANTILE | 0.99  | Quantile used to clip outliers when quantizing                               |
+| QDRANT_QUANTIZATION_ALWAYS_RAM | true | Keep the quantized vector copy in RAM                                       |
+
+Qdrant supports a smaller set of vector settings than Redis, and rejects the rest with an error at startup rather than mapping them to a nearest equivalent:
+
+| Setting | Accepted on Qdrant | Rejected on Qdrant |
+|---------|--------------------|--------------------|
+| `VECTOR_ALGORITHM` | `HNSW`, `FLAT` (`FLAT` maps to `hnsw_config.m = 0`, Qdrant brute force search) | `SVS-VAMANA`, which is a Redis-only index type |
+| `VECTOR_DISTANCE_METRIC` | `COSINE`, `L2` | `IP`, because Qdrant returns an unbounded raw inner product, so `vector_distance` values and `distance_threshold` cannot be interpreted |
+| `VECTOR_DATATYPE` | `FLOAT32`, `FLOAT16` | - |
+
+Changing any of the accepted values changes the derived collection name, so incompatible vectors cannot be mixed.
 
 #### ConnectorMssql
 

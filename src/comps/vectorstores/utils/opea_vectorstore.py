@@ -51,6 +51,7 @@ class OPEAVectorStore():
             "redis-cluster": self._import_redis,
             "pgvector": self._import_pgvector,
             "mssql": self._import_mssql,
+            "qdrant": self._import_qdrant,
         }
 
         if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:
@@ -186,3 +187,13 @@ class OPEAVectorStore():
             self.vector_store = ConnectorMssql()
         except ModuleNotFoundError:
             logger.exception("exception when loading ConnectorMssql")
+
+    def _import_qdrant(self):
+        """
+        Imports the ConnectorQdrant connector.
+        """
+        try:
+            from comps.vectorstores.utils.connectors.connector_qdrant import ConnectorQdrant
+            self.vector_store = ConnectorQdrant()
+        except ModuleNotFoundError:
+            logger.exception("exception when loading ConnectorQdrant")

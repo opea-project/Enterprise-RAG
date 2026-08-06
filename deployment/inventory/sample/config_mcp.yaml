@@ -203,5 +203,5 @@ chat_history:
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis-cluster
+  vector_store: redis-cluster  # Supported options: redis-cluster, mssql (RBAC not supported with mssql); qdrant is EXPERIMENTAL, not for production
   vector_datatype: FLOAT32

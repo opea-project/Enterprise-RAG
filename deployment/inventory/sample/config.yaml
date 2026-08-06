@@ -269,10 +269,21 @@ edp:
   # Uncomment to switch from default FLAT to SVS-VAMANA or HNSW.
   # The retriever will automatically use the same settings.
   # After changing, re-upload all files so data is re-indexed.
-  # ingestion:
-  #   config:
+  # With vector_store: qdrant only "FLAT" and "HNSW" are accepted, and
+  # vector_distance_metric accepts only "COSINE" and "L2". SVS-VAMANA is a
+  # Redis-only index type and "IP" has no interpretable distance on Qdrant, so
+  # both are rejected with an error instead of being silently remapped.
+  ingestion:
+    config:
   #     vector_algorithm: "SVS-VAMANA"  # "FLAT", "HNSW", "SVS-VAMANA"
   #     vector_svs_compression: "LeanVec4x8"  # "LeanVec4x8" (requires custom Redis image), "Q8", or "" (none)
+  #     # Qdrant-only settings, ignored by every other vector store. Applied to both
+  #     # the ingestion service and the retriever, so they cannot drift apart.
+      qdrant_collection: "enterprise-rag-default"
+      qdrant_on_disk: "True"  # on-disk storage profile, the HNSW graph stays in RAM
+      qdrant_quantization: "none"  # "none" or "int8". int8 cuts resident vectors ~4x
+  #                                  # at a recall cost that has not been measured for
+  #                                  # the shipped embedding models.
 
 rag_utils:
   enabled: true
@@ -283,7 +294,12 @@ rag_utils:
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis-cluster  # Supported options: redis-cluster, mssql (RBAC not supported with mssql)
+  # Supported options: redis-cluster, mssql (RBAC not supported with mssql).
+  # qdrant is EXPERIMENTAL for this release and not supported for production use:
+  # it has no backup and restore story (no snapshot job, not covered by Velero, no
+  # restore procedure) and it requires node-local storage, so a node loss means the
+  # loss of the vector data with re-ingestion as the only recovery path.
+  vector_store: qdrant
   vector_datatype: FLOAT32
   # vector_dims is auto-detected from embedding_model_name and does not need
   # to be set manually. Override only when using a custom model that is not
@@ -294,3 +310,18 @@ vector_databases:
   #   image:
   #     repository: <registry>/erag/redis
   #     tag: "8.2.2-svs"
+  # With vector_store: qdrant the storage class below is mandatory. Qdrant does not
+  # support network storage such as NFS and must not fall back to the cluster default
+  # storage class, so deployment fails fast when it is unset, when the named class
+  # does not exist, or when its provisioner is NFS-backed. Point it at a block or
+  # node-local storage class backed by SSD. A node-local provisioner such as
+  # local-path-provisioner is a prerequisite you install yourself: this repository
+  # does not install one for Qdrant.
+  qdrant:
+    persistence:
+      storageClass: "local-path"
+      size: "20Gi"
+    snapshotPersistence:
+      enabled: true
+      storageClass: "local-path"  # defaults to persistence.storageClass when empty
+      size: "20Gi"

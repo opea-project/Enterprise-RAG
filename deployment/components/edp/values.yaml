@@ -1055,6 +1055,7 @@ ingestion:
   config:
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     embedding_model_name: *embedding_model_name # e.g., "nomic-ai/nomic-embed-text-v1"
+    vector_store: "redis-cluster" # "redis", "redis-cluster", "pgvector", "mssql", "qdrant"
     # Vector Algorithm configuration
     vector_algorithm: "FLAT" # "FLAT", "HNSW", "SVS-VAMANA"
     vector_dims: "768" # Auto-detected from embedding_model_name by resolve_vector_dims.py; kept here as Helm chart default only
@@ -1070,6 +1071,10 @@ ingestion:
     vector_svs_construction_window_size: "250"
     vector_svs_search_window_size: "200"
     vector_svs_compression: "LeanVec4x8" # "LeanVec4x8" (requires custom Redis image), "Q8", or "" (none)
+    # For the qdrant vector store additional settings are available
+    qdrant_collection: "enterprise-rag-default"
+    qdrant_on_disk: "True" # keep vectors and payloads on disk for low-RAM deployments
+    qdrant_quantization: "none" # "none" or "int8"
     # For hierarchical indices
     use_hierarchical_indices: "False"
   pullPolicy: Always

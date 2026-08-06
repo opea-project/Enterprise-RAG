@@ -12,7 +12,7 @@
         kind: StatefulSet
         namespace: "{{ vector_databases.namespace }}"
         label_selectors:
-          - app.kubernetes.io/name=redis-cluster
+          - app.kubernetes.io/name={{ vector_databases.vector_store }}
           - app.kubernetes.io/instance=vdb
       register: vdb_deployment
 
@@ -21,7 +21,7 @@
         kind: Pod
         namespace: "{{ vector_databases.namespace }}"
         label_selectors:
-          - app.kubernetes.io/name=redis-cluster
+          - app.kubernetes.io/name={{ vector_databases.vector_store }}
           - app.kubernetes.io/instance=vdb
       register: vdb_pods
 
@@ -33,6 +33,7 @@
 
     - name: Query Redis
       no_log: "{{ secure_logs }}"
+      when: vector_databases.vector_store in ['redis', 'redis-cluster']
       block:
         - name: Query Redis for number of keys (using container environment)
           kubernetes.core.k8s_exec:
@@ -43,12 +44,40 @@
           register: vdb_keys_count
           when: vdb_pod is defined
 
-    - name: Extract key count from Redis response
+    - name: Query Qdrant
+      no_log: "{{ secure_logs }}"
+      when: vector_databases.vector_store == 'qdrant'
+      block:
+        - name: Query Qdrant for number of points
+          kubernetes.core.k8s_exec:
+            namespace: "{{ vector_databases.namespace }}"
+            pod: "{{ vdb_pod }}"
+            command: >
+              bash -c 'KEY="$QDRANT__SERVICE__READ_ONLY_API_KEY";
+              exec 3<>/dev/tcp/127.0.0.1/6333;
+              printf "GET /collections HTTP/1.1\r\nHost: localhost\r\nApi-key: $KEY\r\nConnection: close\r\n\r\n" >&3;
+              LIST=$(cat <&3);
+              echo "$LIST" | grep -q "\"status\":\"ok\"" || { echo "qdrant collection list request failed" >&2; exit 1; };
+              TOTAL=0;
+              for NAME in $(echo "$LIST" | grep -o "\"name\":\"[^\"]*\"" | cut -d: -f2 | tr -d "\""); do
+              exec 3<>/dev/tcp/127.0.0.1/6333;
+              printf "GET /collections/$NAME HTTP/1.1\r\nHost: localhost\r\nApi-key: $KEY\r\nConnection: close\r\n\r\n" >&3;
+              INFO=$(cat <&3);
+              echo "$INFO" | grep -q "\"status\":\"ok\"" || { echo "qdrant collection info request failed for $NAME" >&2; exit 1; };
+              COUNT=$(echo "$INFO" | grep -o "\"points_count\":[0-9]*" | head -1 | cut -d: -f2);
+              TOTAL=$((TOTAL + ${COUNT:-0}));
+              done;
+              echo "$TOTAL"'
+          register: vdb_keys_count
+          when: vdb_pod is defined
+
+    - name: Extract key count from vector database response
       ansible.builtin.set_fact:
         vdb_keys_total: "{{ vdb_keys_count.stdout_lines[-1] | regex_search('\\d+') | default('0') }}"
       when:
         - vdb_keys_count is defined
         - vdb_keys_count.stdout is defined
+        - vdb_keys_count.stdout_lines | length > 0
 
     - name: Set default key count if not determined
       ansible.builtin.set_fact:

@@ -37,6 +37,8 @@ spec:
           {{- include "postgresql_init_container" . | nindent 8 }}
         {{- else if eq .Values.ingestion.config.vector_store "mssql" }}
           {{- include "mssql_init_container" . | nindent 8 }}
+        {{- else if eq .Values.ingestion.config.vector_store "qdrant" }}
+          {{- include "qdrant_init_container" . | nindent 8 }}
         {{- end }}
       containers:
         - name: {{ .Values.ingestion.nameOverride }}

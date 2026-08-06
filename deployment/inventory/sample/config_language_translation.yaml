@@ -156,4 +156,4 @@ chatHistory:
 vector_databases:
   enabled: false
   namespace: vdb
-  vector_store: redis # Supported: redis, redis-cluster
+  vector_store: redis # Supported: redis, redis-cluster; qdrant is EXPERIMENTAL, not for production

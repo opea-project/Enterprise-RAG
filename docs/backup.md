@@ -61,6 +61,9 @@ To have a working backup and restore functionality, the following items need to 
 
 Application supports taking backup and restoring user data, including ingested vector data, ingested documents, user accounts, credentials, and chat history.
 
+> [!IMPORTANT]
+> Vector data is covered only for the supported vector database backends. The experimental `qdrant` backend is **not** covered: its volumes are not part of the backup configuration, there is no snapshot job and there is no restore procedure. Qdrant also requires node-local storage, which rules out the volume-snapshot storage class this feature depends on, so a node loss means the loss of the vector data with re-ingestion through the data preparation pipeline as the only recovery path. Everything else in the list above is still backed up.
+
 With backup enabled and configured in the cluster, the backup can be taken with the following command:
 ```sh
 ansible-playbook -u $USER -K playbooks/backup.yaml --tags backup,monitor_backup \

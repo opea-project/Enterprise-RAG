@@ -207,6 +207,9 @@ ingestion:
 {% endif %}
     vector_dims: {{ vector_databases.vector_dims }}
     vector_datatype: {{ vector_databases.vector_datatype }}
+{% if vector_databases.enabled %}
+    vector_store: {{ vector_databases.vector_store }}
+{% endif %}
 {% if edp.late_chunking.enabled is true %}
     use_late_chunking: "True"
 {% endif %}

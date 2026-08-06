@@ -71,6 +71,8 @@ spec:
           {{- include "postgresql_init_container" . | nindent 8 }}
         {{- else if eq (index .Values "images" .filename "vector_store") "mssql" }}
           {{- include "mssql_init_container" . | nindent 8 }}
+        {{- else if eq (index .Values "images" .filename "vector_store") "qdrant" }}
+          {{- include "qdrant_init_container" . | nindent 8 }}
         {{- end }}
         - name: wait-for-ner-service
           image: alpine/curl
@@ -117,6 +119,17 @@ spec:
                 optional: true
             - secretRef:
                 name: vector-database-config
+        {{- if eq (index .Values "images" .filename "vector_store") "qdrant" }}
+          # The connector reads only QDRANT_API_KEY, so the read path is confined
+          # to the read-only key by mapping it onto that name. An explicit env
+          # entry takes precedence over the envFrom value above.
+          env:
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vector-database-config
+                  key: QDRANT_READ_ONLY_API_KEY
+        {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

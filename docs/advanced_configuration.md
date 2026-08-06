@@ -545,6 +545,12 @@ Intel® AI for Enterprise RAG supports multiple vector database backends for sto
   - **Important**: Requires accepting Microsoft SQL Server EULA during deployment
   - **Limitations**: Role-based access control (RBAC) for vector databases is not supported with `mssql`, so be sure to set `edp.rbac.enabled` to false in config.yaml
 
+3. **qdrant** - Qdrant 1.19.0, single node, on-disk storage profile
+  - **Important**: EXPERIMENTAL for this release and not supported for production use
+  - Best for: evaluating a low memory vector store where the vector data does not need to survive the loss of a node
+  - **Prerequisites**: a node-local or block StorageClass backed by SSD, which you install yourself. Qdrant does not support network storage such as NFS, so `vector_databases.qdrant.persistence.storageClass` is mandatory and the deployment fails fast when it is unset, absent from the cluster, or NFS-backed
+  - **Limitations**: backup and restore are not covered (no snapshot job, not covered by Velero, no restore procedure), so a node loss means the loss of the vector data with re-ingestion as the only recovery path. Hybrid retrieval with BM25 and Reciprocal Rank Fusion is not supported, and `VECTOR_ALGORITHM: SVS-VAMANA` and `VECTOR_DISTANCE_METRIC: IP` are rejected with an error
+
 **Configuration:**
 
 Modify the `vector_store` parameter in your inventory configuration file ([config.yaml](../deployment/inventory/sample/config.yaml)):
@@ -553,10 +559,43 @@ Modify the `vector_store` parameter in your inventory configuration file ([confi
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis-cluster  # Options: redis, redis-cluster, mssql
+  vector_store: redis-cluster  # Options: redis, redis-cluster, mssql, qdrant (experimental)
   vector_datatype: FLOAT32
   vector_dims: 768  # Must match your embedding model dimensions
 ```
+
+Only one backend is deployed at a time. Switching `vector_store` does not migrate the vector data, so all documents have to be re-ingested through the data preparation pipeline afterwards.
+
+**Feature Support by Backend:**
+
+| Capability | redis-cluster | mssql | qdrant |
+|------------|:-------------:|:-----:|:------:|
+| Status | Supported | Experimental | Experimental, not for production |
+| Vector database RBAC | Yes | No | Yes |
+| Hybrid retrieval with BM25 and RRF | Yes | No | No |
+| `SVS-VAMANA` vector algorithm | Yes | No | No, rejected with an error |
+| `IP` distance metric | Yes | Yes | No, rejected with an error |
+| Backup and restore with Velero | Yes | Yes | No |
+| Usable on the cluster default NFS storage class | Yes | Yes | No, needs an explicit node-local or block class |
+
+**Qdrant Storage Class:**
+
+If you select `qdrant`, set the storage class explicitly. This repository makes `nfs-csi` the cluster default StorageClass on multi-node clusters and Qdrant cannot use it:
+
+```yaml
+vector_databases:
+  vector_store: qdrant
+  qdrant:
+    persistence:
+      storageClass: "local-path"   # must exist on the cluster and must not be NFS-backed
+      size: "20Gi"
+    snapshotPersistence:
+      enabled: true
+      storageClass: "local-path"   # falls back to persistence.storageClass when empty
+      size: "20Gi"
+```
+
+A node-local provisioner such as [local-path-provisioner](https://github.com/rancher/local-path-provisioner) is a prerequisite you install yourself. This repository does not install one. For volume sizing, resource guidance, the API key model, upgrade constraints and troubleshooting, see [Vector Databases Component Documentation](../deployment/components/vector_databases/README.md#qdrant).
 
 **Microsoft SQL Server EULA Acceptance:**
 

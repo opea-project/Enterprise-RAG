@@ -8,6 +8,7 @@ This guide provides recommendations for optimizing the performance of your Intel
      - [LLM Model Selection](#llm-model-selection)
      - [Vector Database Selection](#vector-database-selection)
      - [Redis Vector Database Performance Settings](#redis-vector-database-performance-settings)
+     - [Qdrant Vector Database Performance Settings](#qdrant-vector-database-performance-settings)
    - [Component Scaling](#component-scaling)
      - [TeiRerank Scaling](#teirerank-scaling)
      - [VLLM Scaling](#vllm-scaling)
@@ -34,13 +35,14 @@ llm_model: "casperhansen/llama-3-8b-instruct-awq"
 * Intel® AI for Enterprise RAG supports following vector database backends. Choose based on your deployment scale:
   - **redis-cluster**: Multi-node cluster for production and large-scale deployments (1M+ vectors)
   - **mssql**: Microsoft SQL Server 2025 Express Edition for SQL-based vector operations
+  - **qdrant**: single-node Qdrant with an on-disk storage profile, for low memory deployments
 * Modify the `vector_store` parameter in [config.yaml](../deployment/inventory/sample/config.yaml):
 
 ```yaml
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis-cluster  # Options: redis-cluster, mssql
+  vector_store: redis-cluster  # Options: redis-cluster, mssql, qdrant (experimental)
 ```
 
 > [!NOTE]
@@ -154,6 +156,65 @@ vector_databases:
 ```
 
 In case of `redis-cluster`, all above settings are applied for each cluster node.
+
+### Qdrant Vector Database Performance Settings
+
+> [!IMPORTANT]
+> Qdrant support is EXPERIMENTAL. Backup and restore are not covered, so a node loss means the loss of the vector data.
+
+Qdrant is deployed with an on-disk storage profile, which trades memory for disk bandwidth. Being precise about what this means matters for tuning:
+
+* Qdrant always memory-maps vector data. `QDRANT_ON_DISK_VECTORS` and `QDRANT_ON_DISK_PAYLOAD` control whether it is prefaulted into the page cache, not whether it is stored on disk.
+* The HNSW graph is deliberately kept in RAM (`QDRANT_HNSW_ON_DISK` defaults to `false`). Qdrant documents that a graph on disk turns every query into many small random reads, so moving it out of RAM is not a supported tuning move here.
+
+Storage and resources are configured in your inventory config file:
+
+```yaml
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: qdrant
+  qdrant:
+    # Mandatory. Qdrant does not support NFS and the deployment fails fast on an
+    # unset, missing or NFS-backed class. Use a node-local or block class on SSD.
+    persistence:
+      storageClass: "local-path"
+      size: "20Gi"
+    snapshotPersistence:
+      enabled: true
+      storageClass: "local-path"
+      size: "20Gi"
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "4000m"
+        memory: "6Gi"
+```
+
+The documented reference scale for this release is 1M vectors at 768 dimensions, which needs roughly 5Gi of steady state data.
+
+`persistence.size` and `storageClass` cannot be changed on an existing deployment: the upgrade rules reject both, because a StatefulSet update cannot resize or move an existing PVC. Size for growth up front.
+
+Vector index settings are configured the same way as for Redis, under `edp.ingestion.config`, but Qdrant accepts a smaller set and rejects the rest with an error at startup instead of mapping them to a nearest equivalent:
+
+| Setting | Accepted | Rejected |
+|---------|----------|----------|
+| `vector_algorithm` | `HNSW`, `FLAT` (`FLAT` is Qdrant brute force search) | `SVS-VAMANA`, a Redis-only index type |
+| `vector_distance_metric` | `COSINE`, `L2` | `IP`, because Qdrant returns an unbounded raw inner product, so distance values and `distance_threshold` cannot be interpreted |
+| `vector_datatype` | `FLOAT32`, `FLOAT16` | - |
+
+Scalar int8 quantization is available and off by default, because recall for the shipped embedding models took priority over the memory saving. It reduces the resident vector copy roughly 4x.
+
+```yaml
+edp:
+  ingestion:
+    config:
+      qdrant_quantization: "int8"   # "none" or "int8", default "none"
+```
+
+The full environment variable reference is in the [VectorStore documentation](../src/comps/vectorstores/README.md#connectorqdrant), and operational guidance is in the [Vector Databases Component Documentation](../deployment/components/vector_databases/README.md#qdrant).
 
 ---
 

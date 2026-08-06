@@ -19,6 +19,12 @@ data:
   VECTOR_HNSW_EF_RUNTIME: {{ .Values.ingestion.config.vector_hnsw_ef_runtime | quote }}
   VECTOR_HNSW_EPSILON: {{ .Values.ingestion.config.vector_hnsw_epsilon | quote }}
   {{- end }}
+  {{- if eq .Values.ingestion.config.vector_store "qdrant" }}
+  QDRANT_COLLECTION_NAME: {{ .Values.ingestion.config.qdrant_collection | quote }}
+  QDRANT_ON_DISK_VECTORS: {{ .Values.ingestion.config.qdrant_on_disk | quote }}
+  QDRANT_ON_DISK_PAYLOAD: {{ .Values.ingestion.config.qdrant_on_disk | quote }}
+  QDRANT_QUANTIZATION: {{ .Values.ingestion.config.qdrant_quantization | quote }}
+  {{- end }}
   {{- if eq .Values.ingestion.config.vector_algorithm "SVS-VAMANA" }}
   VECTOR_SVS_GRAPH_MAX_DEGREE: {{ .Values.ingestion.config.vector_svs_graph_max_degree | quote }}
   VECTOR_SVS_CONSTRUCTION_WINDOW_SIZE: {{ .Values.ingestion.config.vector_svs_construction_window_size | quote }}

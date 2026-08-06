@@ -2,6 +2,7 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 */ -}}
+{{- if eq .Values.vectorStore "redis-cluster" }}
 {{- $redisCluster := index .Values "redis-cluster" -}}
 apiVersion: apps/v1
 kind: StatefulSet
@@ -229,3 +230,4 @@ spec:
         requests:
           storage: {{ $redisCluster.persistence.size }}
 
+{{- end }}

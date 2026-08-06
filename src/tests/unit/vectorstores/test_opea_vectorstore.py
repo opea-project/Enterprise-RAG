@@ -83,6 +83,15 @@ def test_import_redis_success():
         vectorstore_instance._import_redis()
         assert isinstance(vectorstore_instance.vector_store, MockConnectorRedis.__class__)
 
+def test_import_qdrant_success(reset_singleton):
+    # The fixture resets the singleton on both sides, so a failure mid-body cannot
+    # leave it poisoned for later tests.
+    from comps.vectorstores.utils.connectors.connector_qdrant import ConnectorQdrant
+    vectorstore_instance = OPEAVectorStore("qdrant")
+    # ConnectorQdrant connects lazily, so loading it must not touch the network.
+    assert isinstance(vectorstore_instance.vector_store, ConnectorQdrant)
+    assert vectorstore_instance.vector_store._client is None
+
 def test_import_redis_failure(caplog):
     with mock.patch('comps.vectorstores.utils.connectors.connector_redis', side_effect=ModuleNotFoundError) as MockConnectorRedis:
         with caplog.at_level(logging.ERROR):

@@ -4,6 +4,9 @@ SPDX-License-Identifier: Apache-2.0
 #}
 
 namespace: {{ pipelines[0].namespace }}
+{% if vector_databases.vector_store is defined %}
+vectorStore: {{ vector_databases.vector_store }}
+{% endif %}
 
 httpRoute:
   enabled: true

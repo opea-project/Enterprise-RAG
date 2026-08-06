@@ -1,10 +1,10 @@
-{{- if and (index .Values "app-monitors" "enabled") (eq .Values.vectorStore "redis-cluster") }}
-# Copyright (C) 2024-2026 Intel Corporation
+{{- if and (index .Values "app-monitors" "enabled") (eq .Values.vectorStore "qdrant") }}
+# Copyright (C) 2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: redis-cluster-metrics
+  name: qdrant-metrics
   labels:
     release: {{.Release.Name}}
 spec:
@@ -13,10 +13,19 @@ spec:
     - vdb
   selector:
     matchLabels:
-      app.kubernetes.io/name: redis-cluster
+      app.kubernetes.io/name: qdrant
+      # Selects the headless service only, so the same pod is not scraped twice.
+      app.kubernetes.io/component: cluster-discovery
   endpoints:
-  - port: metrics
+  - port: http
+    path: /metrics
     interval: 30s
+    # Qdrant serves /metrics on the same port as the API and requires the api key.
+    authorization:
+      type: Bearer
+      credentials:
+        name: vector-database-config
+        key: QDRANT_READ_ONLY_API_KEY
     relabelings:
     - sourceLabels: [__meta_kubernetes_namespace]
       targetLabel: namespace

@@ -2,7 +2,7 @@ apiVersion: v2
 name: vector_databases
 description: Vector databases for Enterprise RAG solution
 type: application
-version: 2.0.7
+version: 2.0.8
 appVersion: "2.3.0"
 annotations:
   app.kubernetes.io/part-of: ERAG

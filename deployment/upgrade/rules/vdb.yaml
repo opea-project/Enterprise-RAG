@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 # Component-specific validation rules for vdb
@@ -34,6 +34,30 @@ validation_rules:
   - path_regex: ".*redis-cluster/redis.*"
     response: "approve"
     note: "Approve Redis cluster configuration changes"
+
+  - path_regex: ".*qdrant/resources/(requests|limits).*"
+    response: "approve"
+    note: "Qdrant resource adjustment - approved for performance/cost tuning"
+
+  - path_regex: ".*qdrant/(persistence|snapshotPersistence)/(size|storageClassName).*"
+    response: "reject"
+    note: "Qdrant volume size or storage class change cannot be applied to existing PVCs by a StatefulSet update"
+
+  - path_regex: ".*qdrant/image/tag.*"
+    response: "reject"
+    note: "Qdrant server version change needs an explicit migration decision: a downgrade cannot read a newer storage format"
+
+  - path_regex: ".*qdrant/config/storage/on_disk_payload.*"
+    response: "reject"
+    note: "Qdrant on-disk payload change rewrites the storage layout of every existing collection"
+
+  - path_regex: ".*qdrant/config/cluster.*"
+    response: "reject"
+    note: "Qdrant clustering change requires a resharding plan, not a StatefulSet update"
+
+  - path_regex: ".*release-values-yaml/qdrant.*"
+    response: "approve"
+    note: "Approve remaining Qdrant configuration changes"
 
   - path_regex: ".*"
     response: "reject"

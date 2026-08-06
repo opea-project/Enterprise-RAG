@@ -75,6 +75,29 @@ spec:
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
+  name: qdrant
+  namespace: vdb
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qdrant
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/vdb/sa/vdb-qdrant
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/monitoring/sa/telemetry-prometheus-redis-exporter
+        - cluster.local/ns/chatqa/sa/retriever-usvc
+        - cluster.local/ns/mcp/sa/retriever-usvc
+
+---
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
   name: redis
   namespace: vdb
 spec:

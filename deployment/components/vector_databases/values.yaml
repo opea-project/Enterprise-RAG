@@ -47,6 +47,113 @@ mssql:
       cpu: 16
       memory: 16Gi
 
+qdrant:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: docker.io/qdrant/qdrant
+    tag: "v1.19.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    # p2p (6335) is intentionally omitted: single-node, clustering disabled.
+    ports:
+      - name: http
+        port: 6333
+        targetPort: 6333
+        protocol: TCP
+        checksEnabled: true
+      - name: grpc
+        port: 6334
+        targetPort: 6334
+        protocol: TCP
+        checksEnabled: false
+  env:
+    - name: QDRANT__SERVICE__API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: QDRANT_API_KEY
+    - name: QDRANT__SERVICE__READ_ONLY_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: QDRANT_READ_ONLY_API_KEY
+  persistence:
+    accessModes: ["ReadWriteOnce"]
+    size: "20Gi"
+    storageClassName: ""
+  snapshotPersistence:
+    enabled: true
+    accessModes: ["ReadWriteOnce"]
+    size: "20Gi"
+    storageClassName: ""
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 60
+    successThreshold: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 4
+      memory: 6Gi
+  containerSecurityContext:
+    capabilities:
+      drop:
+      - ALL
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    fsGroup: 3000
+    fsGroupChangePolicy: Always
+  config:
+    # Single instance, no consensus. The subchart defaults this to true.
+    cluster:
+      enabled: false
+    service:
+      enable_tls: false
+      enable_static_content: false
+      enable_cors: false
+    telemetry_disabled: true
+    storage:
+      # On-disk profile is the default. Payloads stay off the heap; the HNSW
+      # graph is deliberately left in RAM, since a cold HNSW graph destroys
+      # query latency.
+      on_disk_payload: true
+      optimizers:
+        default_segment_number: 2
+        flush_interval_sec: 5
+      wal:
+        wal_capacity_mb: 32
+      quotas:
+        enabled: true
+        max_disk_usage_percent: 90
+
 redis-cluster:
   enabled: true
   image:

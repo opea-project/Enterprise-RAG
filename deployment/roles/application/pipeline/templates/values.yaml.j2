@@ -206,7 +206,15 @@ images:
 {% endif %}
 {% if edp.ingestion.config is defined and edp.ingestion.config.vector_algorithm is defined %}
       VECTOR_ALGORITHM: {{ edp.ingestion.config.vector_algorithm }}
+{% endif %}
+{% if edp.ingestion.config is defined %}
       VECTOR_DISTANCE_METRIC: {{ edp.ingestion.config.vector_distance_metric | default("COSINE") }}
+{% endif %}
+{% if vector_databases.enabled and vector_databases.vector_store == "qdrant" %}
+      QDRANT_COLLECTION_NAME: {{ edp.ingestion.config.qdrant_collection | default("enterprise-rag-default") }}
+      QDRANT_ON_DISK_VECTORS: {{ edp.ingestion.config.qdrant_on_disk | default("True") }}
+      QDRANT_ON_DISK_PAYLOAD: {{ edp.ingestion.config.qdrant_on_disk | default("True") }}
+      QDRANT_QUANTIZATION: {{ edp.ingestion.config.qdrant_quantization | default("none") }}
 {% endif %}
 {% if edp.ingestion.config.vector_algorithm is defined and edp.ingestion.config.vector_algorithm == "SVS-VAMANA" %}
       VECTOR_SVS_GRAPH_MAX_DEGREE: {{ edp.ingestion.config.vector_svs_graph_max_degree | default("40") }}

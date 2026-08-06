@@ -6,6 +6,9 @@
 ### ============================================================================
 # Namespace where the application services are deployed
 namespace: chatqa
+# Vector database backend in use: redis, redis-cluster, pgvector, mssql or qdrant.
+# Selects which vector database monitors are created.
+vectorStore: redis-cluster
 
 ### ============================================================================
 # BASE components: grafana/prometheus+operator + all Kubernetes basic extension

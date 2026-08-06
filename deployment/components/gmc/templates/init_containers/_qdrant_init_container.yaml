@@ -1,0 +1,42 @@
+{{- define "qdrant_init_container" -}}
+- name: wait-for-qdrant
+  image: alpine/curl
+  imagePullPolicy: IfNotPresent
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+  env:
+    - name: VECTOR_STORE
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: VECTOR_STORE
+    - name: QDRANT_URL
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: QDRANT_URL
+    - name: QDRANT_READ_ONLY_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: QDRANT_READ_ONLY_API_KEY
+  command:
+    - sh
+    - -c
+    - |
+        if [ -z "$QDRANT_URL" ]; then
+          echo "Environment variable QDRANT_URL is not set, cannot wait for qdrant. Check the vector-database-config secret.";
+          exit 1
+        else
+          until curl -sf -H "api-key: $QDRANT_READ_ONLY_API_KEY" "$QDRANT_URL/readyz" > /dev/null; do
+            echo "waiting for qdrant server $QDRANT_URL to be ready...";
+            sleep 2;
+          done;
+        fi;
+{{- end -}}

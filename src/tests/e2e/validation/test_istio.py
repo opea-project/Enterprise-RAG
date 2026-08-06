@@ -165,6 +165,10 @@ def get_vector_db_endpoints():
     if not cfg.get("vector_databases", {}).get("enabled"):
         return []
 
+    # Vector stores that do not speak the Redis protocol are queried elsewhere
+    if cfg.get("vector_databases", {}).get("vector_store") not in (None, "redis", "redis-cluster"):
+        return []
+
     # Check for redis-cluster implementation first
     try:
         services = list(kr8s.get("services", "vdb-redis-cluster-headless", namespace="vdb"))
@@ -188,6 +192,25 @@ def get_vector_db_endpoints():
     raise RuntimeError("No vector database services found with expected names (vdb-redis-cluster or vdb-redis)")
 
 
+def get_qdrant_endpoints():
+    # Qdrant serves its API over HTTP, so it is checked as an HTTP endpoint
+    if not cfg.get("vector_databases", {}).get("enabled"):
+        return []
+    if cfg.get("vector_databases", {}).get("vector_store") != "qdrant":
+        return []
+
+    try:
+        services = list(kr8s.get("services", "vdb-qdrant", namespace="vdb"))
+        if len(services) == 1:
+            service = services[0]
+            logger.info("Found qdrant vector DB service: %s", service.name)
+            return [f"{service.name}.vdb.svc.cluster.local:6333"]
+    except (RuntimeError, ValueError, AttributeError):
+        pass
+
+    raise RuntimeError("No vector database services found with expected name (vdb-qdrant)")
+
+
 def get_edp_redis_endpoints():
     if cfg.get("edp", {}).get("enabled"):
         return ["edp-redis.edp.svc.cluster.local:6379"]
@@ -201,6 +224,7 @@ def prepare_tests(istio_helper):
     # Dynamically populate redis endpoints
     redis_endpoints.extend(get_edp_redis_endpoints())
     redis_endpoints.extend(get_vector_db_endpoints())
+    http_endpoints.extend(get_qdrant_endpoints())
 
     istio_helper.create_namespace(inmesh=True)
     endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}

@@ -182,6 +182,105 @@
       tags:
         - install
 
+- name: Configure Qdrant vector store
+  when: vector_databases.vector_store == 'qdrant'
+  tags:
+    - install
+    - pre-upgrade
+  block:
+    - name: Abort if Qdrant storage class is unset
+      ansible.builtin.fail:
+        msg: >-
+          vector_databases.qdrant.persistence.storageClass is not set. Qdrant does not
+          support network storage such as NFS and must not rely on the cluster default
+          StorageClass. Set vector_databases.qdrant.persistence.storageClass in your
+          inventory config to a block or node-local storage class backed by SSD, for
+          example the "local-path" class provided by local-path-provisioner, which you
+          must install on the cluster before deploying Qdrant.
+      when: vector_databases.qdrant.persistence.storageClass | length == 0
+
+    - name: Collect Qdrant storage classes to validate
+      ansible.builtin.set_fact:
+        qdrant_storage_classes_to_check: >-
+          {{
+            ([vector_databases.qdrant.persistence.storageClass] +
+             ([vector_databases.qdrant.snapshotPersistence.storageClass]
+              if vector_databases.qdrant.snapshotPersistence.storageClass | length > 0
+              else [])) | unique
+          }}
+
+    - name: Get Qdrant storage classes from the cluster
+      kubernetes.core.k8s_info:
+        kind: StorageClass
+        api_version: storage.k8s.io/v1
+        name: "{{ item }}"
+      loop: "{{ qdrant_storage_classes_to_check }}"
+      register: qdrant_storage_class_info
+
+    - name: Abort if a Qdrant storage class is missing or backed by NFS
+      ansible.builtin.fail:
+        msg: >-
+          {{
+            'StorageClass "' + item.item + '" does not exist on this cluster. Create it, or set '
+            + 'vector_databases.qdrant.persistence.storageClass (and snapshotPersistence.storageClass) '
+            + 'to an existing block or node-local storage class. local-path-provisioner is not '
+            + 'installed by this repository and has to be provided by the operator.'
+            if (item.resources | length == 0)
+            else 'StorageClass "' + item.item + '" uses provisioner "'
+            + item.resources[0].provisioner + '", which is network storage. Qdrant does not support '
+            + 'network storage such as NFS. Use a block or node-local storage class backed by SSD.'
+          }}
+      loop: "{{ qdrant_storage_class_info.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: >-
+        item.resources | length == 0 or
+        'nfs' in item.resources[0].provisioner | lower
+
+    - name: Generate API keys for Qdrant
+      ansible.builtin.include_role:
+        name: generate_password
+        tasks_from: generate_key.yaml
+        apply:
+          tags:
+            - pre-upgrade
+      loop:
+        - { name: 'QDRANT_API_KEY' }
+        - { name: 'QDRANT_READ_ONLY_API_KEY' }
+      no_log: "{{ secure_logs }}"
+      tags:
+        - install
+        - pre-upgrade
+
+    - name: Generate user connection details for Qdrant vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_port: "6333"
+        vector_database_connection_grpc_port: "6334"
+      tags:
+        - install
+        - pre-upgrade
+
+    - name: Generate host connection details for Qdrant vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_host: >-
+          {{
+            vector_databases.helm.release_name + '-' + vector_databases.vector_store +
+            '.' + vector_databases.namespace + '.svc'
+          }}
+      tags:
+        - install
+        - pre-upgrade
+
+    - name: Generate uri connection details for Qdrant vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_host_with_auth: >-
+          {{
+            "http://" + vector_database_connection_host + ':' + vector_database_connection_port
+          }}
+      tags:
+        - install
+        - pre-upgrade
+
 - name: Get pipelines namespaces
   ansible.builtin.include_role:
     name: utils
@@ -217,6 +316,18 @@
         name: "{{ item }}"
   loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
   ignore_errors: true
+  tags:
+    - install
+
+- name: Ensure vector store namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ vector_databases.namespace }}"
+  when: vector_databases.vector_store == 'qdrant'
   tags:
     - install
 
@@ -285,6 +396,30 @@
   when: vector_databases.vector_store == 'mssql'
   no_log: "{{ secure_logs }}"
   loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
+  tags:
+    - install
+
+- name: Create qdrant compatible vector store configs for services in namespaces
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "vector-database-config"
+        namespace: "{{ item }}"
+      data:
+        VECTOR_STORE: "{{ vector_databases.vector_store | b64encode }}"
+        QDRANT_URL: "{{ vector_database_connection_host_with_auth | b64encode }}"
+        QDRANT_HOST: "{{ vector_database_connection_host | b64encode }}"
+        QDRANT_PORT: "{{ vector_database_connection_port | b64encode }}"
+        QDRANT_GRPC_PORT: "{{ vector_database_connection_grpc_port | b64encode }}"
+        QDRANT_API_KEY: '{{ QDRANT_API_KEY | b64encode }}'
+        QDRANT_READ_ONLY_API_KEY: '{{ QDRANT_READ_ONLY_API_KEY | b64encode }}'
+        QDRANT_COLLECTION_NAME: "{{ vector_databases.qdrant.collection_name | b64encode }}"
+  when: vector_databases.vector_store == 'qdrant'
+  no_log: "{{ secure_logs }}"
+  loop: "{{ (vector_db_connection_detail_namespaces + [vector_databases.namespace]) | flatten | unique }}"
   tags:
     - install
 
@@ -381,6 +516,24 @@
     - password_mappings:
       - { key: MSSQL_PASSWORD, variable: MSSQL_PASSWORD, user: "{{ vector_database_connection_username }}" }
   when: vector_databases.vector_store == 'mssql'
+  tags:
+    - install
+
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ item }}"
+    - secret_name: "vector-database-config"
+    - password_mappings:
+      - { key: QDRANT_API_KEY, variable: QDRANT_API_KEY, user: "" }
+      - { key: QDRANT_READ_ONLY_API_KEY, variable: QDRANT_READ_ONLY_API_KEY, user: "" }
+  loop: "{{ (vector_db_connection_detail_namespaces + [vector_databases.namespace]) | flatten | unique }}"
+  when: vector_databases.vector_store == 'qdrant'
   tags:
     - install
 

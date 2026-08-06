@@ -24,6 +24,34 @@ mssql:
     mssql_pid: {{ vector_databases.mssql.mssql_pid | quote }}
 {% endif %}
 
+{% if vector_databases.vector_store == "qdrant" %}
+
+# Root-level values for service naming
+namespace: {{ vector_databases.namespace }}
+vectorStore: {{ vector_databases.vector_store }}
+
+qdrant:
+  enabled: true
+  image:
+    repository: {{ vector_databases[vector_databases.vector_store].image.repository | default('docker.io/qdrant/qdrant', true) }}
+    tag: "{{ vector_databases[vector_databases.vector_store].image.tag | default('v1.19.0', true) }}"
+    pullPolicy: {{ vector_databases[vector_databases.vector_store].image.pullPolicy | default('IfNotPresent', true) }}
+  resources:
+    requests:
+      cpu: "{{ '100m' if (minimal_configuration is defined and minimal_configuration) else vector_databases[vector_databases.vector_store].resources.requests.cpu | default('500m', true) }}"
+      memory: "{{ vector_databases[vector_databases.vector_store].resources.requests.memory | default('2Gi', true) }}"
+    limits:
+      cpu: "{{ vector_databases[vector_databases.vector_store].resources.limits.cpu | default('4000m', true) }}"
+      memory: "{{ vector_databases[vector_databases.vector_store].resources.limits.memory | default('6Gi', true) }}"
+  persistence:
+    storageClassName: "{{ vector_databases[vector_databases.vector_store].persistence.storageClass }}"
+    size: "{{ vector_databases[vector_databases.vector_store].persistence.size | default('20Gi', true) }}"
+  snapshotPersistence:
+    enabled: {{ vector_databases[vector_databases.vector_store].snapshotPersistence.enabled | default(true, true) }}
+    storageClassName: "{{ vector_databases[vector_databases.vector_store].snapshotPersistence.storageClass | default(vector_databases[vector_databases.vector_store].persistence.storageClass, true) }}"
+    size: "{{ vector_databases[vector_databases.vector_store].snapshotPersistence.size | default('20Gi', true) }}"
+{% endif %}
+
 {% if vector_databases.vector_store == "redis" %}
 vector_database_password: {{ REDIS_PASSWORD }}
 

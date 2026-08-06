@@ -58,3 +58,31 @@ vector_databases:
 
   mssql:
     mssql_pid: "Express"
+
+  qdrant:
+    name: qdrant
+    version: "1.19.0"
+
+    image:
+      repository: "docker.io/qdrant/qdrant"
+      tag: "v1.19.0"
+      pullPolicy: "IfNotPresent"
+
+    collection_name: "enterprise-rag-default"
+
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "4000m"
+        memory: "6Gi"
+
+    persistence:
+      size: "20Gi"
+      storageClass: ""
+
+    snapshotPersistence:
+      enabled: true
+      size: "20Gi"
+      storageClass: ""

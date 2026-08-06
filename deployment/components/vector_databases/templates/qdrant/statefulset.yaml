@@ -1,0 +1,158 @@
+{{- if index .Values "qdrant" "enabled" -}}
+{{- $qdrant := index .Values "qdrant" -}}
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-qdrant
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: qdrant
+spec:
+  serviceName: {{ .Release.Name }}-qdrant-headless
+  replicas: {{ $qdrant.replicaCount | default 1 }}
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qdrant
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: qdrant
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/qdrant/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-qdrant
+      {{- with $qdrant.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: qdrant
+          image: "{{ $qdrant.image.repository }}:{{ $qdrant.image.tag }}"
+          imagePullPolicy: {{ $qdrant.image.pullPolicy | default "IfNotPresent" }}
+          {{- with $qdrant.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command: ["/bin/bash", "-c"]
+          args: ["./config/initialize.sh"]
+          env:
+            - name: QDRANT_INIT_FILE_PATH
+              value: /qdrant/init/.qdrant-initialized
+          {{- range $qdrant.env }}
+            - name: {{ .name }}
+              {{- if .valueFrom }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- else }}
+              value: {{ .value | quote }}
+              {{- end }}
+          {{- end }}
+          ports:
+            {{- range $qdrant.service.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .targetPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+          {{- if $qdrant.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: {{ $qdrant.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ $qdrant.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ $qdrant.startupProbe.timeoutSeconds }}
+            successThreshold: {{ $qdrant.startupProbe.successThreshold }}
+            failureThreshold: {{ $qdrant.startupProbe.failureThreshold }}
+          {{- end }}
+          {{- if $qdrant.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: {{ $qdrant.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $qdrant.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ $qdrant.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ $qdrant.readinessProbe.successThreshold }}
+            failureThreshold: {{ $qdrant.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $qdrant.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: {{ $qdrant.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $qdrant.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ $qdrant.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ $qdrant.livenessProbe.successThreshold }}
+            failureThreshold: {{ $qdrant.livenessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml $qdrant.resources | nindent 12 }}
+          volumeMounts:
+            - name: qdrant-storage
+              mountPath: /qdrant/storage
+            - name: qdrant-snapshots
+              mountPath: /qdrant/snapshots
+            - name: qdrant-config
+              mountPath: /qdrant/config/initialize.sh
+              subPath: initialize.sh
+            - name: qdrant-config
+              mountPath: /qdrant/config/production.yaml
+              subPath: production.yaml
+            # readOnlyRootFilesystem is set, so every path Qdrant writes to
+            # outside its volumes needs to be backed by an emptyDir.
+            - name: qdrant-init
+              mountPath: /qdrant/init
+      volumes:
+        - name: qdrant-config
+          configMap:
+            name: {{ .Release.Name }}-qdrant
+            defaultMode: 0755
+        - name: qdrant-init
+          emptyDir: {}
+        {{- if not $qdrant.snapshotPersistence.enabled }}
+        - name: qdrant-snapshots
+          emptyDir: {}
+        {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: qdrant-storage
+        labels:
+          app.kubernetes.io/name: qdrant
+          app.kubernetes.io/instance: {{ .Release.Name }}
+      spec:
+        storageClassName: {{ required "qdrant.persistence.storageClassName is required: Qdrant must not use the cluster default StorageClass. Set it to a block or node-local class backed by SSD." $qdrant.persistence.storageClassName | quote }}
+        accessModes:
+        {{- range $qdrant.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ $qdrant.persistence.size | quote }}
+    {{- if $qdrant.snapshotPersistence.enabled }}
+    # A separate volume so that a large snapshot cannot fill the data volume.
+    - metadata:
+        name: qdrant-snapshots
+        labels:
+          app.kubernetes.io/name: qdrant
+          app.kubernetes.io/instance: {{ .Release.Name }}
+      spec:
+        storageClassName: {{ required "qdrant.snapshotPersistence.storageClassName is required when snapshotPersistence is enabled: see qdrant.persistence.storageClassName." $qdrant.snapshotPersistence.storageClassName | quote }}
+        accessModes:
+        {{- range $qdrant.snapshotPersistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ $qdrant.snapshotPersistence.size | quote }}
+    {{- end }}
+{{- end }}

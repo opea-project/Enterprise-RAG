@@ -416,6 +416,7 @@
       vars:
         check_pods_no_fail: false
         check_pods_store_result: "{{ is_upgrade_mode | default(false) | bool }}"
+        check_pods_role_retries: 20
       tags:
         - install
         - uninstall

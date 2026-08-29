@@ -289,30 +289,38 @@
     - install
     - update-configuration
 
-- name: Wait for vLLM Gaudi pods to become ready (model download may take up to {{ gmc.vllm_model_download_timeout_minutes }} minutes)
-  # Triggered statically when the pipeline uses HPU resources — avoids a race with
-  # GMC controller reconciliation that would leave the pod list empty right after
-  # "Apply pipeline".  GMC creates pods a few seconds after the Pipeline CR is applied;
-  # the poll loop below handles the initial "no pods yet" phase automatically.
-  when: "'hpu' in effective_resources_path"
+- name: Set vLLM app label for pod readiness wait
+  ansible.builtin.set_fact:
+    _vllm_app_label: "{{ 'vllm_gaudi' if 'hpu' in effective_resources_path else 'vllm' }}"
+  tags:
+    - install
+
+- name: Wait for vLLM pods to become ready (model download may take up to {{ gmc.vllm_model_download_timeout_minutes }} minutes)
+  # Avoids a race with GMC controller reconciliation that would leave the pod list
+  # empty right after "Apply pipeline". GMC creates pods a few seconds after the
+  # Pipeline CR is applied; the poll loop handles the initial "no pods yet" phase.
+  # For CPU pipelines the StatefulSet rolls sequentially over a shared ReadWriteOnce
+  # PVC: the first replica downloads the model, subsequent ones load from disk.
+  # The combined wall-clock can exceed 15 min for a 14 GB model, hence the extended
+  # timeout derived from gmc.vllm_model_download_timeout_minutes.
   block:
-    - name: Poll vLLM Gaudi pod readiness with download-aware extended timeout
+    - name: Poll vLLM pod readiness with download-aware extended timeout
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: "{{ item.namespace }}"
         label_selectors:
-          - "app.kubernetes.io/name=vllm_gaudi"
-      register: vllm_gaudi_pods_status
+          - "app.kubernetes.io/name={{ _vllm_app_label }}"
+      register: _vllm_pods_status
       until: >
-        (vllm_gaudi_pods_status.resources | length > 0)
+        (_vllm_pods_status.resources | length > 0)
         and
         (
-          (vllm_gaudi_pods_status.resources
+          (_vllm_pods_status.resources
            | selectattr('status.containerStatuses', 'defined')
            | map(attribute='status.containerStatuses') | flatten
            | selectattr('ready', 'equalto', false) | list | length == 0)
           or
-          (vllm_gaudi_pods_status.resources
+          (_vllm_pods_status.resources
            | selectattr('status.containerStatuses', 'defined')
            | map(attribute='status.containerStatuses') | flatten
            | selectattr('state.waiting.reason', 'defined')
@@ -324,13 +332,13 @@
       retries: "{{ (gmc.vllm_model_download_timeout_minutes | int * 2) | int }}"
       delay: 30
 
-    - name: Fail if vLLM Gaudi pods are in a crash state (not just waiting for model download)
+    - name: Fail if vLLM pods are in a crash state (not just waiting for model download)
       fail:
         msg: >
-          One or more vLLM Gaudi pods in namespace '{{ item.namespace }}' are in a crash state.
-          Run: kubectl logs -n {{ item.namespace }} -l app.kubernetes.io/name=vllm_gaudi
+          One or more vLLM pods in namespace '{{ item.namespace }}' are in a crash state.
+          Run: kubectl logs -n {{ item.namespace }} -l app.kubernetes.io/name={{ _vllm_app_label }}
       when: >
-        vllm_gaudi_pods_status.resources
+        _vllm_pods_status.resources
         | selectattr('status.containerStatuses', 'defined')
         | map(attribute='status.containerStatuses') | flatten
         | selectattr('state.waiting.reason', 'defined')

@@ -1,15 +1,21 @@
 # Intel® AI for Enterprise RAG
 
 > [!IMPORTANT]
-> 📣 **Intel® AI for Enterprise RAG** is moving to a new home!
-> Version 2.3.0 is the final release published from this repository. Starting with the next release, Intel® AI for Enterprise RAG will continue its development in a new repository - details will be shared soon.
+> 📣 **Intel® AI for Enterprise RAG has moved to [github.com/intel/enterprise-rag](https://github.com/intel/enterprise-rag).**
+> Version 2.3.0 is the final release from this repository. All new development, releases, and support continue in the new repository, starting with **[v3.0.0](https://github.com/intel/enterprise-rag/releases/tag/v3.0.0)**.
 >
-> The project isn't going anywhere - it's growing. The team, the roadmap, and our commitment to production-grade enterprise RAG remain fully in place. The move sets us up for the next phase of the project and a stronger foundation for what's ahead.
+> Since v3.0.0 one installer deploys Kubernetes, platform services, model serving, and the RAG application together. What's new:
+> - **One installer for the whole stack** - install, validate, and tear down through a single entry point
+> - **Preconfigured use cases** - pick `chatqna`, `docsum`, `audioqna`, `translation`, or `pl_chatqna` at setup and get a working configuration
+> - **Modular pipelines** - build pipelines from reusable steps and tune settings per step on a running system, with no downtime
+> - **Lighter images** - about 42% smaller containers that download and start faster
 >
-> Stay tuned:
-> - Watch this repository for the announcement of the new location
-> - Continue using 2.3.0 with confidence - it's a stable, supported release
-> - Issues and discussions remain open here until the transition is complete
+> **We encourage all users to move to v3.0.0.** To get started:
+> - Follow the [Quick Start](https://github.com/intel/enterprise-rag/blob/release-3.0/docs/quickstart/quickstart.md) for a fresh deployment
+> - Read the [documentation](https://github.com/intel/enterprise-rag/blob/release-3.0/docs/README.md) and [release notes](https://github.com/intel/enterprise-rag/releases/tag/v3.0.0)
+> - Open new issues and discussions in the [new repository](https://github.com/intel/enterprise-rag/issues)
+>
+> This repository stays available as a reference for 2.3.0 and will not receive further updates.
 
 Intel® AI for Enterprise RAG simplifies transforming your enterprise data into actionable insights. Powered by Intel® Xeon® processors and Intel® Gaudi® AI accelerators, it integrates components from industry partners to offer a streamlined approach to deploying enterprise solutions.
 
